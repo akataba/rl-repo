@@ -20,14 +20,12 @@ class Training:
         self.batch_size = batch_size
         self.reset_target_counter = 0
 
-    def train_model(self, agent, target_model=False, model_path=None):
+    def train_model(self, agent, target_model=False):
         """Trains the model in the enivronment provided
 
         agent: String that is used to dynamical instatiate the model
 
         target_model (bool): If true the architecture has a target model that must be reset
-
-        model_path (string): Absolute or relative path to the module where model will be found
 
         """
 
