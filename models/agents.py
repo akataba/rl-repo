@@ -125,7 +125,7 @@ class DuelingDDQNAgent(RLAgent):
         model = Model(inputs = state_input, outputs = q_values)
         model.compile(loss='mse', optimizer=Adam(lr=self.learning_rate))
         if weights is not None:
-            model.set_weight(weights)
+            model.set_weights(weights)
         return model
  
     def act(self, state):
