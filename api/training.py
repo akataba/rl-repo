@@ -29,7 +29,7 @@ class Training:
 
         """
 
-        for e in self.episodes:
+        for e in range(self.episodes):
             current_state = np.reshape(self.env.reset(), [1, self.state_space])
             done = False
             score = 0 
