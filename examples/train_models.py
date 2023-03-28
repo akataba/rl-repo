@@ -21,5 +21,5 @@ env = CartPoleWrapper(env)
 
 agent = DQNAgent(2,2)
 train_api = Training(500, env, 32)
-train_api.train_model(agent, target_model=True, model_path='rl_learn/models/agents')
+train_api.train_model(agent, target_model=False)
 train_api.plot_performance('DQNAgent')
