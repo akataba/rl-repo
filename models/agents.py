@@ -63,7 +63,7 @@ class DDQNAgent(RLAgent):
 
 class DQNAgent(RLAgent):
     def __init__(self, n_state, n_action) -> None:
-        super().__init(n_state, n_action)
+        super().__init__(n_state, n_action)
         self.model = self._build_model()        
   
     def _build_model(self):
