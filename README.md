@@ -1,0 +1,19 @@
+
+# Relaqs
+Relqs is a Python framework for doing reinforcement learning for quantum control and quantum gate compilation 
+
+
+## Installation
+
+To install Relaqs:
+
+1. First install poetry with installation instructions [here](https://python-poetry.org/docs/)
+
+2. Then execute the command: 
+
+        poetry install
+
+in the folder with the `pyproject.toml` file
+
+
+
