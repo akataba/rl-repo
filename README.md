@@ -15,5 +15,8 @@ To install Relaqs:
 
 in the folder with the `pyproject.toml` file
 
+Ray installation:
 
+        pip install -U "ray[rllib]"
+        pip install torch
 
