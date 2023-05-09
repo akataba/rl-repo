@@ -56,7 +56,7 @@ class GateSynthEnvRLlib(gym.Env):
         gamma = action[2] + 1j * action[3]
         
         # Get state
-        H = self.evolve_hamiltonian(self.delta, alpha, gamma)
+        H = self.hamiltonian(self.delta, alpha, gamma)
         Ut = la.expm(-1j*self.dt*H)
         self.U = Ut @ self.U # What is the purpose of this operation ?
         self.state = self.unitary_to_observation(self.U)
@@ -83,7 +83,7 @@ class GateSynthEnvRLlib(gym.Env):
     def unitary_to_observation(self, U):
        return np.clip(np.array([(x.real, x.imag) for x in U.flatten()], dtype=np.float64).squeeze().reshape(-1), -1, 1) # todo, see if clip is necessary
     
-    def evolve_hamiltonian(self, delta, alpha, gamma):
+    def hamiltonian(self, delta, alpha, gamma):
         """Alpha and gamma are complex. This function could be made a callable class attribute."""
         return alpha*Z + 0.5*(gamma*sig_m + gamma.conjugate()*sig_p) + delta*Z
     

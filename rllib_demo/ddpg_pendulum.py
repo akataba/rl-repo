@@ -1,6 +1,12 @@
 import json
 from ray.rllib.algorithms.ddpg import DDPGConfig
 
+
+# Build rllib model
+# Inputs config = (model().environment)
+# Register environment i.e give a string
+
+
 def run(print_rewards=False, save_file_name=None):
     config = (
         DDPGConfig()

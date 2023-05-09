@@ -5,6 +5,8 @@ import gym
 import matplotlib.pyplot as plt
 from importlib import import_module
 import math
+import ray
+from ray.tune.registry import register_env
 
 class Training:
     """"
@@ -83,4 +85,23 @@ class Training:
         plt.scatter(list(range(len(self.score_for_episode))), self.score_for_episode)
         plt.plot(list(range(len(self.score_for_episode))), self.score_for_episode)
         plt.show()
+
+class TrainRLLib:
+    def __init__(self, rllibmodel, env, framework_name="torch", episodes=2) -> None:
+        ray.init()
+
+        register_env("my_env", self.env_creator)
+        self.alg_config = rllibmodel()
+        self.alg_config.framework(framework_name)
+        self.alg_config.environment("my_env", env_config=rllibmodel.get_default_env_config())
+        self.alg = self.alg_config.build()
+        self.episodes = episodes
+
+    def env_creator(self, config, env):
+        return env(config)
+
+    def train_model():
+        for _ in range(self.epsidoes):
+            result = self.alg.train()
+
 
