@@ -23,9 +23,9 @@ def gate_environment(config):
     return GateSynthEnvRLlib(config)
 
 def test_environment(gate_environment, config):
-    assert 4 == len(gate_environment.state)
-    assert (8,) == gate_environment.observation_space.shape()
-    assert (4,) == gate_environment.action_space.shape()
+    assert 8 == len(gate_environment.state)
+    assert (8,) == gate_environment.observation_space.shape
+    assert (4,) == gate_environment.action_space.shape
     
     # reset the environment
     gate_environment.reset()
