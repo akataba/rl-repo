@@ -7,6 +7,7 @@ import scipy.linalg as la
 from ray.tune.registry import register_env
 from ray.rllib.algorithms.ddpg import DDPGConfig
 from ray.rllib.utils import check_env
+from relaqs.hamiltonians.single_qubit_gate import hamiltonian
 
 sig_p = np.array([[0,1],[0,0]])
 sig_m = np.array([[0,0],[1,0]])
@@ -87,18 +88,5 @@ class GateSynthEnvRLlib(gym.Env):
         """Alpha and gamma are complex. This function could be made a callable class attribute."""
         return alpha*Z + 0.5*(gamma*sig_m + gamma.conjugate()*sig_p) + delta*Z
     
-def env_creator(env_config):
-    return GateSynthEnvRLlib(env_config)
 
-if __name__ == "__main__":
-    ray.init()
 
-    register_env("my_env", env_creator)
-    alg_config = DDPGConfig()
-    alg_config.framework("torch")
-    alg_config.environment("my_env", env_config=GateSynthEnvRLlib.get_default_env_config())
-    alg = alg_config.build()
-
-    for _ in range(1):
-        result = alg.train()
-        #print(result)
