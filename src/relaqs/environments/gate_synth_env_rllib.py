@@ -1,0 +1,104 @@
+""" """
+from asyncore import file_dispatcher
+import gymnasium as gym
+import ray
+import numpy as np
+import scipy.linalg as la
+from ray.tune.registry import register_env
+from ray.rllib.algorithms.ddpg import DDPGConfig
+from ray.rllib.utils import check_env
+
+sig_p = np.array([[0,1],[0,0]])
+sig_m = np.array([[0,0],[1,0]])
+X = np.array([[0,1],[1,0]])
+Z = np.array([[1,0],[0,-1]])
+I = np.array([[1,0],[0,1]])
+Y = np.array([[0, 1j],[-1j, 0]])
+
+class GateSynthEnvRLlib(gym.Env):
+    @classmethod
+    def get_default_env_config(cls):
+        return {
+            "observation_space_size": 8,
+            "action_space_size": 4,
+            "U_initial": I,
+            "U_target" : X,
+            "final_time": 2,
+            "dt": 0.01,
+            "delta": 1,
+        }
+ 
+    def __init__(self, env_config):
+        self.observation_space = gym.spaces.Box(low=-1, high=1, shape=(env_config["observation_space_size"],))
+        self.action_space = gym.spaces.Box(low=-1/np.sqrt(2), high=1/np.sqrt(2), shape=(env_config["action_space_size"],)) # assuming norm should be <= 1
+        self.t = 0
+        self.final_time = env_config["final_time"] # Final time for the gates
+        self.dt = env_config["dt"]  # time step
+        self.delta = env_config["delta"] # detuning
+        self.U_target = env_config["U_target"]
+        self.U_initial = env_config["U_initial"] # future todo, can make random initial state
+        self.U = env_config["U_initial"]
+        self.state = self.unitary_to_observation(self.U)
+    
+    def reset(self, *, seed=None, options=None):
+        self.t = 0
+        self.U = self.U_initial
+        starting_observeration = self.unitary_to_observation(self.U_initial)
+        info = {}
+        return starting_observeration, info
+
+    def step(self, action):
+        truncated = False
+        info = {}
+
+        # Get actions
+        alpha = action[0] + 1j * action[1]
+        gamma = action[2] + 1j * action[3]
+        
+        # Get state
+        H = self.evolve_hamiltonian(self.delta, alpha, gamma)
+        Ut = la.expm(-1j*self.dt*H)
+        self.U = Ut @ self.U # What is the purpose of this operation ?
+        self.state = self.unitary_to_observation(self.U)
+
+        #leaving off conjugate transpose since X yields itself : <--- which line did this refer to?
+        # Get reward (fidelity)
+        fidelity = float(0.5 * np.trace(self.U_target@self.U) * np.trace(self.U_target@self.U).conjugate())
+        reward = fidelity
+        
+        # Determine if episode is over
+        truncated = False
+        if (fidelity >= 0.95) or self.t >= self.final_time:
+            terminated = True
+            truncated = True
+        elif self.t >= self.final_time:
+            terminated = True
+        else:
+            terminated = False
+
+        self.t = self.t + self.dt # increment time
+
+        return (self.state, reward, terminated, truncated, info)
+
+    def unitary_to_observation(self, U):
+       return np.clip(np.array([(x.real, x.imag) for x in U.flatten()], dtype=np.float64).squeeze().reshape(-1), -1, 1) # todo, see if clip is necessary
+    
+    def evolve_hamiltonian(self, delta, alpha, gamma):
+        """Alpha and gamma are complex. This function could be made a callable class attribute."""
+        return alpha*Z + 0.5*(gamma*sig_m + gamma.conjugate()*sig_p) + delta*Z
+    
+def env_creator(env_config):
+    return GateSynthEnvRLlib(env_config)
+
+if __name__ == "__main__":
+    ray.init()
+
+    register_env("my_env", env_creator)
+    alg_config = DDPGConfig()
+    alg_config.framework("torch")
+    alg_config.environment("my_env", env_config=GateSynthEnvRLlib.get_default_env_config())
+    alg = alg_config.build()
+
+    for _ in range(1):
+        result = alg.train()
+        #print(result)
