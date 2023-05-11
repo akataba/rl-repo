@@ -65,3 +65,4 @@ tzdata==2023.3
 urllib3==1.26.15
 virtualenv==20.21.0
 zipp==3.15.0
+pytest
