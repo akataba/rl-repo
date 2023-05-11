@@ -7,7 +7,7 @@ import scipy.linalg as la
 from ray.tune.registry import register_env
 from ray.rllib.algorithms.ddpg import DDPGConfig
 from ray.rllib.utils import check_env
-from relaqs.hamiltonians.single_qubit_gate import hamiltonian
+
 
 sig_p = np.array([[0,1],[0,0]])
 sig_m = np.array([[0,0],[1,0]])
