@@ -19,4 +19,9 @@ Ray installation:
 
         pip install -U "ray[rllib]"
         pip install torch
+        conda install tensorboardX
+        pip install tensorflow-probability
 
+Alternatively:
+* Use requirements.txt
+* If using a conda environment `conda env create -n <ENVNAME> --file requirements.yml`
