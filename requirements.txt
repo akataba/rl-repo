@@ -14,7 +14,7 @@ filelock==3.12.0
 fonttools==4.39.3
 frozenlist==1.3.3
 gast==0.5.4
-grpcio @ file:///Users/runner/miniforge3/conda-bld/grpc-split_1683022350189/work
+grpcio
 Gymnasium==0.26.3
 gymnasium-notices==0.0.1
 idna==3.4
@@ -33,7 +33,7 @@ mdurl==0.1.2
 mpmath==1.3.0
 msgpack==1.0.5
 networkx==3.1
-numpy @ file:///Users/runner/miniforge3/conda-bld/numpy_1682210398476/work
+numpy
 packaging==23.1
 pandas==2.0.1
 Pillow==9.5.0
@@ -52,10 +52,10 @@ requests==2.29.0
 rich==13.3.5
 scikit-image==0.20.0
 scipy==1.9.1
-six @ file:///home/conda/feedstock_root/build_artifacts/six_1620240208055/work
+six
 sympy==1.11.1
 tabulate==0.9.0
-tensorboardX @ file:///home/conda/feedstock_root/build_artifacts/tensorboardx_1645578792360/work
+tensorboardX
 tensorflow-probability==0.19.0
 tifffile==2023.4.12
 torch==2.0.0
