@@ -64,7 +64,7 @@ class GateSynthEnvRLlib(gym.Env):
 
         #leaving off conjugate transpose since X yields itself : <--- which line did this refer to?
         # Get reward (fidelity)
-        fidelity = float(0.5 * np.trace(self.U_target@self.U) * np.trace(self.U_target@self.U).conjugate())
+        fidelity = float(np.abs(np.trace(self.U_target.conjugate().transpose()@self.U)))  / self.U.shape[0]
         reward = fidelity
         
         # Determine if episode is over
