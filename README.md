@@ -4,24 +4,17 @@ Relqs is a Python framework for doing reinforcement learning for quantum control
 
 
 ## Installation
+One may install in a number of ways. Either by manually installing the required packages, or by executing one of the commands below:
 
-To install Relaqs:
-
-1. First install poetry with installation instructions [here](https://python-poetry.org/docs/)
-
-2. Then execute the command: 
-
-        poetry install
-
-in the folder with the `pyproject.toml` file
-
-Ray installation:
+### Required Packages:
 
         pip install -U "ray[rllib]"
         pip install torch
         conda install tensorboardX
         pip install tensorflow-probability
 
-Alternatively:
-* Use requirements.txt
-* If using a conda environment `conda env create -n <ENVNAME> --file requirements.yml`
+### Install with pip:
+`pip install -r requirements.txt
+
+### Install in a conda environment (verified on M1 Mac):
+If you are using a conda environment running `conda env create -n <ENVNAME> --file requirements.yml` will install packages using a combination of `pip` and `conda`. This is useful on M1 Macs where some packages aren't available through `pip`.

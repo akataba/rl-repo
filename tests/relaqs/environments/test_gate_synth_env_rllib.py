@@ -1,11 +1,5 @@
-from asyncore import file_dispatcher
-import gymnasium as gym
-import ray
 import numpy as np
-import scipy.linalg as la
-from ray.tune.registry import register_env
 from ray.rllib.algorithms.ddpg import DDPGConfig
-from ray.rllib.utils import check_env
 import pytest
 from relaqs.environments.gate_synth_env_rllib import GateSynthEnvRLlib
 
