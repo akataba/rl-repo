@@ -1,12 +1,10 @@
 """ """
 from asyncore import file_dispatcher
 import gymnasium as gym
-import ray
 import numpy as np
 import scipy.linalg as la
-from ray.tune.registry import register_env
-from ray.rllib.algorithms.ddpg import DDPGConfig
-from ray.rllib.utils import check_env
+import matplotlib.pyplot as plt
+from matplotlib.animation import FuncAnimation
 
 
 sig_p = np.array([[0,1],[0,0]])
@@ -21,7 +19,7 @@ class GateSynthEnvRLlib(gym.Env):
     def get_default_env_config(cls):
         return {
             "observation_space_size": 8,
-            "action_space_size": 4,
+            "action_space_size": 3,
             "U_initial": I,
             "U_target" : X,
             "final_time": 2,
@@ -40,12 +38,15 @@ class GateSynthEnvRLlib(gym.Env):
         self.U_initial = env_config["U_initial"] # future todo, can make random initial state
         self.U = env_config["U_initial"]
         self.state = self.unitary_to_observation(self.U)
+        self.amplitudes =[]
+
     
     def reset(self, *, seed=None, options=None):
         self.t = 0
         self.U = self.U_initial
         starting_observeration = self.unitary_to_observation(self.U_initial)
         info = {}
+        self.amplitudes = []
         return starting_observeration, info
 
     def step(self, action):
@@ -53,8 +54,8 @@ class GateSynthEnvRLlib(gym.Env):
         info = {}
 
         # Get actions
-        alpha = action[0] + 1j * action[1]
-        gamma = action[2] + 1j * action[3]
+        alpha = action[0]
+        gamma = action[1] + 1j * action[2]
         
         # Get state
         H = self.hamiltonian(self.delta, alpha, gamma)
@@ -64,8 +65,8 @@ class GateSynthEnvRLlib(gym.Env):
 
         #leaving off conjugate transpose since X yields itself : <--- which line did this refer to?
         # Get reward (fidelity)
-        fidelity = float(0.5 * np.trace(self.U_target@self.U) * np.trace(self.U_target@self.U).conjugate())
-        reward = fidelity
+        fidelity = 0.5 *  abs(np.trace(self.U_target@self.U))**2
+        reward = fidelity 
         
         # Determine if episode is over
         truncated = False
@@ -78,15 +79,22 @@ class GateSynthEnvRLlib(gym.Env):
             terminated = False
 
         self.t = self.t + self.dt # increment time
+        self.amplitudes.append([alpha, gamma, fidelity])
 
         return (self.state, reward, terminated, truncated, info)
 
     def unitary_to_observation(self, U):
-       return np.clip(np.array([(x.real, x.imag) for x in U.flatten()], dtype=np.float64).squeeze().reshape(-1), -1, 1) # todo, see if clip is necessary
+       return np.clip(np.array([(x.real, x.imag) for x in U.flatten()], dtype=np.float64).squeeze().reshape(-1), -1, 1)
     
     def hamiltonian(self, delta, alpha, gamma):
         """Alpha and gamma are complex. This function could be made a callable class attribute."""
         return alpha*Z + 0.5*(gamma*sig_m + gamma.conjugate()*sig_p) + delta*Z
     
+    def get_fidelity(self):
+        fidelity = [self.amplitudes[i][2] for i in range(self.amplitudes)]
+        return fidelity
+  
+
+
 
 
