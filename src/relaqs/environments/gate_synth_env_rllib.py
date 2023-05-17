@@ -2,7 +2,6 @@ import gymnasium as gym
 import ray
 import numpy as np
 import scipy.linalg as la
-from ray.tune.registry import register_env
 from ray.rllib.algorithms.ddpg import DDPGConfig
 from ray.rllib.utils import check_env
 
