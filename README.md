@@ -18,7 +18,7 @@ One may install required packages in a number of ways. Either by manually instal
         pip install tensorflow-probability
 
 ### Install with pip:
-`pip install -r requirements.txt
+`pip install -r requirements.txt`
 
 ### Install in a conda environment (verified on M1 Mac):
 If you are using a conda environment running `conda env create -n <ENVNAME> --file requirements.yml` will install packages using a combination of `pip` and `conda`. This is useful on M1 Macs where some packages aren't available through `pip`.
