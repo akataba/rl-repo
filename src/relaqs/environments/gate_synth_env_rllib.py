@@ -82,5 +82,5 @@ class GateSynthEnvRLlib(gym.Env):
     def hamiltonian(self, delta, alpha, gamma_magnitude, gamma_phase):
         """Alpha and gamma are complex. This function could be made a callable class attribute."""
         #return alpha*Z + 0.5*(gamma*sig_m + gamma.conjugate()*sig_p) + delta*Z
-        return (delta + alpha)*Z  + gamma_magnitude*(np.cos(gamma_phase)*X + np.sin(gamma_phase)*Y)
+        return (delta + alpha)*Z + gamma_magnitude*(np.cos(gamma_phase)*X + np.sin(gamma_phase)*Y)
     
