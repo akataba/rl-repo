@@ -3,11 +3,15 @@
 Relqs is a Python framework for doing reinforcement learning for quantum control and quantum gate compilation 
 
 
-## Installation
-One may install in a number of ways. Either by manually installing the required packages, or by executing one of the commands below:
+## Install relaqs
+```
+pip install -e .
+```
 
 ### Required Packages:
+One may install required packages in a number of ways. Either by manually installing, or by executing one of the commands below:
 
+### Direct install: 
         pip install -U "ray[rllib]"
         pip install torch
         conda install tensorboardX
