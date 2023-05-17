@@ -1,8 +1,6 @@
 import gymnasium as gym
-import ray
 import numpy as np
 import scipy.linalg as la
-from ray.rllib.algorithms.ddpg import DDPGConfig
 
 sig_p = np.array([[0,1],[0,0]])
 sig_m = np.array([[0,0],[1,0]])
@@ -26,7 +24,7 @@ class GateSynthEnvRLlib(gym.Env):
  
     def __init__(self, env_config):
         self.observation_space = gym.spaces.Box(low=-1, high=1, shape=(env_config["observation_space_size"],))
-        self.action_space = gym.spaces.Box(low=-1/np.sqrt(2), high=1/np.sqrt(2), shape=(env_config["action_space_size"])) # assuming norm should be <= 1
+        self.action_space = gym.spaces.Box(low=-1/np.sqrt(2), high=1/np.sqrt(2), shape=(env_config["action_space_size"],)) # assuming norm should be <= 1
         self.t = 0
         self.final_time = env_config["final_time"] # Final time for the gates
         self.dt = env_config["dt"]  # time step
