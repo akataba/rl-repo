@@ -1,5 +1,4 @@
 import numpy as np
-from ray.rllib.algorithms.ddpg import DDPGConfig
 import pytest
 from relaqs.environments.gate_synth_env_rllib import GateSynthEnvRLlib
 
@@ -27,3 +26,8 @@ def test_environment(gate_environment, config):
     np.array_equal(gate_environment.U_initial,con["U_initial"])
     assert 0 == gate_environment.t
 
+def test_unitarity(gate_environment): 
+    for _ in range(10):
+        action = gate_environment.action_space.sample()
+        gate_environment.step(action)
+    assert np.allclose(gate_environment.U @ gate_environment.U.T.conjugate(), I)
