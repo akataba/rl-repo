@@ -54,10 +54,9 @@ class GateSynthEnvRLlib(gym.Env):
         # Get state
         H = self.hamiltonian(self.delta, alpha, gamma_magnitude, gamma_phase)
         Ut = la.expm(-1j*self.dt*H)
-        self.U = Ut @ self.U # What is the purpose of this operation ?
+        self.U = Ut @ self.U 
         self.state = self.unitary_to_observation(self.U)
 
-        #leaving off conjugate transpose since X yields itself : <--- which line did this refer to?
         # Get reward (fidelity)
         fidelity = float(np.abs(np.trace(self.U_target.conjugate().transpose()@self.U)))  / self.U.shape[0]
         reward = fidelity
