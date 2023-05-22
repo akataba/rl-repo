@@ -71,7 +71,7 @@ class GateSynthEnvRLlib(gym.Env):
         else:
             terminated = False
 
-        self.t = self.t + self.dt # increment time
+        self.t = round(self.t + self.dt, 3) # increment time
 
         return (self.state, reward, terminated, truncated, info)
 
