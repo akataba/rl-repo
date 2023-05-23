@@ -24,7 +24,7 @@ class GateSynthEnvRLlib(gym.Env):
  
     def __init__(self, env_config):
         self.observation_space = gym.spaces.Box(low=-1, high=1, shape=(env_config["observation_space_size"],))
-        self.action_space = gym.spaces.Box(low=np.array([0, 0, 0]), high=np.array([2, 10, np.pi])) # TODO: verify these bounds
+        self.action_space = gym.spaces.Box(low=np.array([0, 0, -np.pi]), high=np.array([2, 10, np.pi])) # TODO: verify these bounds
         #self.action_space = gym.spaces.Box(low=[0, 0, 0], high=[1, 1/np.sqrt(2), 1/np.sqrt(2)], shape=(env_config["action_space_size"],))
         self.t = 0
         self.final_time = env_config["final_time"] # Final time for the gates
