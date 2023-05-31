@@ -1,6 +1,8 @@
 import gymnasium as gym
 import numpy as np
 import scipy.linalg as la
+from qutip.superoperator import liouvillian
+from qutip.operators import *
 
 sig_p = np.array([[0,1],[0,0]])
 sig_m = np.array([[0,0],[1,0]])
@@ -50,17 +52,35 @@ class GateSynthEnvRLlib(gym.Env):
         alpha = action[0] 
         gamma_magnitude = action[1]
         gamma_phase = action[2] 
-        
-        # Get state
-        H = self.hamiltonian(self.delta, alpha, gamma_magnitude, gamma_phase)
-        Ut = la.expm(-1j*self.dt*H)
-        self.U = Ut @ self.U 
-        self.state = self.unitary_to_observation(self.U)
 
-        # Get reward (fidelity)
-        fidelity = float(np.abs(np.trace(self.U_target.conjugate().transpose()@self.U)))  / self.U.shape[0]
-        reward = fidelity
-        
+        # Set noise opertors
+        relaxationRate = 0.01
+        jump_ops = [np.sqrt(relaxationRate)*sigmam()]
+
+        if not jump_ops:
+            # Get state
+            H = self.hamiltonian(self.delta, alpha, gamma_magnitude, gamma_phase)
+            Ut = la.expm(-1j*self.dt*H)
+            self.U = Ut @ self.U 
+            self.state = self.unitary_to_observation(self.U)
+
+            # Get reward (fidelity)
+            fidelity = float(np.abs(np.trace(self.U_target.conjugate().transpose()@self.U)))  / (self.U.shape[0]**2)
+            reward = fidelity
+
+        if jump_ops:
+            # L_target set (different from U_target). THIS NEEDS TO BE INTEGRATED AS self.L_target
+            L_target = self.unitary_to_observation(spre(U_target)*spost(U_target))
+
+            # Liouvillian Generation
+            Lt = self.dt*self.liouvillianWithControl(self.delta, alpha, gamma_magnitude, gamma_phase, jump_ops)
+            self.L = Lt @ self.L
+            self.state = self.unitary_to_observation(self.L)   #L is not unitary. It is matrix and needs to be flattened
+
+            # Here, Rewards for Liouvillian should be used.
+            fidelity = float(np.abs(np.trace(self.L_target.conjugate().transpose()@self.L)))  / (self.L.shape[0]**2)
+            reward = fidelity
+
         # Determine if episode is over
         truncated = False
         if (fidelity >= 0.95) or self.t >= self.final_time:
@@ -82,4 +102,15 @@ class GateSynthEnvRLlib(gym.Env):
         """Alpha and gamma are complex. This function could be made a callable class attribute."""
         #return alpha*Z + 0.5*(gamma*sig_m + gamma.conjugate()*sig_p) + delta*Z
         return (delta + alpha)*Z + gamma_magnitude*(np.cos(gamma_phase)*X + np.sin(gamma_phase)*Y)
-    
+
+    def liouvillianWithControl(self, delta, alpha, gamma_magnitude, gamma_phase, jump_ops):
+        """This is Liouvillian so should be separately used from the Hamiltonian"""
+        X = sigmax()
+        Y = sigmay()
+        Z = sigmaz()
+
+        H = (delta + alpha)*Z + gamma_magnitude*(np.cos(gamma_phase)*X + np.sin(gamma_phase)*Y)
+
+        L = liouvillian(H, jump_ops, data_only=False, chi=None)
+
+        return L.data
