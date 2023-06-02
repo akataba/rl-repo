@@ -70,7 +70,7 @@ class GateSynthEnvRLlib(gym.Env):
 
         if jump_ops:
             # L_target set (different from U_target). THIS NEEDS TO BE INTEGRATED AS self.L_target
-            L_target = self.unitary_to_observation(spre(U_target)*spost(U_target))
+            L_target = self.unitary_to_observation(spre(U_target)*spost(U_target.congjugate().transpose()))
 
             # Liouvillian Generation
             Lt = self.dt*self.liouvillianWithControl(self.delta, alpha, gamma_magnitude, gamma_phase, jump_ops)
