@@ -29,7 +29,6 @@ class GateSynthEnvRLlibHaarNoiseless(gym.Env):
     def __init__(self, env_config):
         self.observation_space = gym.spaces.Box(low=-1, high=1, shape=(env_config["observation_space_size"],))
         self.action_space = gym.spaces.Box(low=np.array([-0.1, 0.1, -1.1*np.pi]), high=np.array([0.1, 10, 1.1*np.pi])) 
-        self.t = 0
         self.final_time = env_config["final_time"] # Final time for the gates
         self.delta = env_config["delta"] # detuning
         self.U_target = env_config["U_target"]
@@ -43,9 +42,12 @@ class GateSynthEnvRLlibHaarNoiseless(gym.Env):
         self.state = self.unitary_to_observation(self.U)
     
     def reset(self, *, seed=None, options=None):
-        self.t = 0
         self.U = self.U_initial
         starting_observeration = self.unitary_to_observation(self.U_initial)
+        self.current_Haar_num = 0
+        self.H_array = []
+        self.H_tot = []
+        self.U_array = []
         info = {}
         return starting_observeration, info
 
@@ -98,12 +100,14 @@ class GateSynthEnvRLlibHaarNoiseless(gym.Env):
         fidelity = float(np.abs(np.trace(self.U_target.conjugate().transpose()@self.U)))  / (self.U.shape[0])
         reward = -np.log10(1.0001-fidelity)
 
+        print(fidelity, reward)
+
         # Determine if episode is over
         truncated = False
-        if (fidelity >= 0.95):
-            terminated = True
+        terminated = False
+        if self.current_Haar_num >= self.num_Haar_basis:
             truncated = True
-        elif self.current_Haar_num >= self.num_Haar_basis:
+        elif (fidelity >= 0.95):
             terminated = True
         else:
             terminated = False
