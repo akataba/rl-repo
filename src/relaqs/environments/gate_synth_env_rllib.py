@@ -75,7 +75,7 @@ class GateSynthEnvRLlib(gym.Env):
             self.state = self.unitary_to_observation(self.U)
 
             # Get reward (fidelity)
-            fidelity = float(np.abs(np.trace(self.U_target.conjugate().transpose()@self.U)))  / (self.U.shape[0]**2)
+            fidelity = float(np.abs(np.trace(self.U_target.conjugate().transpose()@self.U)))  / (self.U.shape[0])
             reward = fidelity
 
         if jump_ops:
@@ -173,7 +173,7 @@ class GateSynthEnvRLlibNoiseless(gym.Env):
         self.state = self.unitary_to_observation(self.U)
 
         # Get reward (fidelity)
-        fidelity = float(np.abs(np.trace(self.U_target.conjugate().transpose()@self.U)))  / (self.U.shape[0]**2)
+        fidelity = float(np.abs(np.trace(self.U_target.conjugate().transpose()@self.U)))  / (self.U.shape[0])
         reward = -np.log10(1-fidelity)
 
         # Determine if episode is over
