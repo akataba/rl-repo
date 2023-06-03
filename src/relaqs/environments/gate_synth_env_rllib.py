@@ -25,7 +25,7 @@ class GateSynthEnvRLlib(gym.Env):
             "L_initial": (spre(Qobj(I))*spost(Qobj(I))).data.toarray(),
             "L_target" : (spre(Qobj(X))*spost(Qobj(X))).data.toarray(),
             "final_time": 0.3,
-            "dt": 0.01,
+            "dt": 0.03,
             "delta": 0,
         }
  
@@ -86,7 +86,7 @@ class GateSynthEnvRLlib(gym.Env):
 
             # Here, Rewards for Liouvillian should be used.
             fidelity = float(np.abs(np.trace(self.L @ self.L_target.conjugate().transpose())))  / self.L.shape[0]
-            reward = fidelity
+            reward = -np.log10(1-fidelity)
 
         # Determine if episode is over
         truncated = False
