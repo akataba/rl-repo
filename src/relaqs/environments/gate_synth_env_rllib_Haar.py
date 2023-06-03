@@ -55,6 +55,7 @@ class GateSynthEnvRLlibHaarNoiseless(gym.Env):
 
         self.current_Haar_num += 1
         num_time_bins = 2 ** (self.current_Haar_num - 1)
+        self.U = self.U_initial
 
         # Get actions
         alpha = action[0] 
@@ -79,7 +80,7 @@ class GateSynthEnvRLlibHaarNoiseless(gym.Env):
         for ii, H_elem in enumerate(self.H_array):
             for jj in range(0, num_time_bins):
                 Haar_num = self.current_Haar_num - ii
-                factor = (-1) ** np.floor(jj / (2 ** Haar_num))
+                factor = (-1) ** np.floor(jj / (2 ** (Haar_num-1)))
                 if ii > 0:
                     self.H_tot[jj] += factor * H_elem 
                 else:
@@ -95,7 +96,7 @@ class GateSynthEnvRLlibHaarNoiseless(gym.Env):
 
         # Get reward (fidelity)
         fidelity = float(np.abs(np.trace(self.U_target.conjugate().transpose()@self.U)))  / (self.U.shape[0])
-        reward = -np.log10(1-fidelity)
+        reward = -np.log10(1.0001-fidelity)
 
         # Determine if episode is over
         truncated = False
@@ -115,64 +116,3 @@ class GateSynthEnvRLlibHaarNoiseless(gym.Env):
     def hamiltonian(self, delta, alpha, gamma_magnitude, gamma_phase):
         """Alpha and gamma are complex. This function could be made a callable class attribute."""
         return (delta + alpha)*Z + gamma_magnitude*(np.cos(gamma_phase)*X + np.sin(gamma_phase)*Y)
-    
-
-
-class GateSynthEnvRLlibHaarNoisy(gym.Env):
-    @classmethod
-    def get_default_env_config(cls):
-        return {
-            "observation_space_size": 32,
-            "action_space_size": 3,
-            "L_initial": (spre(Qobj(I))*spost(Qobj(I))).data.toarray(),
-            "L_target" : (spre(Qobj(X))*spost(Qobj(X))).data.toarray(),
-            "final_time": 0.3,
-            "dt": 0.001,
-            "delta": 0,
-        }
- 
-    def __init__(self, env_config):
-        self.observation_space = gym.spaces.Box(low=-1, high=1, shape=(env_config["observation_space_size"],))
-        self.action_space = gym.spaces.Box(low=np.array([-0.1, 0.1, -1.1*np.pi]), high=np.array([0.1, 10, 1.1*np.pi])) # TODO: verify these bounds
-        #self.action_space = gym.spaces.Box(low=[0, 0, 0], high=[1, 1/np.sqrt(2), 1/np.sqrt(2)], shape=(env_config["action_space_size"],))
-        self.t = 0
-        self.final_time = env_config["final_time"] # Final time for the gates
-        self.dt = env_config["dt"]  # time step
-        self.delta = env_config["delta"] # detuning
-        self.L_target = env_config["L_target"]
-        self.L_initial = env_config["L_initial"] 
-        self.L = env_config["L_initial"]
-        self.state = self.unitary_to_observation(self.L)
-    
-    def reset(self, *, seed=None, options=None):
-        self.t = 0
-        self.L = self.L_initial
-        # starting_observeration = self.unitary_to_observation(self.U_initial)
-        starting_observeration = self.unitary_to_observation(self.L_initial)
-        info = {}
-        return starting_observeration, info
-
-    def step(self, action):
-        truncated = False
-        info = {}
-
-        # Here, Rewards for Liouvillian should be used.
-        fidelity = float(np.abs(np.trace(self.L @ self.L_target.conjugate().transpose())))  / self.L.shape[0]
-        reward = -np.log10(1-fidelity)
-
-        return (self.state, reward, terminated, truncated, info)
-
-    def unitary_to_observation(self, U):
-       return np.clip(np.array([(x.real, x.imag) for x in U.flatten()], dtype=np.float64).squeeze().reshape(-1), -1, 1) # todo, see if clip is necessary
-    
-    def liouvillianWithControl(self, delta, alpha, gamma_magnitude, gamma_phase, jump_ops):
-        """This is Liouvillian so should be separately used from the Hamiltonian"""
-        X = sigmax()
-        Y = sigmay()
-        Z = sigmaz()
-
-        H = (delta + alpha)*Z + gamma_magnitude*(np.cos(gamma_phase)*X + np.sin(gamma_phase)*Y)
-
-        L = liouvillian(H, jump_ops, data_only=False, chi=None)
-
-        return L.data.toarray()
