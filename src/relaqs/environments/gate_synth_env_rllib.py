@@ -26,7 +26,7 @@ class GateSynthEnvRLlib(gym.Env):
             "L_target" : (spre(Qobj(X))*spost(Qobj(X))).data.toarray(),
             "final_time": 0.3,
             "dt": 0.01,
-            "delta": 1,
+            "delta": 0,
         }
  
     def __init__(self, env_config):
