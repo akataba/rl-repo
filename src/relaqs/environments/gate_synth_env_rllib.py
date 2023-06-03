@@ -1,8 +1,10 @@
 import gymnasium as gym
 import numpy as np
 import scipy.linalg as la
-from qutip.superoperator import liouvillian
+from qutip.superoperator import liouvillian, spre, spost
+from qutip import Qobj
 from qutip.operators import *
+
 
 sig_p = np.array([[0,1],[0,0]])
 sig_m = np.array([[0,0],[1,0]])
@@ -16,31 +18,39 @@ class GateSynthEnvRLlib(gym.Env):
     def get_default_env_config(cls):
         return {
             "observation_space_size": 8,
+            "observation_space_size_noisy": 32,
             "action_space_size": 3,
             "U_initial": I,
             "U_target" : X,
+            "L_initial": (spre(Qobj(I))*spost(Qobj(I))).data.toarray(),
+            "L_target" : (spre(Qobj(X))*spost(Qobj(X))).data.toarray(),
             "final_time": 2,
             "dt": 0.01,
             "delta": 1,
         }
  
     def __init__(self, env_config):
-        self.observation_space = gym.spaces.Box(low=-1, high=1, shape=(env_config["observation_space_size"],))
-        self.action_space = gym.spaces.Box(low=np.array([0, 0, 0]), high=np.array([2, 10, np.pi])) # TODO: verify these bounds
+        self.observation_space = gym.spaces.Box(low=-1, high=1, shape=(env_config["observation_space_size_noisy"],))
+        self.action_space = gym.spaces.Box(low=np.array([0, 0, -np.pi]), high=np.array([2, 10, np.pi])) # TODO: verify these bounds
         #self.action_space = gym.spaces.Box(low=[0, 0, 0], high=[1, 1/np.sqrt(2), 1/np.sqrt(2)], shape=(env_config["action_space_size"],))
         self.t = 0
         self.final_time = env_config["final_time"] # Final time for the gates
         self.dt = env_config["dt"]  # time step
         self.delta = env_config["delta"] # detuning
         self.U_target = env_config["U_target"]
+        self.L_target = env_config["L_target"]
         self.U_initial = env_config["U_initial"] # future todo, can make random initial state
+        self.L_initial = env_config["L_initial"] 
         self.U = env_config["U_initial"]
+        self.L = env_config["L_initial"]
         self.state = self.unitary_to_observation(self.U)
     
     def reset(self, *, seed=None, options=None):
         self.t = 0
         self.U = self.U_initial
-        starting_observeration = self.unitary_to_observation(self.U_initial)
+        self.L = self.L_initial
+        # starting_observeration = self.unitary_to_observation(self.U_initial)
+        starting_observeration = self.unitary_to_observation(self.L_initial)
         info = {}
         return starting_observeration, info
 
@@ -69,16 +79,13 @@ class GateSynthEnvRLlib(gym.Env):
             reward = fidelity
 
         if jump_ops:
-            # L_target set (different from U_target). THIS NEEDS TO BE INTEGRATED AS self.L_target
-            L_target = self.unitary_to_observation(spre(U_target)*spost(U_target.congjugate().transpose()))
-
             # Liouvillian Generation
             Lt = self.dt*self.liouvillianWithControl(self.delta, alpha, gamma_magnitude, gamma_phase, jump_ops)
             self.L = Lt @ self.L
             self.state = self.unitary_to_observation(self.L)   #L is not unitary. It is matrix and needs to be flattened
 
             # Here, Rewards for Liouvillian should be used.
-            fidelity = float(np.abs(np.trace(self.L_target.conjugate().transpose()@self.L)))  / (self.L.shape[0]**2)
+            fidelity = float(np.abs(np.trace(self.L @ self.L_target.conjugate().transpose())))  / (self.L.shape[0]**2)
             reward = fidelity
 
         # Determine if episode is over
@@ -113,4 +120,4 @@ class GateSynthEnvRLlib(gym.Env):
 
         L = liouvillian(H, jump_ops, data_only=False, chi=None)
 
-        return L.data
+        return L.data.toarray()
