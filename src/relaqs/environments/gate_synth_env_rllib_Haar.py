@@ -54,14 +54,18 @@ class GateSynthEnvRLlibHaarNoiseless(gym.Env):
         info = {}
 
         self.current_Haar_num += 1
-
         num_time_bins = 2 ** (self.current_Haar_num - 1)
+
+        # Get actions
+        alpha = action[0] 
+        gamma_magnitude = action[1]
+        gamma_phase = action[2] 
 
         H = self.hamiltonian(self.delta, alpha, gamma_magnitude, gamma_phase)
         self.H_array.append(H)
 
-        array_temp = np.zeros(num_time_bins)
-        self.H_tot = Qobj(array_temp)
+        #array_temp = np.zeros((num_time_bins, 2, 2))
+        self.H_tot = []
 
         ## Original
         # for ii in range(0, len(H_array)):
@@ -72,11 +76,14 @@ class GateSynthEnvRLlibHaarNoiseless(gym.Env):
         #             H_tot[jj] += (-1) ** np.floor(jj / (2 ** (self.current_Haar_num - ii - 1))) * H_array[ii]
 
         ## Pythonic
-        for ii, H_elem in enumerate(H_array):
+        for ii, H_elem in enumerate(self.H_array):
             for jj in range(0, num_time_bins):
                 Haar_num = self.current_Haar_num - ii
                 factor = (-1) ** np.floor(jj / (2 ** Haar_num))
-                self.H_tot[jj] += factor * H_elem
+                if ii > 0:
+                    self.H_tot[jj] += factor * H_elem 
+                else:
+                    self.H_tot.append(factor * H_elem)
 
 
         for jj in range(0, num_time_bins):
