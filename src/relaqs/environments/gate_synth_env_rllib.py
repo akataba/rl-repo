@@ -81,11 +81,11 @@ class GateSynthEnvRLlib(gym.Env):
         if jump_ops:
             # Liouvillian Generation
             Lt = self.dt*self.liouvillianWithControl(self.delta, alpha, gamma_magnitude, gamma_phase, jump_ops)
-            self.L = Lt @ self.L
+            self.L = (np.eye(Lt.shape[0]) + Lt) @ self.L
             self.state = self.unitary_to_observation(self.L)   #L is not unitary. It is matrix and needs to be flattened
 
             # Here, Rewards for Liouvillian should be used.
-            fidelity = float(np.abs(np.trace(self.L @ self.L_target.conjugate().transpose())))  / (self.L.shape[0]**2)
+            fidelity = float(np.abs(np.trace(self.L @ self.L_target.conjugate().transpose())))  / self.L.shape[0]
             reward = fidelity
 
         # Determine if episode is over
