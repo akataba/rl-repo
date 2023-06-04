@@ -1,3 +1,4 @@
+import os
 import gymnasium as gym
 import numpy as np
 import scipy.linalg as la
@@ -5,7 +6,7 @@ import cmath
 from qutip.superoperator import liouvillian, spre, spost
 from qutip import Qobj
 from qutip.operators import *
-
+# from relaqs.visualization.RealTimeScatterPlot import RealTimeScatterPlot
 
 sig_p = np.array([[0,1],[0,0]])
 sig_m = np.array([[0,0],[1,0]])
@@ -15,6 +16,10 @@ I = np.array([[1,0],[0,1]])
 Y = np.array([[0, 1j],[-1j, 0]])
 
 class GateSynthEnvRLlibHaarNoiseless(gym.Env):
+    fidelities = []
+    rewards = []
+    scatter_plot = RealTimeScatterPlot()
+
     @classmethod
     def get_default_env_config(cls):
         return {
@@ -101,16 +106,24 @@ class GateSynthEnvRLlibHaarNoiseless(gym.Env):
 
         # Get reward (fidelity)
         fidelity = float(np.abs(np.trace(self.U_target.conjugate().transpose()@self.U)))  / (self.U.shape[0])
-        reward = -(np.log10(1.0001-fidelity)-np.log10(1.0001-self.prev_fidelity))
+        reward = -(np.log10(1.0-fidelity)-np.log10(1.0-self.prev_fidelity))
         self.prev_fidelity = fidelity
 
+        GateSynthEnvRLlibHaarNoiseless.append_fidelity(fidelity)
+        GateSynthEnvRLlibHaarNoiseless.append_reward(reward)
+
+        if len(GateSynthEnvRLlibHaarNoiseless.get_fidelities()) % 300 == 0:
+            GateSynthEnvRLlibHaarNoiseless.save_data()
+
+        # if self.current_Haar_num == self.num_Haar_basis:
+        #     GateSynthEnvRLlibHaarNoiseless.scatter_plot.plot(GateSynthEnvRLlibHaarNoiseless.get_fidelities(), GateSynthEnvRLlibHaarNoiseless.get_rewards())
 
         # Determine if episode is over
         truncated = False
         terminated = False
         if self.current_Haar_num >= self.num_Haar_basis:
             truncated = True
-        elif (fidelity >= 0.99):
+        elif (fidelity >= 1):
             terminated = True
         else:
             terminated = False
@@ -123,3 +136,61 @@ class GateSynthEnvRLlibHaarNoiseless(gym.Env):
     def hamiltonian(self, delta, alpha, gamma_magnitude, gamma_phase):
         """Alpha and gamma are complex. This function could be made a callable class attribute."""
         return (delta + alpha)*Z + gamma_magnitude*(np.cos(gamma_phase)*X + np.sin(gamma_phase)*Y)
+
+    @classmethod    
+    def append_fidelity(cls,fidelity):
+        cls.fidelities.append(fidelity)
+
+    @classmethod
+    def append_reward(cls,reward):
+        cls.rewards.append(reward)
+
+    @classmethod
+    def get_fidelities(cls):
+        return cls.fidelities
+
+    @classmethod    
+    def get_rewards(cls):
+        return cls.rewards
+    
+    @classmethod
+    def save_data(cls):
+        # Get the next file number
+        file_num = cls.get_next_file_number()
+
+        # Get the data to be saved
+        fidelity_data = cls.get_fidelities()
+        reward_data = cls.get_rewards()
+
+        # Create a file name
+        file_name = f"data-{file_num:03}.txt"
+
+        # Set the file path
+        file_dir = "./logs/"
+        file_path = os.path.join(file_dir, file_name)
+
+        # Save the data to the file
+        with open(file_path, "w") as file:
+            for fidelity, reward in zip(fidelity_data, reward_data):
+                file.write(f"{fidelity},{reward}\n")
+
+        print(f"Data saved to: {file_path}")
+
+    @classmethod
+    def get_next_file_number(cls):
+        file_dir = "./logs/"
+
+        # Get the existing file numbers
+        existing_files = []
+        for file_name in os.listdir(file_dir):
+            if file_name.startswith("data-") and file_name.endswith(".txt"):
+                file_num = int(file_name[5:-4])
+                existing_files.append(file_num)
+
+        # Find the next file number
+        if existing_files:
+            next_file_num = max(existing_files) + 1
+        else:
+            next_file_num = 1
+
+        return next_file_num
