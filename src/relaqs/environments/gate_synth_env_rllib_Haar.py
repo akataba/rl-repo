@@ -1,6 +1,7 @@
 import gymnasium as gym
 import numpy as np
 import scipy.linalg as la
+import cmath
 from qutip.superoperator import liouvillian, spre, spost
 from qutip import Qobj
 from qutip.operators import *
@@ -27,9 +28,9 @@ class GateSynthEnvRLlibHaarNoiseless(gym.Env):
         }
  
     def __init__(self, env_config):
-        self.observation_space = gym.spaces.Box(low=-1, high=1, shape=(env_config["observation_space_size"],))
-        self.action_space = gym.spaces.Box(low=np.array([-0.1, 0.1, -1.1*np.pi]), high=np.array([0.1, 10, 1.1*np.pi])) 
         self.final_time = env_config["final_time"] # Final time for the gates
+        self.observation_space = gym.spaces.Box(low=-1, high=1, shape=(env_config["observation_space_size"],))
+        self.action_space = gym.spaces.Box(low=np.array([-0.1, 0, -1.1*np.pi]), high=np.array([0.1, 10, 1.1*np.pi])) 
         self.delta = env_config["delta"] # detuning
         self.U_target = env_config["U_target"]
         self.U_initial = env_config["U_initial"] # future todo, can make random initial state
@@ -40,6 +41,7 @@ class GateSynthEnvRLlibHaarNoiseless(gym.Env):
         self.H_tot = []
         self.U_array = []
         self.state = self.unitary_to_observation(self.U)
+        self.prev_fidelity = 0
     
     def reset(self, *, seed=None, options=None):
         self.U = self.U_initial
@@ -48,6 +50,7 @@ class GateSynthEnvRLlibHaarNoiseless(gym.Env):
         self.H_array = []
         self.H_tot = []
         self.U_array = []
+        self.prev_fidelity = 0
         info = {}
         return starting_observeration, info
 
@@ -60,7 +63,7 @@ class GateSynthEnvRLlibHaarNoiseless(gym.Env):
         self.U = self.U_initial
 
         # Get actions
-        alpha = action[0] 
+        alpha = action[0]
         gamma_magnitude = action[1]
         gamma_phase = action[2] 
 
@@ -98,16 +101,16 @@ class GateSynthEnvRLlibHaarNoiseless(gym.Env):
 
         # Get reward (fidelity)
         fidelity = float(np.abs(np.trace(self.U_target.conjugate().transpose()@self.U)))  / (self.U.shape[0])
-        reward = -np.log10(1.0001-fidelity)
+        reward = -(np.log10(1.0001-fidelity)-np.log10(1.0001-self.prev_fidelity))
+        self.prev_fidelity = fidelity
 
-        print(fidelity, reward)
 
         # Determine if episode is over
         truncated = False
         terminated = False
         if self.current_Haar_num >= self.num_Haar_basis:
             truncated = True
-        elif (fidelity >= 0.95):
+        elif (fidelity >= 0.99):
             terminated = True
         else:
             terminated = False
@@ -115,7 +118,7 @@ class GateSynthEnvRLlibHaarNoiseless(gym.Env):
         return (self.state, reward, terminated, truncated, info)
 
     def unitary_to_observation(self, U):
-       return np.clip(np.array([(x.real, x.imag) for x in U.flatten()], dtype=np.float64).squeeze().reshape(-1), -1, 1) # todo, see if clip is necessary
+       return np.array([(abs(x), cmath.phase(x)/np.pi) for x in U.flatten()], dtype=np.float64).squeeze().reshape(-1)
     
     def hamiltonian(self, delta, alpha, gamma_magnitude, gamma_phase):
         """Alpha and gamma are complex. This function could be made a callable class attribute."""
