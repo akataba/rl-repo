@@ -18,7 +18,7 @@ Y = np.array([[0, 1j],[-1j, 0]])
 class GateSynthEnvRLlibHaarNoiseless(gym.Env):
     fidelities = []
     rewards = []
-    scatter_plot = RealTimeScatterPlot()
+    # scatter_plot = RealTimeScatterPlot()
 
     @classmethod
     def get_default_env_config(cls):
