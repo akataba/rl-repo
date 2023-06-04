@@ -1,6 +1,7 @@
 import gymnasium as gym
 import numpy as np
 import scipy.linalg as la
+import cmath
 from qutip.superoperator import liouvillian, spre, spost
 from qutip import Qobj
 from qutip.operators import *
@@ -103,7 +104,7 @@ class GateSynthEnvRLlib(gym.Env):
         return (self.state, reward, terminated, truncated, info)
 
     def unitary_to_observation(self, U):
-       return np.clip(np.array([(x.real, x.imag) for x in U.flatten()], dtype=np.float64).squeeze().reshape(-1), -1, 1) # todo, see if clip is necessary
+        return np.array([(abs(x), cmath.phase(x)/np.pi) for x in U.flatten()], dtype=np.float64).squeeze().reshape(-1)
     
     def hamiltonian(self, delta, alpha, gamma_magnitude, gamma_phase):
         """Alpha and gamma are complex. This function could be made a callable class attribute."""
@@ -191,7 +192,7 @@ class GateSynthEnvRLlibNoiseless(gym.Env):
         return (self.state, reward, terminated, truncated, info)
 
     def unitary_to_observation(self, U):
-       return np.clip(np.array([(x.real, x.imag) for x in U.flatten()], dtype=np.float64).squeeze().reshape(-1), -1, 1) # todo, see if clip is necessary
+        return np.array([(abs(x), cmath.phase(x)/np.pi) for x in U.flatten()], dtype=np.float64).squeeze().reshape(-1)
     
     def hamiltonian(self, delta, alpha, gamma_magnitude, gamma_phase):
         """Alpha and gamma are complex. This function could be made a callable class attribute."""
@@ -271,7 +272,7 @@ class GateSynthEnvRLlibNoisy(gym.Env):
         return (self.state, reward, terminated, truncated, info)
 
     def unitary_to_observation(self, U):
-       return np.clip(np.array([(x.real, x.imag) for x in U.flatten()], dtype=np.float64).squeeze().reshape(-1), -1, 1) # todo, see if clip is necessary
+        return np.array([(abs(x), cmath.phase(x)/np.pi) for x in U.flatten()], dtype=np.float64).squeeze().reshape(-1)
     
     def liouvillianWithControl(self, delta, alpha, gamma_magnitude, gamma_phase, jump_ops):
         """This is Liouvillian so should be separately used from the Hamiltonian"""
