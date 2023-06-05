@@ -15,7 +15,7 @@ Z = np.array([[1,0],[0,-1]])
 I = np.array([[1,0],[0,1]])
 Y = np.array([[0, 1j],[-1j, 0]])
 
-class GateSynthEnvRLlibHaarNoiseless(gym.Env):
+class GateSynthEnvRLlibHaar(gym.Env):
     fidelities = []
     rewards = []
     # scatter_plot = RealTimeScatterPlot()

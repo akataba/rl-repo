@@ -8,7 +8,7 @@ from relaqs.api.training import TrainRLLib
 #from relaqs.environments.gate_synth_env_rllib import GateSynthEnvRLlibNoiseless
 #from relaqs.environments.gate_synth_env_rllib import GateSynthEnvRLlibNoisy
 
-from relaqs.environments.gate_synth_env_rllib_Haar import GateSynthEnvRLlibHaarNoiseless
+from relaqs.environments.gate_synth_env_rllib_Haar import GateSynthEnvRLlibHaar
 
 from ray.rllib.algorithms.ddpg import DDPGConfig
 
@@ -18,6 +18,6 @@ from ray.rllib.algorithms.ddpg import DDPGConfig
 #trainer = TrainRLLib(DDPGConfig, GateSynthEnvRLlib, episodes=300)
 #trainer = TrainRLLib(DDPGConfig, GateSynthEnvRLlibNoiseless, episodes=300)
 #trainer = TrainRLLib(DDPGConfig, GateSynthEnvRLlibNoisy, episodes=300)
-trainer = TrainRLLib(DDPGConfig, GateSynthEnvRLlibHaarNoiseless, episodes=300)
+trainer = TrainRLLib(DDPGConfig, GateSynthEnvRLlibHaar, episodes=300)
 
 trainer.train_model()
