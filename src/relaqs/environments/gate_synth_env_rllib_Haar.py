@@ -204,38 +204,43 @@ class GateSynthEnvRLlibHaarNoisy(gym.Env):
     @classmethod
     def get_default_env_config(cls):
         return {
-            "observation_space_size": 32,
+            "observation_space_size": 8,
             "action_space_size": 3,
-            "L_initial": (spre(Qobj(I))*spost(Qobj(I))).data.toarray(),
-            "L_target" : (spre(Qobj(X))*spost(Qobj(X))).data.toarray(),
+            "U_initial": I,
+            "U_target" : X,
+            "dt" : 0.001,
             "final_time": 0.3,
             "num_Haar_basis": 5,
             "delta": 0,
         }
  
     def __init__(self, env_config):
+        self.dt = env_config["dt"]
         self.final_time = env_config["final_time"] # Final time for the gates
         self.observation_space = gym.spaces.Box(low=-1, high=1, shape=(env_config["observation_space_size"],))
         self.action_space = gym.spaces.Box(low=np.array([-0.1, 0, -1.1*np.pi]), high=np.array([0.1, 10, 1.1*np.pi])) 
         self.delta = env_config["delta"] # detuning
-        self.L_target = env_config["L_target"]
-        self.L_initial = env_config["L_initial"] # future todo, can make random initial state
-        self.L = env_config["L_initial"]
+        self.U_target = env_config["U_target"]
+        self.U_initial = env_config["U_initial"] 
         self.num_Haar_basis = env_config["num_Haar_basis"]
         self.current_Haar_num = 0
         self.H_array = []
         self.H_tot = []
         self.L_array = []
-        self.state = self.unitary_to_observation(self.L)
+        self.U_array = []
+        self.U = []
+        self.state = self.unitary_to_observation(self.U_initial)
         self.prev_fidelity = 0
     
     def reset(self, *, seed=None, options=None):
-        self.L = self.L_initial
-        starting_observeration = self.unitary_to_observation(self.L_initial)
+        starting_observeration = self.unitary_to_observation(self.U_initial)
         self.current_Haar_num = 0
         self.H_array = []
         self.H_tot = []
         self.L_array = []
+        self.U_array = []
+        self.U = []
+        self.state = self.unitary_to_observation(self.U_initial) ## DO WE NEED THIS?
         self.prev_fidelity = 0
         info = {}
         return starting_observeration, info
@@ -246,7 +251,7 @@ class GateSynthEnvRLlibHaarNoisy(gym.Env):
 
         self.current_Haar_num += 1
         num_time_bins = 2 ** (self.current_Haar_num - 1)
-        self.L = self.L_initial
+        self.U = self.U_initial
 
         # Get actions
         alpha = action[0]
@@ -271,18 +276,28 @@ class GateSynthEnvRLlibHaarNoisy(gym.Env):
                 else:
                     self.H_tot.append(factor * H_elem)
 
-
-        L = (liouvillian(H, jump_ops, data_only=False, chi=None)).data.toarray()
+        t = 0
+        self.U = np.eye(2)
 
         for jj in range(0, num_time_bins):
-            Ut = la.expm(-1j* self.final_time/num_time_bins *self.H_tot[jj])
-            self.U = Ut @ self.U 
+            L = (liouvillian(self.H_tot[jj], jump_ops, data_only=False, chi=None)).data.toarray()
+            self.L_array.append(L)
+            evolution_end_time = (jj+1) * t/num_time_bins
+            while t < evolution_end_time:
+                if t + self.dt > evolution_end_time:
+                    evolution_time = evolution_end_time - t
+                    Ut = evolution_time*L
+                    self.U = (np.eye(Ut.shape[0]) + Ut) @ self.U
+                    t = evolution_end_time
+                else:
+                    Ut = self.dt*L
+                    self.U = (np.eye(Ut.shape[0]) + Ut) @ self.U
+                    t += self.dt
 
-        self.state = self.unitary_to_observation(self.L)
-        self.L_array.append(self.L)
+        self.state = self.unitary_to_observation(self.U)
 
         # Get reward (fidelity)
-        fidelity = float(np.abs(np.trace(self.L_target.conjugate().transpose()@self.L)))  / (self.L.shape[0])
+        fidelity = float(np.abs(np.trace(self.U_target.conjugate().transpose()@self.U)))  / (self.U.shape[0])
         reward = -(np.log10(1.0-fidelity)-np.log10(1.0-self.prev_fidelity))
         self.prev_fidelity = fidelity
 
@@ -307,8 +322,8 @@ class GateSynthEnvRLlibHaarNoisy(gym.Env):
 
         return (self.state, reward, terminated, truncated, info)
 
-    def unitary_to_observation(self, L):
-       return np.array([(abs(x), cmath.phase(x)/np.pi) for x in L.flatten()], dtype=np.float64).squeeze().reshape(-1)
+    def unitary_to_observation(self, U):
+       return np.array([(abs(x), cmath.phase(x)/np.pi) for x in U.flatten()], dtype=np.float64).squeeze().reshape(-1)
     
     def hamiltonian(self, delta, alpha, gamma_magnitude, gamma_phase):
         """Alpha and gamma are complex. This function could be made a callable class attribute."""
