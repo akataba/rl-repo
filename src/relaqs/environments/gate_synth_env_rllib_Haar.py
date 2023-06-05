@@ -204,10 +204,10 @@ class GateSynthEnvRLlibHaarNoisy(gym.Env):
     @classmethod
     def get_default_env_config(cls):
         return {
-            "observation_space_size": 8,
+            "observation_space_size": 32,
             "action_space_size": 3,
-            "U_initial": I,
-            "U_target" : X,
+            "U_initial": (spre(Qobj(I))*spost(Qobj(I))).data.toarray(),
+            "U_target" : (spre(Qobj(X))*spost(Qobj(X))).data.toarray(),
             "dt" : 0.001,
             "final_time": 0.3,
             "num_Haar_basis": 5,
@@ -240,7 +240,7 @@ class GateSynthEnvRLlibHaarNoisy(gym.Env):
         self.L_array = []
         self.U_array = []
         self.U = []
-        self.state = self.unitary_to_observation(self.U_initial) ## DO WE NEED THIS?
+        # self.state = self.unitary_to_observation(self.U_initial) ## DO WE NEED THIS?
         self.prev_fidelity = 0
         info = {}
         return starting_observeration, info
@@ -277,22 +277,13 @@ class GateSynthEnvRLlibHaarNoisy(gym.Env):
                     self.H_tot.append(factor * H_elem)
 
         t = 0
-        self.U = np.eye(2)
+        self.U = np.eye(4)
 
         for jj in range(0, num_time_bins):
-            L = (liouvillian(self.H_tot[jj], jump_ops, data_only=False, chi=None)).data.toarray()
+            L = (liouvillian(Qobj(self.H_tot[jj]), jump_ops, data_only=False, chi=None)).data.toarray()
             self.L_array.append(L)
-            evolution_end_time = (jj+1) * t/num_time_bins
-            while t < evolution_end_time:
-                if t + self.dt > evolution_end_time:
-                    evolution_time = evolution_end_time - t
-                    Ut = evolution_time*L
-                    self.U = (np.eye(Ut.shape[0]) + Ut) @ self.U
-                    t = evolution_end_time
-                else:
-                    Ut = self.dt*L
-                    self.U = (np.eye(Ut.shape[0]) + Ut) @ self.U
-                    t += self.dt
+            Ut = la.expm(self.final_time/num_time_bins * L)
+            self.U = Ut @ self.U 
 
         self.state = self.unitary_to_observation(self.U)
 
