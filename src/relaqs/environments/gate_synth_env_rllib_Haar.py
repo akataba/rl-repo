@@ -34,7 +34,7 @@ class GateSynthEnvRLlibHaar(gym.Env):
  
     def __init__(self, env_config):
         self.final_time = env_config["final_time"] # Final time for the gates
-        self.observation_space = gym.spaces.Box(low=-1, high=1, shape=(env_config["observation_space_size"],))
+        self.observation_space = gym.spaces.Box(low=-1.1, high=1.1, shape=(env_config["observation_space_size"],))
         self.action_space = gym.spaces.Box(low=np.array([-0.1, 0, -1.1*np.pi]), high=np.array([0.1, 10, 1.1*np.pi])) 
         self.delta = env_config["delta"] # detuning
         self.U_target = env_config["U_target"]
@@ -217,7 +217,7 @@ class GateSynthEnvRLlibHaarNoisy(gym.Env):
     def __init__(self, env_config):
         self.dt = env_config["dt"]
         self.final_time = env_config["final_time"] # Final time for the gates
-        self.observation_space = gym.spaces.Box(low=-1, high=1, shape=(env_config["observation_space_size"],))
+        self.observation_space = gym.spaces.Box(low=-1.1, high=1.1, shape=(env_config["observation_space_size"],))
         self.action_space = gym.spaces.Box(low=np.array([-0.1, 0, -1.1*np.pi]), high=np.array([0.1, 10, 1.1*np.pi])) 
         self.delta = env_config["delta"] # detuning
         self.U_target = env_config["U_target"]
