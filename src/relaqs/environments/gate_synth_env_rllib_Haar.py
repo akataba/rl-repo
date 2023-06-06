@@ -166,7 +166,7 @@ class GateSynthEnvRLlibHaar(gym.Env):
         file_name = f"data-{file_num:03}.txt"
 
         # Set the file path
-        file_dir = "./logs/"
+        file_dir = "../results/"
         file_path = os.path.join(file_dir, file_name)
 
         # Save the data to the file
@@ -178,7 +178,7 @@ class GateSynthEnvRLlibHaar(gym.Env):
 
     @classmethod
     def get_next_file_number(cls):
-        file_dir = "./logs/"
+        file_dir = "../results/"
 
         # Get the existing file numbers
         existing_files = []
@@ -349,7 +349,7 @@ class GateSynthEnvRLlibHaarNoisy(gym.Env):
         file_name = f"data-{file_num:03}.txt"
 
         # Set the file path
-        file_dir = "./logs/"
+        file_dir = "../results/"
         file_path = os.path.join(file_dir, file_name)
 
         # Save the data to the file
@@ -361,7 +361,7 @@ class GateSynthEnvRLlibHaarNoisy(gym.Env):
 
     @classmethod
     def get_next_file_number(cls):
-        file_dir = "./logs/"
+        file_dir = "../results/"
 
         # Get the existing file numbers
         existing_files = []
