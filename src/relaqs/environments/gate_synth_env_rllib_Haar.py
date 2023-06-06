@@ -1,4 +1,6 @@
 import os
+import datetime
+
 import gymnasium as gym
 import numpy as np
 import scipy.linalg as la
@@ -34,8 +36,8 @@ class GateSynthEnvRLlibHaar(gym.Env):
  
     def __init__(self, env_config):
         self.final_time = env_config["final_time"] # Final time for the gates
-        self.observation_space = gym.spaces.Box(low=-1.1, high=1.1, shape=(env_config["observation_space_size"],))
-        self.action_space = gym.spaces.Box(low=np.array([-0.1, 0, -1.1*np.pi]), high=np.array([0.1, 10, 1.1*np.pi])) 
+        self.observation_space = gym.spaces.Box(low=-1, high=1, shape=(env_config["observation_space_size"],))
+        self.action_space = gym.spaces.Box(low=np.array([-0.1, 0, -np.pi]), high=np.array([0.1, 10, np.pi])) 
         self.delta = env_config["delta"] # detuning
         self.U_target = env_config["U_target"]
         self.U_initial = env_config["U_initial"] # future todo, can make random initial state
@@ -201,6 +203,8 @@ class GateSynthEnvRLlibHaarNoisy(gym.Env):
     fidelities = []
     rewards = []
 
+    data_dir = "../results/"+datetime.datetime.now().strftime("%Y-%m-%d_%H-%M-%S/")
+
     @classmethod
     def get_default_env_config(cls):
         return {
@@ -210,15 +214,15 @@ class GateSynthEnvRLlibHaarNoisy(gym.Env):
             "U_target" : (spre(Qobj(X))*spost(Qobj(X))).data.toarray(),
             "dt" : 0.001,
             "final_time": 0.3,
-            "num_Haar_basis": 5,
+            "num_Haar_basis": 3,
             "delta": 0,
         }
  
     def __init__(self, env_config):
         self.dt = env_config["dt"]
         self.final_time = env_config["final_time"] # Final time for the gates
-        self.observation_space = gym.spaces.Box(low=-1.1, high=1.1, shape=(env_config["observation_space_size"],))
-        self.action_space = gym.spaces.Box(low=np.array([-0.1, 0, -1.1*np.pi]), high=np.array([0.1, 10, 1.1*np.pi])) 
+        self.observation_space = gym.spaces.Box(low=-1, high=1, shape=(env_config["observation_space_size"],))
+        self.action_space = gym.spaces.Box(low=np.array([-0.1, 0, -np.pi]), high=np.array([0.1, 10, np.pi])) 
         self.delta = env_config["delta"] # detuning
         self.U_target = env_config["U_target"]
         self.U_initial = env_config["U_initial"] 
@@ -292,6 +296,8 @@ class GateSynthEnvRLlibHaarNoisy(gym.Env):
         reward = -(np.log10(1.0-fidelity)-np.log10(1.0-self.prev_fidelity))
         self.prev_fidelity = fidelity
 
+        print(self.current_Haar_num,fidelity,alpha,gamma_magnitude,gamma_phase)
+
         GateSynthEnvRLlibHaarNoisy.append_fidelity(fidelity)
         GateSynthEnvRLlibHaarNoisy.append_reward(reward)
 
@@ -349,8 +355,7 @@ class GateSynthEnvRLlibHaarNoisy(gym.Env):
         file_name = f"data-{file_num:03}.txt"
 
         # Set the file path
-        file_dir = "../results/"
-        file_path = os.path.join(file_dir, file_name)
+        file_path = os.path.join(cls.data_dir, file_name)
 
         # Save the data to the file
         with open(file_path, "w") as file:
@@ -361,11 +366,13 @@ class GateSynthEnvRLlibHaarNoisy(gym.Env):
 
     @classmethod
     def get_next_file_number(cls):
-        file_dir = "../results/"
-
         # Get the existing file numbers
         existing_files = []
-        for file_name in os.listdir(file_dir):
+
+        if not os.path.exists(cls.data_dir):
+                    os.mkdir(cls.data_dir)
+
+        for file_name in os.listdir(cls.data_dir):
             if file_name.startswith("data-") and file_name.endswith(".txt"):
                 file_num = int(file_name[5:-4])
                 existing_files.append(file_num)
