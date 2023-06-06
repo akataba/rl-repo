@@ -41,4 +41,4 @@ def plot(file_dir):
 
     plt.show()
 
-plot("../../../examples/logs/")
+plot("../../../scripts/logs/")
