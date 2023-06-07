@@ -214,15 +214,15 @@ class GateSynthEnvRLlibHaarNoisy(gym.Env):
             "U_target" : (spre(Qobj(X))*spost(Qobj(X))).data.toarray(),
             "dt" : 0.001,
             "final_time": 0.3,
-            "num_Haar_basis": 3,
+            "num_Haar_basis": 1,
             "delta": 0,
         }
  
     def __init__(self, env_config):
         self.dt = env_config["dt"]
         self.final_time = env_config["final_time"] # Final time for the gates
-        self.observation_space = gym.spaces.Box(low=-1, high=1, shape=(env_config["observation_space_size"],))
-        self.action_space = gym.spaces.Box(low=np.array([-0.1, 0, -np.pi]), high=np.array([0.1, 10, np.pi])) 
+        self.observation_space = gym.spaces.Box(low=0, high=1, shape=(env_config["observation_space_size"],))
+        self.action_space = gym.spaces.Box(low=np.array([-1, -1, -1]), high=np.array([1, 1, 1])) 
         self.delta = env_config["delta"] # detuning
         self.U_target = env_config["U_target"]
         self.U_initial = env_config["U_initial"] 
@@ -258,9 +258,9 @@ class GateSynthEnvRLlibHaarNoisy(gym.Env):
         self.U = self.U_initial
 
         # Get actions
-        alpha = action[0]
-        gamma_magnitude = action[1]
-        gamma_phase = action[2] 
+        alpha = 0.1*action[0]
+        gamma_magnitude = 3*(action[1]+1)
+        gamma_phase = 1.1*np.pi*action[2] 
 
         # Set noise opertors
         relaxationRate = 0.01
@@ -293,7 +293,7 @@ class GateSynthEnvRLlibHaarNoisy(gym.Env):
 
         # Get reward (fidelity)
         fidelity = float(np.abs(np.trace(self.U_target.conjugate().transpose()@self.U)))  / (self.U.shape[0])
-        reward = -(np.log10(1.0-fidelity)-np.log10(1.0-self.prev_fidelity))
+        reward = (-np.log10(1.0-fidelity)+np.log10(1.0-self.prev_fidelity))+(fidelity-self.prev_fidelity)
         self.prev_fidelity = fidelity
 
         print(self.current_Haar_num,fidelity,alpha,gamma_magnitude,gamma_phase)
@@ -320,7 +320,7 @@ class GateSynthEnvRLlibHaarNoisy(gym.Env):
         return (self.state, reward, terminated, truncated, info)
 
     def unitary_to_observation(self, U):
-       return np.array([(abs(x), cmath.phase(x)/np.pi) for x in U.flatten()], dtype=np.float64).squeeze().reshape(-1)
+       return np.array([(abs(x), (cmath.phase(x)/np.pi+1)/2) for x in U.flatten()], dtype=np.float64).squeeze().reshape(-1)
     
     def hamiltonian(self, delta, alpha, gamma_magnitude, gamma_phase):
         """Alpha and gamma are complex. This function could be made a callable class attribute."""
