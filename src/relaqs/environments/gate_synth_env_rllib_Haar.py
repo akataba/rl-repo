@@ -215,6 +215,7 @@ class GateSynthEnvRLlibHaarNoisy(gym.Env):
             "dt" : 0.001,
             "final_time": 0.3,
             "num_Haar_basis": 1,
+            "steps_per_Haar": 3,
             "delta": 0,
         }
  
@@ -227,7 +228,9 @@ class GateSynthEnvRLlibHaarNoisy(gym.Env):
         self.U_target = env_config["U_target"]
         self.U_initial = env_config["U_initial"] 
         self.num_Haar_basis = env_config["num_Haar_basis"]
+        self.steps_per_Haar = env_config["steps_per_Haar"]
         self.current_Haar_num = 0
+        self.current_step_per_Haar = 1
         self.H_array = []
         self.H_tot = []
         self.L_array = []
@@ -239,6 +242,7 @@ class GateSynthEnvRLlibHaarNoisy(gym.Env):
     def reset(self, *, seed=None, options=None):
         starting_observeration = self.unitary_to_observation(self.U_initial)
         self.current_Haar_num = 0
+        self.current_step_per_Haar = 1
         self.H_array = []
         self.H_tot = []
         self.L_array = []
@@ -273,7 +277,7 @@ class GateSynthEnvRLlibHaarNoisy(gym.Env):
 
         for ii, H_elem in enumerate(self.H_array):
             for jj in range(0, num_time_bins):
-                Haar_num = self.current_Haar_num - ii
+                Haar_num = self.current_Haar_num - np.floor(ii/self.steps_per_Haar)
                 factor = (-1) ** np.floor(jj / (2 ** (Haar_num-1)))
                 if ii > 0:
                     self.H_tot[jj] += factor * H_elem 
@@ -310,12 +314,14 @@ class GateSynthEnvRLlibHaarNoisy(gym.Env):
         # Determine if episode is over
         truncated = False
         terminated = False
-        if self.current_Haar_num >= self.num_Haar_basis:
+        if (fidelity >= 1):
             truncated = True
-        elif (fidelity >= 1):
+        elif (self.current_Haar_num >= self.num_Haar_basis) and (self.current_step_per_Haar >= self.steps_per_Haar):
             terminated = True
         else:
             terminated = False
+        
+        self.current_step_per_Haar += 1
 
         return (self.state, reward, terminated, truncated, info)
 
