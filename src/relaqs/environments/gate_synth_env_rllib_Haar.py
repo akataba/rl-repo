@@ -208,28 +208,28 @@ class GateSynthEnvRLlibHaarNoisy(gym.Env):
     @classmethod
     def get_default_env_config(cls):
         return {
-            "observation_space_size": 32,
-            "action_space_size": 3,
+            "observation_space_size": 33,
+            # "action_space_size": 3,
+            "action_space_size": 2,
             "U_initial": (spre(Qobj(I))*spost(Qobj(I))).data.toarray(),
             "U_target" : (spre(Qobj(X))*spost(Qobj(X))).data.toarray(),
-            "dt" : 0.001,
             "final_time": 0.3,
-            "num_Haar_basis": 1,
+            "num_Haar_basis": 2,
             "steps_per_Haar": 3,
             "delta": 0,
         }
  
     def __init__(self, env_config):
-        self.dt = env_config["dt"]
         self.final_time = env_config["final_time"] # Final time for the gates
         self.observation_space = gym.spaces.Box(low=0, high=1, shape=(env_config["observation_space_size"],))
-        self.action_space = gym.spaces.Box(low=np.array([-1, -1, -1]), high=np.array([1, 1, 1])) 
+        # self.action_space = gym.spaces.Box(low=np.array([-1, -1, -1]), high=np.array([1, 1, 1])) 
+        self.action_space = gym.spaces.Box(low=np.array([-1, -1]), high=np.array([1, 1])) 
         self.delta = env_config["delta"] # detuning
         self.U_target = env_config["U_target"]
         self.U_initial = env_config["U_initial"] 
         self.num_Haar_basis = env_config["num_Haar_basis"]
         self.steps_per_Haar = env_config["steps_per_Haar"]
-        self.current_Haar_num = 0
+        self.current_Haar_num = 1
         self.current_step_per_Haar = 1
         self.H_array = []
         self.H_tot = []
@@ -241,7 +241,7 @@ class GateSynthEnvRLlibHaarNoisy(gym.Env):
     
     def reset(self, *, seed=None, options=None):
         starting_observeration = self.unitary_to_observation(self.U_initial)
-        self.current_Haar_num = 0
+        self.current_Haar_num = 1
         self.current_step_per_Haar = 1
         self.H_array = []
         self.H_tot = []
@@ -257,14 +257,25 @@ class GateSynthEnvRLlibHaarNoisy(gym.Env):
         truncated = False
         info = {}
 
-        self.current_Haar_num += 1
         num_time_bins = 2 ** (self.current_Haar_num - 1)
         self.U = self.U_initial
 
         # Get actions
-        alpha = 0.1*action[0]
-        gamma_magnitude = 3*(action[1]+1)
-        gamma_phase = 1.1*np.pi*action[2] 
+
+        gamma_phase_max = 2.1*np.pi
+        gamma_magnitude_max = 2*np.pi/self.final_time/self.steps_per_Haar
+
+        # alpha = 0.1*np.arctan(action[0])
+        # gamma_magnitude = 3*np.arctan(action[1]+1)
+        # gamma_phase = 1.1*np.pi*np.arctan(action[2])
+
+        # alpha = 0.1*action[0]
+        # gamma_magnitude = 3*(action[1]+1)
+        # gamma_phase = 1.1*np.pi*action[2]
+
+        alpha = 0
+        gamma_magnitude = gamma_magnitude_max/2*(action[0]+1)
+        gamma_phase = gamma_phase_max*action[1]
 
         # Set noise opertors
         relaxationRate = 0.01
@@ -297,15 +308,18 @@ class GateSynthEnvRLlibHaarNoisy(gym.Env):
 
         # Get reward (fidelity)
         fidelity = float(np.abs(np.trace(self.U_target.conjugate().transpose()@self.U)))  / (self.U.shape[0])
-        reward = (-np.log10(1.0-fidelity)+np.log10(1.0-self.prev_fidelity))+(fidelity-self.prev_fidelity)
+        # reward = (-3*np.log10(1.0-fidelity)+np.log10(1.0-self.prev_fidelity))+(fidelity-self.prev_fidelity) + 30*np.log10(1.0000001-abs(gamma_phase/gamma_phase_max))**3 + 30*np.log10(1.0000001-abs(2*gamma_magnitude/gamma_magnitude_max-1))**3
+        reward = (-3*np.log10(1.0-fidelity)+np.log10(1.0-self.prev_fidelity))+(3*fidelity-self.prev_fidelity)
         self.prev_fidelity = fidelity
 
-        print(self.current_Haar_num,fidelity,alpha,gamma_magnitude,gamma_phase)
+        # print("Step: ",f"{self.current_step_per_Haar:7.3f}","F: ", f"{fidelity:7.3f}","R: ", f"{reward:7.3f}","detuning: " f"{action[0]:7.3f}","amp: " f"{action[1]:7.3f}","phase: " f"{action[2]:7.3f}")
+        print("Step: ",f"{self.current_step_per_Haar:7.3f}","F: ", f"{fidelity:7.3f}","R: ", f"{reward:7.3f}","amp: " f"{action[0]:7.3f}","phase: " f"{action[1]:7.3f}")
 
-        GateSynthEnvRLlibHaarNoisy.append_fidelity(fidelity)
-        GateSynthEnvRLlibHaarNoisy.append_reward(reward)
+        if self.current_step_per_Haar == self.steps_per_Haar and self.num_Haar_basis == self.current_Haar_num:
+            GateSynthEnvRLlibHaarNoisy.append_fidelity(fidelity)
+            GateSynthEnvRLlibHaarNoisy.append_reward(reward)
 
-        if len(GateSynthEnvRLlibHaarNoisy.get_fidelities()) % 300 == 0:
+        if len(GateSynthEnvRLlibHaarNoisy.get_fidelities()) % 100 == 0:
             GateSynthEnvRLlibHaarNoisy.save_data()
 
         # if self.current_Haar_num == self.num_Haar_basis:
@@ -320,14 +334,19 @@ class GateSynthEnvRLlibHaarNoisy(gym.Env):
             terminated = True
         else:
             terminated = False
-        
-        self.current_step_per_Haar += 1
+
+        if self.current_step_per_Haar == self.steps_per_Haar:
+            self.current_Haar_num += 1        
+            self.current_step_per_Haar = 1
+        else:
+            self.current_step_per_Haar += 1
 
         return (self.state, reward, terminated, truncated, info)
 
     def unitary_to_observation(self, U):
-       return np.array([(abs(x), (cmath.phase(x)/np.pi+1)/2) for x in U.flatten()], dtype=np.float64).squeeze().reshape(-1)
-    
+       fidelity = (np.abs(np.trace(self.U_target.conjugate().transpose()@U)))  / (U.shape[0])
+       return np.append(fidelity,np.array([(abs(x), (cmath.phase(x)/np.pi+1)/2) for x in U.flatten()], dtype=np.float64).squeeze().reshape(-1))
+
     def hamiltonian(self, delta, alpha, gamma_magnitude, gamma_phase):
         """Alpha and gamma are complex. This function could be made a callable class attribute."""
         return (delta + alpha)*Z + gamma_magnitude*(np.cos(gamma_phase)*X + np.sin(gamma_phase)*Y)
@@ -368,7 +387,7 @@ class GateSynthEnvRLlibHaarNoisy(gym.Env):
             for fidelity, reward in zip(fidelity_data, reward_data):
                 file.write(f"{fidelity},{reward}\n")
 
-        print(f"Data saved to: {file_path}")
+        # print(f"Data saved to: {file_path}")
 
     @classmethod
     def get_next_file_number(cls):
@@ -382,6 +401,9 @@ class GateSynthEnvRLlibHaarNoisy(gym.Env):
             if file_name.startswith("data-") and file_name.endswith(".txt"):
                 file_num = int(file_name[5:-4])
                 existing_files.append(file_num)
+                os.remove(cls.data_dir+f"data-{file_num:03}.txt")
+
+        
 
         # Find the next file number
         if existing_files:
