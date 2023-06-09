@@ -36,26 +36,39 @@ def plot(file_dir):
 
     x = np.arange(len(fidelity))
 
+    #moving average window
+    window_size = 1000
+
+    #moving averaged data
+    fidelity_ma = np.convolve(fidelity, np.ones(window_size) / window_size, mode='valid')
+    reward_ma = np.convolve(reward, np.ones(window_size) / window_size, mode='valid')
+
     axs["A"].plot(x, fidelity, c='blue')
+    axs["A"].plot(x[window_size-1:], fidelity_ma, c='black')
     axs["B"].semilogy(x, [1 - ii for ii in fidelity], c='red')  # Set y axis to log scale
+    axs["B"].semilogy(x[window_size-1:], [1 - ii for ii in fidelity_ma], c='black')  # Set y axis to log scale
     axs["C"].plot(x, reward, c='green')
-    axs["D"].plot([mag[3*ii+1] for ii in range(0,int(np.floor(len(mag)/3)))], c='purple')
-    axs["E"].plot([mag[3*ii+2] for ii in range(0,int(np.floor(len(mag)/3)))], c='purple')
-    axs["F"].plot([mag[3*ii+3] for ii in range(0,int(np.floor(len(mag)/3)))], c='purple')
-    axs["G"].plot([phase[3*ii+1] for ii in range(0,int(np.floor(len(mag)/3)))], c='orange')
-    axs["H"].plot([phase[3*ii+2] for ii in range(0,int(np.floor(len(mag)/3)))], c='orange')
-    axs["I"].plot([phase[3*ii+3] for ii in range(0,int(np.floor(len(mag)/3)))], c='orange')
+    axs["C"].plot(x[window_size-1:], reward_ma, c='black')
+    axs["D"].plot([mag[3*ii+1] for ii in range(0,int(np.floor(len(mag)/3))-1)], c='purple')
+    axs["E"].plot([mag[3*ii+2] for ii in range(0,int(np.floor(len(mag)/3))-1)], c='purple')
+    axs["F"].plot([mag[3*ii+3] for ii in range(0,int(np.floor(len(mag)/3))-1)], c='purple')
+    axs["G"].plot([phase[3*ii+1] for ii in range(0,int(np.floor(len(mag)/3))-1)], c='orange')
+    axs["H"].plot([phase[3*ii+2] for ii in range(0,int(np.floor(len(mag)/3))-1)], c='orange')
+    axs["I"].plot([phase[3*ii+3] for ii in range(0,int(np.floor(len(mag)/3))-1)], c='orange')
     
     axs["A"].set_xlim(0, len(fidelity))
     axs["B"].set_xlim(0, len(fidelity))
     axs["C"].set_xlim(0, len(reward))
-    axs["D"].set_xlim(0, np.floor(len(mag)/3))
-    axs["E"].set_xlim(0, np.floor(len(mag)/3))
-    axs["F"].set_xlim(0, np.floor(len(mag)/3))
-    axs["G"].set_xlim(0, np.floor(len(mag)/3))
-    axs["H"].set_xlim(0, np.floor(len(mag)/3))
-    axs["I"].set_xlim(0, np.floor(len(mag)/3))
+    axs["D"].set_xlim(0, np.floor(len(mag)/3)-1)
+    axs["E"].set_xlim(0, np.floor(len(mag)/3)-1)
+    axs["F"].set_xlim(0, np.floor(len(mag)/3)-1)
+    axs["G"].set_xlim(0, np.floor(len(mag)/3)-1)
+    axs["H"].set_xlim(0, np.floor(len(mag)/3)-1)
+    axs["I"].set_xlim(0, np.floor(len(mag)/3)-1)
 
+    plt.savefig(file_dir+"plot")
     plt.show()
 
-plot("../../../results/"+os.listdir("../../../results/")[-1]+"/")
+plotpath = "../../../results/"+os.listdir("../../../results/")[-1]+"/"
+
+plot(plotpath)
