@@ -207,7 +207,7 @@ class GateSynthEnvRLlibHaarNoisy(gym.Env):
             "U_target" : (spre(Qobj(X))*spost(Qobj(X))).data.toarray(),   #target for X
             "final_time": 0.3,
             "num_Haar_basis": 1,                                          #number of Haar basis (need to update for odd combinations)
-            "steps_per_Haar": 1,                                          #steps per Haar basis per episode 
+            "steps_per_Haar": 3,                                          #steps per Haar basis per episode 
             "delta": 0,                                                   #qubit detuning
             "save_data_every_step" : 1
         }
@@ -231,8 +231,8 @@ class GateSynthEnvRLlibHaarNoisy(gym.Env):
         self.U = []                                                                                             #multiplied propagtion operators
         self.state = self.unitary_to_observation(self.U_initial)                                                #starting observation space
         self.prev_fidelity = 0                                                                                  #previous step' fidelity for rewarding
-        self.gamma_phase_max = 2.1*np.pi                                                                               
-        self.gamma_magnitude_max = 2*np.pi/self.final_time/self.steps_per_Haar
+        self.gamma_phase_max = 1.1675*np.pi                                                                               
+        self.gamma_magnitude_max = 1.8*np.pi/self.final_time/self.steps_per_Haar
         self.save_data_every_step = env_config["save_data_every_step"]
     
     def reset(self, *, seed=None, options=None):
