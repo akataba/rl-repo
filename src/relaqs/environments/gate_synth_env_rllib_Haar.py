@@ -191,6 +191,9 @@ class GateSynthEnvRLlibHaarNoisy(gym.Env):
     fidelities = []
     rewards = []
 
+    gamma_magnitudes = []
+    gamma_phases = []
+
     #data saving diretory
     data_dir = "../results/"+datetime.datetime.now().strftime("%Y-%m-%d_%H-%M-%S/")
 
@@ -203,9 +206,10 @@ class GateSynthEnvRLlibHaarNoisy(gym.Env):
             "U_initial": (spre(Qobj(I))*spost(Qobj(I))).data.toarray(),   #staring with I 
             "U_target" : (spre(Qobj(X))*spost(Qobj(X))).data.toarray(),   #target for X
             "final_time": 0.3,
-            "num_Haar_basis": 2,                                          #number of Haar basis (need to update for odd combinations)
-            "steps_per_Haar": 3,                                          #steps per Haar basis per episode 
+            "num_Haar_basis": 1,                                          #number of Haar basis (need to update for odd combinations)
+            "steps_per_Haar": 1,                                          #steps per Haar basis per episode 
             "delta": 0,                                                   #qubit detuning
+            "save_data_every_step" : 1
         }
  
     def __init__(self, env_config):
@@ -229,6 +233,7 @@ class GateSynthEnvRLlibHaarNoisy(gym.Env):
         self.prev_fidelity = 0                                                                                  #previous step' fidelity for rewarding
         self.gamma_phase_max = 2.1*np.pi                                                                               
         self.gamma_magnitude_max = 2*np.pi/self.final_time/self.steps_per_Haar
+        self.save_data_every_step = env_config["save_data_every_step"]
     
     def reset(self, *, seed=None, options=None):
         starting_observeration = self.unitary_to_observation(self.U_initial)
@@ -309,11 +314,17 @@ class GateSynthEnvRLlibHaarNoisy(gym.Env):
 
         # previous format
         # print("Step: ",f"{self.current_step_per_Haar:7.3f}","F: ", f"{fidelity:7.3f}","R: ", f"{reward:7.3f}","detuning: " f"{action[0]:7.3f}","amp: " f"{action[1]:7.3f}","phase: " f"{action[2]:7.3f}")
-        
+
+        GateSynthEnvRLlibHaarNoisy.append_actions(gamma_magnitude, gamma_phase)
+
         # append fidelity and reward only at the end of the episode
-        if self.current_step_per_Haar == self.steps_per_Haar and self.num_Haar_basis == self.current_Haar_num:
+        if self.save_data_every_step == 1:
             GateSynthEnvRLlibHaarNoisy.append_fidelity(fidelity)
             GateSynthEnvRLlibHaarNoisy.append_reward(reward)
+        else:
+            if self.current_step_per_Haar == self.steps_per_Haar and self.num_Haar_basis == self.current_Haar_num:
+                GateSynthEnvRLlibHaarNoisy.append_fidelity(fidelity)
+                GateSynthEnvRLlibHaarNoisy.append_reward(reward)
 
         # save the data to .txt file every 1000 episodes
         if len(GateSynthEnvRLlibHaarNoisy.get_fidelities()) % 1000 == 0:
@@ -360,13 +371,26 @@ class GateSynthEnvRLlibHaarNoisy(gym.Env):
         cls.rewards.append(reward)
 
     @classmethod
+    def append_actions(cls, gamma_magnitude, gamma_phase):          # saving actions as the class variable
+        cls.gamma_magnitudes.append(gamma_magnitude)
+        cls.gamma_phases.append(gamma_phase)
+
+    @classmethod
     def get_fidelities(cls):                # getting array of fidelities
         return cls.fidelities
 
     @classmethod    
     def get_rewards(cls):                   # getting array of rewards
         return cls.rewards
-    
+
+    @classmethod    
+    def get_gamma_magnitudes(cls):                   # getting array of gamma_magnitudes
+        return cls.gamma_magnitudes
+
+    @classmethod    
+    def get_gamma_phases(cls):                   # getting array of gamma_phases
+        return cls.gamma_phases
+
     @classmethod
     def save_data(cls):                     # save the data to the directory at class variable
         # Get the next file number
@@ -376,6 +400,9 @@ class GateSynthEnvRLlibHaarNoisy(gym.Env):
         fidelity_data = cls.get_fidelities()
         reward_data = cls.get_rewards()
 
+        gamma_magnitudes = cls.get_gamma_magnitudes()
+        gamma_phases = cls.get_gamma_phases()
+
         # Create a file name
         file_name = f"data-{file_num:03}.txt"
 
@@ -384,8 +411,9 @@ class GateSynthEnvRLlibHaarNoisy(gym.Env):
 
         # Save the data to the file
         with open(file_path, "w") as file:
-            for fidelity, reward in zip(fidelity_data, reward_data):
-                file.write(f"{fidelity},{reward}\n")
+            for fidelity, reward, mag, phase in zip(fidelity_data, reward_data,gamma_magnitudes, gamma_phases):
+                file.write(f"{fidelity},{reward},{mag},{phase}\n")
+
 
         # print(f"Data saved to: {file_path}")
 
