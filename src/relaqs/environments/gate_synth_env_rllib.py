@@ -65,7 +65,7 @@ class GateSynthEnvRLlib(gym.Env):
 
         #leaving off conjugate transpose since X yields itself : <--- which line did this refer to?
         # Get reward (fidelity)
-        fidelity = 0.5 *  abs(np.trace(self.U_target@self.U))**2
+        fidelity = 0.25 *  abs(np.trace(self.U_target@self.U))**2
         reward = fidelity 
         
         # Determine if episode is over
@@ -88,7 +88,7 @@ class GateSynthEnvRLlib(gym.Env):
     
     def hamiltonian(self, delta, alpha, gamma):
         """Alpha and gamma are complex. This function could be made a callable class attribute."""
-        return alpha*Z + 0.5*(gamma*sig_m + gamma.conjugate()*sig_p) + delta*Z
+        return alpha*Z + 0.25*(gamma*sig_m + gamma.conjugate()*sig_p) + delta*Z
     
     def get_fidelity(self):
         fidelity = [self.amplitudes[i][2] for i in range(self.amplitudes)]

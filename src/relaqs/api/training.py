@@ -7,6 +7,8 @@ from importlib import import_module
 import math
 import ray
 from ray.tune.registry import register_env
+import shutil
+import os
 
 class Training:
     """"
@@ -88,20 +90,38 @@ class Training:
 
 class TrainRLLib:
     def __init__(self, rllibmodel, env, framework_name="torch", episodes=2) -> None:
-        ray.init()
+        # ray.init()
+        ray.shutdown()
+        ray.init(ignore_reinit_error=True)
         self.env = env
         register_env("my_env", self.env_creator)
         self.alg_config = rllibmodel()
         self.alg_config.framework(framework_name)
-        self.alg_config.environment("my_env", env_config=env.get_default_env_config())
+        self.alg_config.environment("my_env", env_config=env.get_default_env_config(), render_env=False)
         self.alg = self.alg_config.build()
         self.episodes = episodes
+
 
     def env_creator(self, config):
         return self.env(config)
 
     def train_model(self):
-        for _ in range(self.episodes):
+        # print("Dashboard URL: http://{}".format(ray.get_webui_url()))
+        CHECKPOINT_ROOT = "tmp/ddpg/singlegate"
+        shutil.rmtree(CHECKPOINT_ROOT, ignore_errors=True, onerror=None)
+        ray_results = "ray_results/"
+        shutil.rmtree(ray_results, ignore_errors=True, onerror=None)
+        s = "{:3d} reward {:6.2f}/{:6.2f}/{:6.2f} len {:6.2f} saved {}"
+        for n in range(self.episodes):
             result = self.alg.train()
+            file_name = self.alg.save(CHECKPOINT_ROOT)
+            print(s.format(
+                n + 1,
+                result["episode_reward_min"],
+                result["episode_reward_mean"],
+                result["episode_reward_max"],
+                result["episode_len_mean"],
+                file_name
+            ))
 
 
