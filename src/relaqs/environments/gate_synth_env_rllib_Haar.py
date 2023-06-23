@@ -8,7 +8,6 @@ import cmath
 from qutip.superoperator import liouvillian, spre, spost
 from qutip import Qobj
 from qutip.operators import *
-# from relaqs.visualization.RealTimeScatterPlot import RealTimeScatterPlot
 
 sig_p = np.array([[0,1],[0,0]])
 sig_m = np.array([[0,0],[1,0]])
@@ -20,7 +19,6 @@ Y = np.array([[0, 1j],[-1j, 0]])
 class GateSynthEnvRLlibHaar(gym.Env):
     fidelities = []
     rewards = []
-    # scatter_plot = RealTimeScatterPlot()
 
     @classmethod
     def get_default_env_config(cls):
@@ -49,6 +47,7 @@ class GateSynthEnvRLlibHaar(gym.Env):
         self.U_array = []
         self.state = self.unitary_to_observation(self.U)
         self.prev_fidelity = 0
+        self.transition_history = []
     
     def reset(self, *, seed=None, options=None):
         self.U = self.U_initial
@@ -72,7 +71,7 @@ class GateSynthEnvRLlibHaar(gym.Env):
         # Get actions
         alpha = action[0]
         gamma_magnitude = action[1]
-        gamma_phase = action[2] 
+        gamma_phase = action[2]
 
         H = self.hamiltonian(self.delta, alpha, gamma_magnitude, gamma_phase)
         self.H_array.append(H)
@@ -109,6 +108,8 @@ class GateSynthEnvRLlibHaar(gym.Env):
 
         # if self.current_Haar_num == self.num_Haar_basis:
         #     GateSynthEnvRLlibHaarNoiseless.scatter_plot.plot(GateSynthEnvRLlibHaarNoiseless.get_fidelities(), GateSynthEnvRLlibHaarNoiseless.get_rewards())
+
+        self.transition_history.append([fidelity, reward, *action])
 
         # Determine if episode is over
         truncated = False
@@ -234,6 +235,7 @@ class GateSynthEnvRLlibHaarNoisy(gym.Env):
         self.gamma_phase_max = 1.1675*np.pi                                                                               
         self.gamma_magnitude_max = 1.8*np.pi/self.final_time/self.steps_per_Haar
         self.save_data_every_step = env_config["save_data_every_step"]
+        self.transition_history = []
     
     def reset(self, *, seed=None, options=None):
         starting_observeration = self.unitary_to_observation(self.U_initial)
@@ -315,24 +317,28 @@ class GateSynthEnvRLlibHaarNoisy(gym.Env):
         # previous format
         # print("Step: ",f"{self.current_step_per_Haar:7.3f}","F: ", f"{fidelity:7.3f}","R: ", f"{reward:7.3f}","detuning: " f"{action[0]:7.3f}","amp: " f"{action[1]:7.3f}","phase: " f"{action[2]:7.3f}")
 
-        GateSynthEnvRLlibHaarNoisy.append_actions(gamma_magnitude, gamma_phase)
+        # -----------------------> Refactor <-----------------------
+        # GateSynthEnvRLlibHaarNoisy.append_actions(gamma_magnitude, gamma_phase)
 
-        # append fidelity and reward only at the end of the episode
-        if self.save_data_every_step == 1:
-            GateSynthEnvRLlibHaarNoisy.append_fidelity(fidelity)
-            GateSynthEnvRLlibHaarNoisy.append_reward(reward)
-        else:
-            if self.current_step_per_Haar == self.steps_per_Haar and self.num_Haar_basis == self.current_Haar_num:
-                GateSynthEnvRLlibHaarNoisy.append_fidelity(fidelity)
-                GateSynthEnvRLlibHaarNoisy.append_reward(reward)
+        # # append fidelity and reward only at the end of the episode
+        # if self.save_data_every_step == 1:
+        #     GateSynthEnvRLlibHaarNoisy.append_fidelity(fidelity)
+        #     GateSynthEnvRLlibHaarNoisy.append_reward(reward)
+        # else:
+        #     if self.current_step_per_Haar == self.steps_per_Haar and self.num_Haar_basis == self.current_Haar_num:
+        #         GateSynthEnvRLlibHaarNoisy.append_fidelity(fidelity)
+        #         GateSynthEnvRLlibHaarNoisy.append_reward(reward)
 
-        # save the data to .txt file every 1000 episodes
-        if len(GateSynthEnvRLlibHaarNoisy.get_fidelities()) % 1000 == 0:
-            GateSynthEnvRLlibHaarNoisy.save_data()
+        # # save the data to .txt file every 1000 episodes
+        # if len(GateSynthEnvRLlibHaarNoisy.get_fidelities()) % 1000 == 0:
+        #     GateSynthEnvRLlibHaarNoisy.save_data()
 
         # real time plotting, failed
         # if self.current_Haar_num == self.num_Haar_basis:
         #     GateSynthEnvRLlibHaarNoiseless.scatter_plot.plot(GateSynthEnvRLlibHaarNoiseless.get_fidelities(), GateSynthEnvRLlibHaarNoiseless.get_rewards())
+        # ----------------------------------------------------------
+
+        self.transition_history.append([fidelity, reward, *action])
 
         # Determine if episode is over
         truncated = False
