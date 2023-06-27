@@ -6,32 +6,32 @@ from qutip.superoperator import liouvillian, spre, spost
 from qutip import Qobj
 from qutip.operators import *
 
+sig_p = np.array([[0, 1], [0, 0]])
+sig_m = np.array([[0, 0], [1, 0]])
+X = np.array([[0, 1], [1, 0]])
+Z = np.array([[1, 0], [0, -1]])
+I = np.array([[1, 0], [0, 1]])
+Y = np.array([[0, 1j], [-1j, 0]])
 
-sig_p = np.array([[0,1],[0,0]])
-sig_m = np.array([[0,0],[1,0]])
-X = np.array([[0,1],[1,0]])
-Z = np.array([[1,0],[0,-1]])
-I = np.array([[1,0],[0,1]])
-Y = np.array([[0, 1j],[-1j, 0]])
 
-class GateSynthEnvRLlibHaarNoiseless(gym.Env):
+class GateSynthEnvRLlibHaar(gym.Env):
     @classmethod
     def get_default_env_config(cls):
         return {
             "observation_space_size": 8,
             "action_space_size": 3,
             "U_initial": I,
-            "U_target" : X,
+            "U_target": X,
             "final_time": 0.3,
             "num_Haar_basis": 5,
             "delta": 0,
         }
- 
+
     def __init__(self, env_config):
-        self.final_time = env_config["final_time"] # Final time for the gates
+        self.final_time = env_config["final_time"]  # Final time for the gates
         self.observation_space = gym.spaces.Box(low=-1, high=1, shape=(env_config["observation_space_size"],))
-        self.action_space = gym.spaces.Box(low=np.array([-0.1, 0, -1.1*np.pi]), high=np.array([0.1, 10, 1.1*np.pi])) 
-        self.delta = env_config["delta"] # detuning
+        self.action_space = gym.spaces.Box(low=np.array([-0.1, 0, -np.pi]), high=np.array([0.1, 10, np.pi]))
+        self.delta = env_config["delta"]  # detuning
         self.U_target = env_config["U_target"]
         self.U_initial = env_config["U_initial"] # future todo, can make random initial state
         self.U = env_config["U_initial"]
@@ -42,7 +42,8 @@ class GateSynthEnvRLlibHaarNoiseless(gym.Env):
         self.U_array = []
         self.state = self.unitary_to_observation(self.U)
         self.prev_fidelity = 0
-    
+        self.transition_history = []
+
     def reset(self, *, seed=None, options=None):
         self.U = self.U_initial
         starting_observeration = self.unitary_to_observation(self.U_initial)
@@ -65,52 +66,42 @@ class GateSynthEnvRLlibHaarNoiseless(gym.Env):
         # Get actions
         alpha = action[0]
         gamma_magnitude = action[1]
-        gamma_phase = action[2] 
+        gamma_phase = action[2]
 
         H = self.hamiltonian(self.delta, alpha, gamma_magnitude, gamma_phase)
         self.H_array.append(H)
 
-        #array_temp = np.zeros((num_time_bins, 2, 2))
         self.H_tot = []
 
-        ## Original
-        # for ii in range(0, len(H_array)):
-        #     for jj in range(0, 2 ** (self.current_Haar_num - 1)):
-        #         if ii == 0:
-        #             H_tot.append((-1) ** np.floor(jj / (2 ** (self.current_Haar_num - ii - 1))) * H_array[ii])
-        #         else:
-        #             H_tot[jj] += (-1) ** np.floor(jj / (2 ** (self.current_Haar_num - ii - 1))) * H_array[ii]
-
-        ## Pythonic
         for ii, H_elem in enumerate(self.H_array):
             for jj in range(0, num_time_bins):
                 Haar_num = self.current_Haar_num - ii
-                factor = (-1) ** np.floor(jj / (2 ** (Haar_num-1)))
+                factor = (-1) ** np.floor(jj / (2 ** (Haar_num - 1)))
                 if ii > 0:
-                    self.H_tot[jj] += factor * H_elem 
+                    self.H_tot[jj] += factor * H_elem
                 else:
                     self.H_tot.append(factor * H_elem)
 
-
         for jj in range(0, num_time_bins):
-            Ut = la.expm(-1j* self.final_time/num_time_bins *self.H_tot[jj])
-            self.U = Ut @ self.U 
+            Ut = la.expm(-1j * self.final_time / num_time_bins * self.H_tot[jj])
+            self.U = Ut @ self.U
 
         self.state = self.unitary_to_observation(self.U)
         self.U_array.append(self.U)
 
         # Get reward (fidelity)
-        fidelity = float(np.abs(np.trace(self.U_target.conjugate().transpose()@self.U)))  / (self.U.shape[0])
-        reward = -(np.log10(1.0001-fidelity)-np.log10(1.0001-self.prev_fidelity))
+        fidelity = float(np.abs(np.trace(self.U_target.conjugate().transpose() @ self.U))) / (self.U.shape[0])
+        reward = -(np.log10(1.0 - fidelity) - np.log10(1.0 - self.prev_fidelity))
         self.prev_fidelity = fidelity
 
+        self.transition_history.append([fidelity, reward, *action])
 
         # Determine if episode is over
         truncated = False
         terminated = False
         if self.current_Haar_num >= self.num_Haar_basis:
             truncated = True
-        elif (fidelity >= 0.99):
+        elif fidelity >= 1:
             terminated = True
         else:
             terminated = False
@@ -118,8 +109,166 @@ class GateSynthEnvRLlibHaarNoiseless(gym.Env):
         return (self.state, reward, terminated, truncated, info)
 
     def unitary_to_observation(self, U):
-       return np.array([(abs(x), cmath.phase(x)/np.pi) for x in U.flatten()], dtype=np.float64).squeeze().reshape(-1)
-    
+        return (
+            np.array(
+                [(abs(x), cmath.phase(x) / np.pi) for x in U.flatten()],
+                dtype=np.float64,
+            )
+            .squeeze()
+            .reshape(-1)
+        )
+
     def hamiltonian(self, delta, alpha, gamma_magnitude, gamma_phase):
         """Alpha and gamma are complex. This function could be made a callable class attribute."""
-        return (delta + alpha)*Z + gamma_magnitude*(np.cos(gamma_phase)*X + np.sin(gamma_phase)*Y)
+        return (delta + alpha) * Z + gamma_magnitude * (np.cos(gamma_phase) * X + np.sin(gamma_phase) * Y)
+
+
+class GateSynthEnvRLlibHaarNoisy(gym.Env):
+    @classmethod
+    def get_default_env_config(cls):
+        return {
+            "observation_space_size": 33, # 2*16 = (complex number)*(density matrix elements = 4)^2, + 1 for fidelity
+            # "action_space_size": 3,
+            "action_space_size": 2,
+            "U_initial": (spre(Qobj(I)) * spost(Qobj(I))).data.toarray(),  # staring with I
+            "U_target": (spre(Qobj(X)) * spost(Qobj(X))).data.toarray(),  # target for X
+            "final_time": 0.3,
+            "num_Haar_basis": 1,  # number of Haar basis (need to update for odd combinations)
+            "steps_per_Haar": 3,  # steps per Haar basis per episode
+            "delta": 0,  # qubit detuning
+            "save_data_every_step": 1,
+            "verbose": True
+        }
+
+    def __init__(self, env_config):
+        self.final_time = env_config["final_time"]  # Final time for the gates
+        self.observation_space = gym.spaces.Box(low=0, high=1, shape=(env_config["observation_space_size"],))  # propagation operator elements + fidelity
+        # self.action_space = gym.spaces.Box(low=np.array([-1, -1, -1]), high=np.array([1, 1, 1])) # for detuning included control
+        self.action_space = gym.spaces.Box(low=np.array([-1, -1]), high=np.array([1, 1]))
+        self.delta = env_config["delta"]  # detuning
+        self.U_target = env_config["U_target"]
+        self.U_initial = env_config["U_initial"]
+        self.num_Haar_basis = env_config["num_Haar_basis"]
+        self.steps_per_Haar = env_config["steps_per_Haar"]
+        self.verbose = env_config["verbose"]
+        self.current_Haar_num = 1  # starting with 1
+        self.current_step_per_Haar = 1
+        self.H_array = []  # saving all H's with Haar wavelet to be multiplied
+        self.H_tot = []  # Haar wavelet multipied H summed up for each time bin
+        self.L_array = []  # Liouvillian for each time bin
+        self.U_array = []  # propagation operators for each time bin
+        self.U = []  # multiplied propagtion operators
+        self.state = self.unitary_to_observation(self.U_initial)  # starting observation space
+        self.prev_fidelity = 0  # previous step' fidelity for rewarding
+        self.gamma_phase_max = 1.1675 * np.pi
+        self.gamma_magnitude_max = 1.8 * np.pi / self.final_time / self.steps_per_Haar
+        self.transition_history = []
+
+    def reset(self, *, seed=None, options=None):
+        starting_observeration = self.unitary_to_observation(self.U_initial)
+        self.state = self.unitary_to_observation(self.U_initial)
+        self.current_Haar_num = 1
+        self.current_step_per_Haar = 1
+        self.H_array = []
+        self.H_tot = []
+        self.L_array = []
+        self.U_array = []
+        self.U = []
+        self.prev_fidelity = 0
+        info = {}
+        return starting_observeration, info
+
+    def step(self, action):
+        num_time_bins = 2 ** (self.current_Haar_num - 1) # Haar number decides the number of time bins
+        self.U = (self.U_initial) # At every step, we start with I, then calculate the propagator for all hamiltonians
+
+        # action space setting
+        alpha = 0  # in current simulation we do not adjust the detuning
+
+        # gamma is the complex amplitude of the control field
+        gamma_magnitude = self.gamma_magnitude_max / 2 * (action[0] + 1)
+        gamma_phase = self.gamma_phase_max * action[1]
+
+        # Set noise opertors
+        relaxationRate = 0.01
+        jump_ops = [np.sqrt(relaxationRate) * sigmam()]  # for the decay
+
+        # Hamiltonian with controls
+        H = self.hamiltonian(self.delta, alpha, gamma_magnitude, gamma_phase)
+        self.H_array.append(H)  # Array of Hs at each Haar wavelet
+
+        # H_tot for adding Hs at each time bins
+        self.H_tot = []
+
+        for ii, H_elem in enumerate(self.H_array):
+            for jj in range(0, num_time_bins):
+                Haar_num = self.current_Haar_num - np.floor(ii / self.steps_per_Haar) # Haar_num: label which Haar wavelet, current_Haar_num: order in the array
+                factor = (-1) ** np.floor(jj / (2 ** (Haar_num - 1))) # factor flips the sign every 2^(Haar_num-1)
+                if ii > 0:
+                    self.H_tot[jj] += factor * H_elem
+                else:  # Because H_tot[jj] does not exist
+                    self.H_tot.append(factor * H_elem)
+
+        self.L = ([])  # at every step we calculate L again because minimal time bin changes
+        self.U = np.eye(4)  # identity
+
+        for jj in range(0, num_time_bins):
+            L = (liouvillian(Qobj(self.H_tot[jj]), jump_ops, data_only=False, chi=None)).data.toarray()  # Liouvillian calc
+            self.L_array.append(L)
+            Ut = la.expm(self.final_time / num_time_bins * L)  # time evolution (propagation operator)
+            self.U = Ut @ self.U  # calculate total propagation until the time we are at
+
+        self.state = self.unitary_to_observation(self.U)  # fidelity and flattening -> magnitude, phase
+
+        # Reward and fidelity calculation
+        fidelity = float(
+            np.abs(np.trace(self.U_target.conjugate().transpose() @ self.U))
+        ) / (self.U.shape[0])
+        reward = (
+            -3 * np.log10(1.0 - fidelity) + np.log10(1.0 - self.prev_fidelity)
+        ) + (3 * fidelity - self.prev_fidelity)
+        self.prev_fidelity = fidelity
+
+        # printing on the command line for quick viewing
+        if self.verbose is True:
+            print(
+                "Step: ",
+                f"{self.current_step_per_Haar:7.3f}",
+                "F: ",
+                f"{fidelity:7.3f}",
+                "R: ",
+                f"{reward:7.3f}",
+                "amp: " f"{action[0]:7.3f}",
+                "phase: " f"{action[1]:7.3f}",
+            )
+
+        self.transition_history.append([fidelity, reward, *action])
+
+        # Determine if episode is over
+        truncated = False
+        terminated = False
+        if fidelity >= 1:
+            truncated = True  # truncated when target fidelity reached
+        elif (self.current_Haar_num >= self.num_Haar_basis) and (self.current_step_per_Haar >= self.steps_per_Haar):  # terminate when all Haar is tested
+            terminated = True
+        else:
+            terminated = False
+
+        if (self.current_step_per_Haar == self.steps_per_Haar):  # For each Haar basis, if all trial steps ends, them move to next haar wavelet
+            self.current_Haar_num += 1
+            self.current_step_per_Haar = 1
+        else:
+            self.current_step_per_Haar += 1
+
+        info = {}
+
+        return (self.state, reward, terminated, truncated, info)
+
+    def unitary_to_observation(self, U):
+        fidelity = (np.abs(np.trace(self.U_target.conjugate().transpose() @ U))) / (U.shape[0])  # fidelity calculation
+        return np.append(fidelity,
+            np.array([(abs(x), (cmath.phase(x) / np.pi + 1) / 2) for x in U.flatten()], dtype=np.float64,).squeeze().reshape(-1),)  # cmath phase gives -pi to pi
+
+    def hamiltonian(self, delta, alpha, gamma_magnitude, gamma_phase):
+        """Alpha and gamma are complex. This function could be made a callable class attribute."""
+        return (delta + alpha) * Z + gamma_magnitude * (np.cos(gamma_phase) * X + np.sin(gamma_phase) * Y)

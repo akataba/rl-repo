@@ -16,6 +16,7 @@ One may install required packages in a number of ways. Either by manually instal
         pip install torch
         conda install tensorboardX
         pip install tensorflow-probability
+        pip install qutip
 
 ### Install with pip:
 `pip install -r requirements.txt`
