@@ -2,6 +2,7 @@ import gymnasium as gym
 import numpy as np
 import scipy.linalg as la
 import cmath
+import random
 from qutip.superoperator import liouvillian, spre, spost
 from qutip import Qobj
 from qutip.operators import *
@@ -127,7 +128,7 @@ class GateSynthEnvRLlibHaarNoisy(gym.Env):
     @classmethod
     def get_default_env_config(cls):
         return {
-            "observation_space_size": 33, # 2*16 = (complex number)*(density matrix elements = 4)^2, + 1 for fidelity
+            "observation_space_size": 34, # 2*16 = (complex number)*(density matrix elements = 4)^2, + 1 for fidelity + 1 for relaxation rate
             # "action_space_size": 3,
             "action_space_size": 2,
             "U_initial": (spre(Qobj(I)) * spost(Qobj(I))).data.toarray(),  # staring with I
@@ -137,7 +138,8 @@ class GateSynthEnvRLlibHaarNoisy(gym.Env):
             "steps_per_Haar": 3,  # steps per Haar basis per episode
             "delta": 0,  # qubit detuning
             "save_data_every_step": 1,
-            "verbose": True
+            "verbose": True,
+            "relaxation_rates_list": [0.01] # list of floats to be sampled from when resetting environment
         }
 
     def __init__(self, env_config):
@@ -151,21 +153,38 @@ class GateSynthEnvRLlibHaarNoisy(gym.Env):
         self.num_Haar_basis = env_config["num_Haar_basis"]
         self.steps_per_Haar = env_config["steps_per_Haar"]
         self.verbose = env_config["verbose"]
+        self.relaxation_rates_list = env_config["relaxation_rates_list"]
+        self.relaxation_rate = self.get_relaxation_rate()
         self.current_Haar_num = 1  # starting with 1
         self.current_step_per_Haar = 1
         self.H_array = []  # saving all H's with Haar wavelet to be multiplied
         self.H_tot = []  # Haar wavelet multipied H summed up for each time bin
         self.L_array = []  # Liouvillian for each time bin
         self.U_array = []  # propagation operators for each time bin
-        self.U = []  # multiplied propagtion operators
+        self.U = self.U_initial.copy()  # multiplied propagtion operators
         self.state = self.unitary_to_observation(self.U_initial)  # starting observation space
         self.prev_fidelity = 0  # previous step' fidelity for rewarding
         self.gamma_phase_max = 1.1675 * np.pi
         self.gamma_magnitude_max = 1.8 * np.pi / self.final_time / self.steps_per_Haar
         self.transition_history = []
 
+    def get_relaxation_rate(self):
+        return random.sample(self.relaxation_rates_list, k=1)[0]
+            
+    def get_observation(self):
+        return np.append([self.compute_fidelity(), self.relaxation_rate], self.unitary_to_observation(self.U))
+    
+    def compute_fidelity(self):
+        return float(np.abs(np.trace(self.U_target.conjugate().transpose() @ self.U))) / (self.U.shape[0])
+
+    def unitary_to_observation(self, U):
+        return np.array([(abs(x), (cmath.phase(x) / np.pi + 1) / 2) for x in U.flatten()], dtype=np.float64,).squeeze().reshape(-1)  # cmath phase gives -pi to pi
+
+    def hamiltonian(self, delta, alpha, gamma_magnitude, gamma_phase):
+        """Alpha and gamma are complex. This function could be made a callable class attribute."""
+        return (delta + alpha) * Z + gamma_magnitude * (np.cos(gamma_phase) * X + np.sin(gamma_phase) * Y)
+
     def reset(self, *, seed=None, options=None):
-        starting_observeration = self.unitary_to_observation(self.U_initial)
         self.state = self.unitary_to_observation(self.U_initial)
         self.current_Haar_num = 1
         self.current_step_per_Haar = 1
@@ -173,14 +192,15 @@ class GateSynthEnvRLlibHaarNoisy(gym.Env):
         self.H_tot = []
         self.L_array = []
         self.U_array = []
-        self.U = []
+        self.U = self.U_initial.copy()
         self.prev_fidelity = 0
+        self.relaxation_rate = self.get_relaxation_rate()
+        starting_observeration = self.get_observation()
         info = {}
         return starting_observeration, info
 
     def step(self, action):
         num_time_bins = 2 ** (self.current_Haar_num - 1) # Haar number decides the number of time bins
-        self.U = (self.U_initial) # At every step, we start with I, then calculate the propagator for all hamiltonians
 
         # action space setting
         alpha = 0  # in current simulation we do not adjust the detuning
@@ -190,8 +210,7 @@ class GateSynthEnvRLlibHaarNoisy(gym.Env):
         gamma_phase = self.gamma_phase_max * action[1]
 
         # Set noise opertors
-        relaxationRate = 0.01
-        jump_ops = [np.sqrt(relaxationRate) * sigmam()]  # for the decay
+        jump_ops = [np.sqrt(self.relaxation_rate) * sigmam()]  # for the decay
 
         # Hamiltonian with controls
         H = self.hamiltonian(self.delta, alpha, gamma_magnitude, gamma_phase)
@@ -218,24 +237,20 @@ class GateSynthEnvRLlibHaarNoisy(gym.Env):
             Ut = la.expm(self.final_time / num_time_bins * L)  # time evolution (propagation operator)
             self.U = Ut @ self.U  # calculate total propagation until the time we are at
 
-        self.state = self.unitary_to_observation(self.U)  # fidelity and flattening -> magnitude, phase
 
         # Reward and fidelity calculation
-        fidelity = float(
-            np.abs(np.trace(self.U_target.conjugate().transpose() @ self.U))
-        ) / (self.U.shape[0])
-        reward = (
-            -3 * np.log10(1.0 - fidelity) + np.log10(1.0 - self.prev_fidelity)
-        ) + (3 * fidelity - self.prev_fidelity)
+        fidelity = self.compute_fidelity()
+        reward = (-3 * np.log10(1.0 - fidelity) + np.log10(1.0 - self.prev_fidelity)) + (3 * fidelity - self.prev_fidelity)
         self.prev_fidelity = fidelity
+
+        self.state = self.get_observation()
 
         # printing on the command line for quick viewing
         if self.verbose is True:
             print(
-                "Step: ",
-                f"{self.current_step_per_Haar:7.3f}",
-                "F: ",
-                f"{fidelity:7.3f}",
+                "Step: ", f"{self.current_step_per_Haar:7.3f}",
+                "Relaxation rate: ", f"{self.relaxation_rate:7.3f}",
+                "F: ", f"{fidelity:7.3f}",
                 "R: ",
                 f"{reward:7.3f}",
                 "amp: " f"{action[0]:7.3f}",
@@ -263,12 +278,3 @@ class GateSynthEnvRLlibHaarNoisy(gym.Env):
         info = {}
 
         return (self.state, reward, terminated, truncated, info)
-
-    def unitary_to_observation(self, U):
-        fidelity = (np.abs(np.trace(self.U_target.conjugate().transpose() @ U))) / (U.shape[0])  # fidelity calculation
-        return np.append(fidelity,
-            np.array([(abs(x), (cmath.phase(x) / np.pi + 1) / 2) for x in U.flatten()], dtype=np.float64,).squeeze().reshape(-1),)  # cmath phase gives -pi to pi
-
-    def hamiltonian(self, delta, alpha, gamma_magnitude, gamma_phase):
-        """Alpha and gamma are complex. This function could be made a callable class attribute."""
-        return (delta + alpha) * Z + gamma_magnitude * (np.cos(gamma_phase) * X + np.sin(gamma_phase) * Y)
