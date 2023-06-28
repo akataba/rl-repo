@@ -5,11 +5,12 @@ from ray.rllib.algorithms.ddpg import DDPGConfig
 from ray.tune.registry import register_env
 from relaqs.environments.gate_synth_env_rllib_Haar import GateSynthEnvRLlibHaarNoisy
 from relaqs.save_results import SaveResults
+from relaqs.plot_data import plot_data
 
 def env_creator(config):
     return GateSynthEnvRLlibHaarNoisy(config)
 
-def run(n_training_iterations=1, save=True):
+def run(n_training_iterations=1, save=True, plot=True):
     ray.init()
     register_env("my_env", env_creator)
 
@@ -48,8 +49,16 @@ def run(n_training_iterations=1, save=True):
         print("Results saved to:", save_dir)
     # --------------------------------------------------------------
 
+    # ---------------------> Plot Data <-------------------------
+    if plot is True:
+        assert save is True, "If plot=True, then save must also be set to True"
+        plot_data(save_dir, episode_length=alg._episode_history[0].episode_length)
+        print("Plots Created")
+    # --------------------------------------------------------------
+
 if __name__ == "__main__":
     n_training_iterations = 1
     save = True
-    run(n_training_iterations, save)
+    plot = True
+    run(n_training_iterations, save, plot)
     
