@@ -248,8 +248,8 @@ class GateSynthEnvRLlibHaarNoisy(gym.Env):
         # printing on the command line for quick viewing
         if self.verbose is True:
             print(
-                "Step: ", f"{self.current_step_per_Haar:7.3f}",
-                "Relaxation rate: ", f"{self.relaxation_rate:7.3f}",
+                "Step: ", f"{self.current_step_per_Haar}",
+                "Relaxation rate: ", f"{self.relaxation_rate:7.6f}",
                 "F: ", f"{fidelity:7.3f}",
                 "R: ",
                 f"{reward:7.3f}",
