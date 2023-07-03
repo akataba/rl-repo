@@ -1,4 +1,4 @@
-""" Demo scrip utilization multiple relaxation rates """
+""" Demo script utilization multiple relaxation rates """
 
 import ray
 from ray.rllib.algorithms.ddpg import DDPGConfig
