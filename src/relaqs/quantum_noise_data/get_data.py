@@ -30,6 +30,21 @@ def get_month_of_single_qubit_data(file_name, qubit_label):
     return t1_list, t2_list
 
 
+def get_month_of_all_qubit_data(file_name):
+    noise_data = None
+    with open(file_name) as f:
+        noise_data = json.load(f)
+    days = list(range(1, 28))
+    n_qubits = len(noise_data['T1']["1"])
+    t1_list = []
+    t2_list = []
+    for day in days:
+        for qubit_label in range(n_qubits):
+            t1_list.append(noise_data['T1'][str(day)][qubit_label])
+            t2_list.append(noise_data['T2'][str(day)][qubit_label])
+    return t1_list, t2_list
+
+
 if __name__ == "__main__":
     #t1, t2 = get_single_qubit_data('april/ibm_lagos_month_is_4.json')
     from relaqs import QUANTUM_NOISE_DATA_DIR
