@@ -1,6 +1,6 @@
 """ Now getting relaxation rates (T1 parameters) from real IBM data """
 
-from relaqs.quantum_noise_data.get_data import get_month_of_single_qubit_data
+from relaqs.quantum_noise_data.get_data import get_month_of_single_qubit_data, get_month_of_all_qubit_data
 from relaqs import quantum_noise_data
 from relaqs import QUANTUM_NOISE_DATA_DIR
 
@@ -9,17 +9,19 @@ from ray.rllib.algorithms.ddpg import DDPGConfig
 from ray.tune.registry import register_env
 from relaqs.environments.gate_synth_env_rllib_Haar import GateSynthEnvRLlibHaarNoisy
 from relaqs.save_results import SaveResults
+from relaqs.plot_data import plot_data
 
 def env_creator(config):
     return GateSynthEnvRLlibHaarNoisy(config)
 
-def run(n_training_iterations=1, save=False):
+def run(n_training_iterations=1, save=False, plot=False):
     ray.init()
     register_env("my_env", env_creator)
 
     # ---------------------> Get quantum noise data <-------------------------
     path_to_file = QUANTUM_NOISE_DATA_DIR + "april/ibm_belem_month_is_4.json"
-    t1_list, t2_list = get_month_of_single_qubit_data(path_to_file, qubit_label=0)
+    #t1_list, t2_list = get_month_of_single_qubit_data(path_to_file, qubit_label=0)
+    t1_list, t2_list = get_month_of_all_qubit_data(path_to_file)
     # ------------------------------------------------------------------------
 
     # ---------------------> Configure algorithm and Environment <-------------------------
@@ -59,8 +61,16 @@ def run(n_training_iterations=1, save=False):
         print("Results saved to:", save_dir)
     # --------------------------------------------------------------
 
+    # ---------------------> Plot Data <-------------------------
+    if plot is True:
+        assert save is True, "If plot=True, then save must also be set to True"
+        plot_data(save_dir, episode_length=alg._episode_history[0].episode_length)
+        print("Plots Created")
+    # --------------------------------------------------------------
+
 if __name__ == "__main__":
-    n_training_iterations = 1
-    save = False
-    run(n_training_iterations, save)
+    n_training_iterations = 500
+    save = True
+    plot = True
+    run(n_training_iterations, save, plot)
     
