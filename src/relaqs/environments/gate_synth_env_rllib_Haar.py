@@ -139,7 +139,8 @@ class GateSynthEnvRLlibHaarNoisy(gym.Env):
             "delta": 0,  # qubit detuning
             "save_data_every_step": 1,
             "verbose": True,
-            "relaxation_rates_list": [0.01] # list of floats to be sampled from when resetting environment
+            "relaxation_rates_list": [[0.01],[0.01]] # relaxation lists of list of floats to be sampled from when resetting environment.
+            "relaxation_ops": [sigmam(),sigmaz()] #relaxation operator lists for T1 and T2, respectively
         }
 
     def __init__(self, env_config):
