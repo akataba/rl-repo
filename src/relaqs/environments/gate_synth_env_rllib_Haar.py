@@ -128,7 +128,7 @@ class GateSynthEnvRLlibHaarNoisy(gym.Env):
     @classmethod
     def get_default_env_config(cls):
         return {
-            "observation_space_size": 34, # 2*16 = (complex number)*(density matrix elements = 4)^2, + 1 for fidelity + 1 for relaxation rate
+            "observation_space_size": 35, # 2*16 = (complex number)*(density matrix elements = 4)^2, + 1 for fidelity + 2 for relaxation rate
             # "action_space_size": 3,
             "action_space_size": 2,
             "U_initial": (spre(Qobj(I)) * spost(Qobj(I))).data.toarray(),  # staring with I
@@ -139,7 +139,7 @@ class GateSynthEnvRLlibHaarNoisy(gym.Env):
             "delta": 0,  # qubit detuning
             "save_data_every_step": 1,
             "verbose": True,
-            "relaxation_rates_list": [[0.01],[0.01]] # relaxation lists of list of floats to be sampled from when resetting environment.
+            "relaxation_rates_list": [[0.01,0.02],[0.05, 0.07]], # relaxation lists of list of floats to be sampled from when resetting environment.
             "relaxation_ops": [sigmam(),sigmaz()] #relaxation operator lists for T1 and T2, respectively
         }
 
@@ -155,6 +155,7 @@ class GateSynthEnvRLlibHaarNoisy(gym.Env):
         self.steps_per_Haar = env_config["steps_per_Haar"]
         self.verbose = env_config["verbose"]
         self.relaxation_rates_list = env_config["relaxation_rates_list"]
+        self.relaxation_ops = env_config["relaxation_ops"]
         self.relaxation_rate = self.get_relaxation_rate()
         self.current_Haar_num = 1  # starting with 1
         self.current_step_per_Haar = 1
@@ -170,10 +171,16 @@ class GateSynthEnvRLlibHaarNoisy(gym.Env):
         self.transition_history = []
 
     def get_relaxation_rate(self):
-        return random.sample(self.relaxation_rates_list, k=1)[0]
+        relaxation_size = len(self.relaxation_ops)      #get number of relaxation ops
+        
+        sampled_rate_list = []
+        for ii in range(relaxation_size):
+            sampled_rate_list.append(random.sample(self.relaxation_rates_list[ii],k=1)[0])
+
+        return sampled_rate_list
             
     def get_observation(self):
-        return np.append([self.compute_fidelity(), self.relaxation_rate], self.unitary_to_observation(self.U))
+        return np.append([self.compute_fidelity()]+self.relaxation_rate, self.unitary_to_observation(self.U))
     
     def compute_fidelity(self):
         return float(np.abs(np.trace(self.U_target.conjugate().transpose() @ self.U))) / (self.U.shape[0])
@@ -211,7 +218,9 @@ class GateSynthEnvRLlibHaarNoisy(gym.Env):
         gamma_phase = self.gamma_phase_max * action[1]
 
         # Set noise opertors
-        jump_ops = [np.sqrt(self.relaxation_rate) * sigmam()]  # for the decay
+        jump_ops = []
+        for ii in range(len(self.relaxation_ops)):
+            jump_ops.append(np.sqrt(self.relaxation_rate[ii]) * self.relaxation_ops[ii])
 
         # Hamiltonian with controls
         H = self.hamiltonian(self.delta, alpha, gamma_magnitude, gamma_phase)
@@ -250,13 +259,16 @@ class GateSynthEnvRLlibHaarNoisy(gym.Env):
         if self.verbose is True:
             print(
                 "Step: ", f"{self.current_step_per_Haar}",
-                "Relaxation rate: ", f"{self.relaxation_rate:7.6f}",
+                "Relaxation rates:")
+            for rate in self.relaxation_rate:
+                print(f"{rate:7.6f}")
+            print(
                 "F: ", f"{fidelity:7.3f}",
-                "R: ",
-                f"{reward:7.3f}",
+                "R: ", f"{reward:7.3f}",
                 "amp: " f"{action[0]:7.3f}",
                 "phase: " f"{action[1]:7.3f}",
             )
+
 
         self.transition_history.append([fidelity, reward, *action])
 
