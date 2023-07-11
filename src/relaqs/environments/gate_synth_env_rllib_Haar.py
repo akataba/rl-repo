@@ -131,8 +131,8 @@ class GateSynthEnvRLlibHaarNoisy(gym.Env):
             "observation_space_size": 34, # 2*16 = (complex number)*(density matrix elements = 4)^2, + 1 for fidelity + 1 for relaxation rate
             # "action_space_size": 3,
             "action_space_size": 2,
-            "U_initial": (spre(Qobj(I)) * spost(Qobj(I))).data.toarray(),  # staring with I
-            "U_target": (spre(Qobj(X)) * spost(Qobj(X))).data.toarray(),  # target for X
+            "U_initial": I,  # staring with I
+            "U_target": X,  # target for X
             "final_time": 0.3,
             "num_Haar_basis": 1,  # number of Haar basis (need to update for odd combinations)
             "steps_per_Haar": 3,  # steps per Haar basis per episode
@@ -148,8 +148,8 @@ class GateSynthEnvRLlibHaarNoisy(gym.Env):
         # self.action_space = gym.spaces.Box(low=np.array([-1, -1, -1]), high=np.array([1, 1, 1])) # for detuning included control
         self.action_space = gym.spaces.Box(low=np.array([-1, -1]), high=np.array([1, 1]))
         self.delta = env_config["delta"]  # detuning
-        self.U_target = env_config["U_target"]
-        self.U_initial = env_config["U_initial"]
+        self.U_target = self.unitary_to_superoperator(env_config["U_target"])
+        self.U_initial = self.unitary_to_superoperator(env_config["U_initial"])
         self.num_Haar_basis = env_config["num_Haar_basis"]
         self.steps_per_Haar = env_config["steps_per_Haar"]
         self.verbose = env_config["verbose"]
@@ -168,9 +168,12 @@ class GateSynthEnvRLlibHaarNoisy(gym.Env):
         self.gamma_magnitude_max = 1.8 * np.pi / self.final_time / self.steps_per_Haar
         self.transition_history = []
 
+    def unitary_to_superoperator(self, U):
+        return (spre(Qobj(U)) * spost(Qobj(U))).data.toarray()
+
     def get_relaxation_rate(self):
         return random.sample(self.relaxation_rates_list, k=1)[0]
-            
+
     def get_observation(self):
         return np.append([self.compute_fidelity(), self.relaxation_rate], self.unitary_to_observation(self.U))
     
