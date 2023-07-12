@@ -148,7 +148,8 @@ class GateSynthEnvRLlibHaarNoisy(gym.Env):
         self.observation_space = gym.spaces.Box(low=0, high=1, shape=(env_config["observation_space_size"],))  # propagation operator elements + fidelity
         # self.action_space = gym.spaces.Box(low=np.array([-1, -1, -1]), high=np.array([1, 1, 1])) # for detuning included control
         self.action_space = gym.spaces.Box(low=np.array([-1, -1]), high=np.array([1, 1]))
-        self.delta = env_config["delta"]  # detuning
+#        self.delta = [env_config["delta"]]  # detuning
+        self.delta = [0, 0.01, 0.02]  # detuning
         self.U_target = env_config["U_target"]
         self.U_initial = env_config["U_initial"]
         self.num_Haar_basis = env_config["num_Haar_basis"]
@@ -222,8 +223,14 @@ class GateSynthEnvRLlibHaarNoisy(gym.Env):
         for ii in range(len(self.relaxation_ops)):
             jump_ops.append(np.sqrt(self.relaxation_rate[ii]) * self.relaxation_ops[ii])
 
+        # Random detuning selection
+        if len(self.delta)==1:
+            detuning = self.delta[0]
+        else:
+            detuning = random.sample(self.delta,k=1)[0]
+
         # Hamiltonian with controls
-        H = self.hamiltonian(self.delta, alpha, gamma_magnitude, gamma_phase)
+        H = self.hamiltonian(detuning, alpha, gamma_magnitude, gamma_phase)
         self.H_array.append(H)  # Array of Hs at each Haar wavelet
 
         # H_tot for adding Hs at each time bins
