@@ -2,12 +2,11 @@ import datetime
 import os
 import csv
 from relaqs import RESULTS_DIR
-
-
-# TODO make these class methods
+from typing import List, Dict
+import json
 
 class SaveResults():
-    def __init__(self, env=None, alg=None, save_path=None):
+    def __init__(self, env=None, alg=None, save_path=None, results:List[Dict]=None):
         self.env = env
         self.alg = alg
         if save_path is None:
@@ -18,6 +17,7 @@ class SaveResults():
         # Create directory if it does not exist
         if not os.path.isdir(self.save_path):
             os.mkdir(self.save_path)
+        self.results = results
 
     def get_new_directory(self):
         return RESULTS_DIR + datetime.datetime.now().strftime("%Y-%m-%d_%H-%M-%S/")
@@ -27,6 +27,10 @@ class SaveResults():
         with open(self.save_path + "env_data.csv", "w") as f:
             writer = csv.writer(f)
             writer.writerows(self.env.transition_history)
+
+    def save_train_results_data(self):
+        with open('train_results_data.json', 'w') as f:
+            json.dump(self.results, f)
 
     def save_config(self, config_dict):
         config_path = self.save_path + "config.txt"
@@ -44,4 +48,6 @@ class SaveResults():
         if self.alg is not None:
             self.save_config(self.alg.get_config().to_dict())
             self.save_model()
+        if self.results is not None:
+            self.save_train_results_data()
         return self.save_path
