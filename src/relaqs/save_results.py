@@ -4,6 +4,26 @@ import csv
 from relaqs import RESULTS_DIR
 from typing import List, Dict
 import json
+import numpy as np
+from types import MappingProxyType
+
+l = frozenset([])
+FrozenSetType = type(l)
+class NpEncoder(json.JSONEncoder):
+    def default(self, obj):
+        if isinstance(obj, np.integer):
+            return int(obj)
+        if isinstance(obj, np.floating):
+            return float(obj)
+        if isinstance(obj, np.ndarray):
+            return obj.tolist()
+        if isinstance(obj, MappingProxyType):
+            return obj.copy()
+        if isinstance(obj, FrozenSetType):
+            return list(obj)
+        else:
+            return obj.__dict__         
+        return super(NpEncoder, self).default(obj)
 
 class SaveResults():
     def __init__(self, env=None, alg=None, save_path=None, results:List[Dict]=None):
@@ -29,8 +49,8 @@ class SaveResults():
             writer.writerows(self.env.transition_history)
 
     def save_train_results_data(self):
-        with open('train_results_data.json', 'w') as f:
-            json.dump(self.results, f)
+        with open(self.save_path+'train_results_data.json', 'w') as f:
+            json.dump(self.results,f, cls=NpEncoder)
 
     def save_config(self, config_dict):
         config_path = self.save_path + "config.txt"

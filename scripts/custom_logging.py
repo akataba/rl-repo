@@ -84,7 +84,7 @@ class GateSynthesisCallbacks(DefaultCallbacks):
             average_grad += vector_norm(grad)
         average_grad = average_grad/(len(gradients))
         episode.hist_data['grad_gnorm'].append(gradients_info['learner_stats']['grad_gnorm'])
-        episode.hist_data["average_gradnorm"].append(average_grad)
+        episode.hist_data["average_gradnorm"].append(average_grad.numpy())
 
 def env_creator(config):
     return GateSynthEnvRLlibHaarNoisy(config)
@@ -119,7 +119,7 @@ def run(n_training_iterations=1, save=True, plot=True):
     # ---------------------> Train Agent <-------------------------
     for _ in range(n_training_iterations):
         result = alg.train()
-        list_of_results.append(result)
+        list_of_results.append(result['hist_stats'])
 
     # ---------------------> Save Results <-------------------------
     if save is True:
@@ -139,6 +139,6 @@ def run(n_training_iterations=1, save=True, plot=True):
 if __name__ == "__main__":
     n_training_iterations = 1
     save = True
-    plot = True
+    plot = False
     run(n_training_iterations, save, plot)
     
