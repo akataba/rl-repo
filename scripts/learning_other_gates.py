@@ -22,7 +22,7 @@ def run(n_training_iterations=1, save=True, plot=True):
 
     env_config = GateSynthEnvRLlibHaarNoisy.get_default_env_config()
 
-    env_config["U_target"] = Gate.X_pi_4
+    env_config["U_target"] = Gate.H
 
     alg_config.environment("my_env", env_config=env_config)
     #alg_config.environment(GateSynthEnvRLlibHaarNoisy, env_config=GateSynthEnvRLlibHaarNoisy.get_default_env_config())
