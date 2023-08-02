@@ -22,7 +22,7 @@ def run(n_training_iterations=1, save=True, plot=True):
 
     env_config = GateSynthEnvRLlibHaar.get_default_env_config()
 
-    env_config["U_target"] = Gate.X
+    env_config["U_target"] = Gate.H
 
     alg_config.environment("my_env", env_config=env_config)
     #alg_config.environment(GateSynthEnvRLlibHaar, env_config=GateSynthEnvRLlibHaar.get_default_env_config())
