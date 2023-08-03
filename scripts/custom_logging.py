@@ -1,32 +1,24 @@
-# Construct H gate in Qutip
-""" For refactor of HaarBasis branch, based off of run_and_save_v2 """
-
 import ray
 from ray.rllib.algorithms.ddpg import DDPGConfig
 from ray.tune.registry import register_env
 from relaqs.environments.gate_synth_env_rllib_Haar import GateSynthEnvRLlibHaarNoisy
 from relaqs.save_results import SaveResults
 from relaqs.plot_data import plot_data
-import numpy as np
+from relaqs.api.callbacks import GateSynthesisCallbacks
+
 
 def env_creator(config):
     return GateSynthEnvRLlibHaarNoisy(config)
 
-def run(n_training_iterations=1, save=True, plot=True):
+def run(n_training_iterations=1, save=True, plot=True, figure_title=None):
     ray.init()
     register_env("my_env", env_creator)
-    
+
     # ---------------------> Configure algorithm and Environment <-------------------------
     alg_config = DDPGConfig()
     alg_config.framework("torch")
-
-    # Set H gate
-    H = 1/np.sqrt(2) * np.array([[1, 1], [1, -1]])
-    env_config = GateSynthEnvRLlibHaarNoisy.get_default_env_config()
-    env_config["U_target"] = H
-
-    alg_config.environment("my_env", env_config=env_config)
-    #alg_config.environment(GateSynthEnvRLlibHaarNoisy, env_config=GateSynthEnvRLlibHaarNoisy.get_default_env_config())
+    alg_config.callbacks(GateSynthesisCallbacks)
+    alg_config.environment("my_env", env_config=GateSynthEnvRLlibHaarNoisy.get_default_env_config())
 
     alg_config.rollouts(batch_mode="complete_episodes")
     alg_config.train_batch_size = GateSynthEnvRLlibHaarNoisy.get_default_env_config()["steps_per_Haar"]
@@ -41,18 +33,19 @@ def run(n_training_iterations=1, save=True, plot=True):
     alg_config.actor_hiddens = [30,30,30]
     alg_config.exploration_config["scale_timesteps"] = 10000
     alg_config.target_network_update_freq=5
+
     alg = alg_config.build()
     # ---------------------------------------------------------------------
-
+    list_of_results = []
     # ---------------------> Train Agent <-------------------------
     for _ in range(n_training_iterations):
         result = alg.train()
-    # -------------------------------------------------------------
+        list_of_results.append(result['hist_stats'])
 
     # ---------------------> Save Results <-------------------------
     if save is True:
         env = alg.workers.local_worker().env
-        sr = SaveResults(env, alg)
+        sr = SaveResults(env, alg, results=list_of_results)
         save_dir = sr.save_results()
         print("Results saved to:", save_dir)
     # --------------------------------------------------------------
@@ -60,13 +53,14 @@ def run(n_training_iterations=1, save=True, plot=True):
     # ---------------------> Plot Data <-------------------------
     if plot is True:
         assert save is True, "If plot=True, then save must also be set to True"
-        plot_data(save_dir, episode_length=alg._episode_history[0].episode_length)
+        plot_data(save_dir, episode_length=alg._episode_history[0].episode_length, figure_title=figure_title)
         print("Plots Created")
     # --------------------------------------------------------------
 
 if __name__ == "__main__":
-    n_training_iterations = 500
+    n_training_iterations = 2
     save = True
     plot = True
-    run(n_training_iterations, save, plot)
+    figure_title ="Noisy environment"
+    run(n_training_iterations, save, plot, figure_title=figure_title)
     
