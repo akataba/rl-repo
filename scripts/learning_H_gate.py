@@ -40,7 +40,7 @@ def run(n_training_iterations=1, save=True, plot=True):
     alg_config.num_steps_sampled_before_learning_starts = 1000
     alg_config.actor_hiddens = [30,30,30]
     alg_config.exploration_config["scale_timesteps"] = 10000
-
+    alg_config.target_network_update_freq=5
     alg = alg_config.build()
     # ---------------------------------------------------------------------
 
