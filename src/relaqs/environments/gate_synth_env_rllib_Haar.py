@@ -189,7 +189,9 @@ class GateSynthEnvRLlibHaarNoisy(gym.Env):
         return np.append([self.compute_fidelity(), self.relaxation_rate], self.unitary_to_observation(self.U))
     
     def compute_fidelity(self):
-        return float(np.abs(np.trace(self.U_target.conjugate().transpose() @ self.U))) / (self.U.shape[0])
+        env_config = GateSynthEnvRLlibHaarNoisy.get_default_env_config()
+        U_target_dagger = self.unitary_to_superoperator(env_config["U_target"].conjugate().transpose())
+        return float(np.abs(np.trace(U_target_dagger @ self.U))) / (self.U.shape[0])
 
     def unitary_to_observation(self, U):
         return np.array([(abs(x), (cmath.phase(x) / np.pi + 1) / 2) for x in U.flatten()], dtype=np.float64,).squeeze().reshape(-1)  # cmath phase gives -pi to pi
