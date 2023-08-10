@@ -6,6 +6,7 @@ import random
 from qutip.superoperator import liouvillian, spre, spost
 from qutip import Qobj
 from qutip.operators import *
+#from relaqs.api.reward_functions import negative_matrix_difference_norm
 
 sig_p = np.array([[0, 1], [0, 0]])
 sig_m = np.array([[0, 0], [1, 0]])
@@ -26,8 +27,8 @@ class GateSynthEnvRLlibHaar(gym.Env):
             "final_time": 0.3,
             "num_Haar_basis": 5,
             "delta": 0,
+            "verbose": True
         }
-
     def __init__(self, env_config):
         self.final_time = env_config["final_time"]  # Final time for the gates
         self.observation_space = gym.spaces.Box(low=-1, high=1, shape=(env_config["observation_space_size"],))
@@ -37,6 +38,7 @@ class GateSynthEnvRLlibHaar(gym.Env):
         self.U_initial = env_config["U_initial"] # future todo, can make random initial state
         self.U = env_config["U_initial"]
         self.num_Haar_basis = env_config["num_Haar_basis"]
+        self.verbose = env_config["verbose"]
         self.current_Haar_num = 0
         self.H_array = []
         self.H_tot = []
@@ -95,7 +97,18 @@ class GateSynthEnvRLlibHaar(gym.Env):
         reward = -(np.log10(1.0 - fidelity) - np.log10(1.0 - self.prev_fidelity))
         self.prev_fidelity = fidelity
 
-        self.transition_history.append([fidelity, reward, *action])
+        # printing on the command line for quick viewing
+        if self.verbose is True:
+            print(
+                "Step: ", f"{self.current_Haar_num}",
+                "F: ", f"{fidelity:7.3f}",
+                "R: ", f"{reward:7.3f}",
+                "alpha: " f"{action[0]:7.3f}",
+                "gamma mag: " f"{action[0]:7.3f}",
+                "gamma phase: " f"{action[1]:7.3f}",
+            )
+
+        self.transition_history.append([fidelity, reward, *action, *self.U.flatten()])
 
         # Determine if episode is over
         truncated = False
@@ -240,10 +253,10 @@ class GateSynthEnvRLlibHaarNoisy(gym.Env):
             Ut = la.expm(self.final_time / num_time_bins * L)  # time evolution (propagation operator)
             self.U = Ut @ self.U  # calculate total propagation until the time we are at
 
-
         # Reward and fidelity calculation
         fidelity = self.compute_fidelity()
         reward = (-3 * np.log10(1.0 - fidelity) + np.log10(1.0 - self.prev_fidelity)) + (3 * fidelity - self.prev_fidelity)
+        #reward = negative_matrix_difference_norm(self.U_target, self.U)
         self.prev_fidelity = fidelity
 
         self.state = self.get_observation()
@@ -254,13 +267,12 @@ class GateSynthEnvRLlibHaarNoisy(gym.Env):
                 "Step: ", f"{self.current_step_per_Haar}",
                 "Relaxation rate: ", f"{self.relaxation_rate:7.6f}",
                 "F: ", f"{fidelity:7.3f}",
-                "R: ",
-                f"{reward:7.3f}",
+                "R: ", f"{reward:7.3f}",
                 "amp: " f"{action[0]:7.3f}",
                 "phase: " f"{action[1]:7.3f}",
             )
 
-        self.transition_history.append([fidelity, reward, *action])
+        self.transition_history.append([fidelity, reward, *action, *self.U.flatten()])
 
         # Determine if episode is over
         truncated = False
