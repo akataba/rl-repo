@@ -38,9 +38,7 @@ def run(n_training_iterations=1, save=True, plot=True):
 
     # ---------------------> Train Agent <-------------------------
     for _ in range(n_training_iterations):
-        result = alg.train()
-    # -------------------------------------------------------------
-
+        result = alg.train() 
     # ---------------------> Save Results <-------------------------
     if save is True:
         env = alg.workers.local_worker().env

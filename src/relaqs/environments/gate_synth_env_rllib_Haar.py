@@ -14,8 +14,6 @@ X = np.array([[0, 1], [1, 0]])
 Z = np.array([[1, 0], [0, -1]])
 I = np.array([[1, 0], [0, 1]])
 Y = np.array([[0, 1j], [-1j, 0]])
-
-
 class GateSynthEnvRLlibHaar(gym.Env):
     @classmethod
     def get_default_env_config(cls):
@@ -291,5 +289,8 @@ class GateSynthEnvRLlibHaarNoisy(gym.Env):
             self.current_step_per_Haar += 1
 
         info = {}
-
         return (self.state, reward, terminated, truncated, info)
+
+
+
+
