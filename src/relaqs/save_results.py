@@ -26,21 +26,24 @@ class NpEncoder(json.JSONEncoder):
         return super(NpEncoder, self).default(obj)
 
 class SaveResults():
-    def __init__(self, env=None, alg=None, save_path=None, results:List[Dict]=None):
+    def __init__(self, env=None, alg=None, results:List[Dict]=None, save_path=None, save_base_path=None):
         self.env = env
         self.alg = alg
         if save_path is None:
-            self.save_path = self.get_new_directory()
+            self.save_path = self.get_new_directory(save_base_path)
         else:
             self.save_path = save_path
     
         # Create directory if it does not exist
         if not os.path.isdir(self.save_path):
-            os.mkdir(self.save_path)
+            os.makedirs(self.save_path)
         self.results = results
 
-    def get_new_directory(self):
-        return RESULTS_DIR + datetime.datetime.now().strftime("%Y-%m-%d_%H-%M-%S/")
+    def get_new_directory(self, save_base_path=None):
+        if save_base_path is None:
+            return RESULTS_DIR + datetime.datetime.now().strftime("%Y-%m-%d_%H-%M-%S/")
+        else:
+            return save_base_path + datetime.datetime.now().strftime("%Y-%m-%d_%H-%M-%S/")
 
     def save_env_transitions(self):
         # TODO add header labels
