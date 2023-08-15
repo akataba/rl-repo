@@ -6,13 +6,7 @@ import json
 from itertools import chain
 import matplotlib as mpl
 
-def plot_data(save_dir, episode_length, figure_title='Noisy Environment'): 
-    """ Currently works for constant episode_length """
-    #---------------------- Getting data from files  <--------------------------------------
-
-    with open(save_dir + "env_data.npy", "rb") as f:
-        df = np.load(f)
-
+def plot_results(save_dir, episode_length, figure_title="Noisy Environment"):
     with open(save_dir + "train_results_data.json") as file:  # q values and gradient vector norms
         results = json.load(file)
 
@@ -22,6 +16,39 @@ def plot_data(save_dir, episode_length, figure_title='Noisy Environment'):
     # Flatten lists
     q_values = list(chain.from_iterable(q_values))
     average_grad_norm = list(chain.from_iterable(average_grad_norm))
+
+    # q values
+    q_series = pd.Series(q_values)
+    q_windows = q_series.rolling(rolling_average_window)
+    q_moving_averages = q_windows.mean().to_list()
+    
+    # gradient norms
+    grad_norm_series = pd.Series(average_grad_norm)
+    grad_norm_windows = grad_norm_series.rolling(rolling_average_window)
+    grad_norm_moving_averages = grad_norm_windows.mean().to_list()
+
+    # -------------------->  q values <--------------------------
+    ax4.plot(q_values, color="m")
+    ax4.plot(q_moving_averages, color="k")
+    ax4.set_title("Q Values")
+    ax4.set_title("d)", loc='left', fontsize='medium')
+    ax4.set_xlabel("Episodes")
+
+    ax5.plot(average_grad_norm, color="slateblue")
+    ax5.plot(grad_norm_moving_averages, color="k")
+    ax5.set_title("Average Gradient Norms")
+    ax5.set_title("e)", loc='left', fontsize='medium')
+    ax5.set_xlabel("Episodes")
+
+def plot_data(save_dir, episode_length, figure_title='Noisy Environment'): 
+    """ Currently works for constant episode_length """
+    #---------------------- Getting data from files  <--------------------------------------
+
+    with open(save_dir + "env_data.npy", "rb") as f:
+        df = np.load(f)
+
+
+
 
     fidelities = df[:, 0]
     rewards = df[:, 1]
@@ -51,15 +78,6 @@ def plot_data(save_dir, episode_length, figure_title='Noisy Environment'):
         avg_final_infelity_per_episode.append(np.mean(final_infelity_per_episode[start: i]))
         avg_sum_of_rewards_per_episode.append(np.mean(sum_of_rewards_per_episode[start: i]))
     
-    # q values
-    q_series = pd.Series(q_values)
-    q_windows = q_series.rolling(rolling_average_window)
-    q_moving_averages = q_windows.mean().to_list()
-    
-    # gradient norms
-    grad_norm_series = pd.Series(average_grad_norm)
-    grad_norm_windows = grad_norm_series.rolling(rolling_average_window)
-    grad_norm_moving_averages = grad_norm_windows.mean().to_list()
 
     # -------------------------------> Plotting <-------------------------------------
     rcParams['font.family'] = 'serif'
@@ -92,18 +110,10 @@ def plot_data(save_dir, episode_length, figure_title='Noisy Environment'):
     ax3.set_title("c)", loc='left', fontsize='medium')
     ax3.set_xlabel("Episodes")
     
-    # -------------------->  q values <--------------------------
-    ax4.plot(q_values, color="m")
-    ax4.plot(q_moving_averages, color="k")
-    ax4.set_title("Q Values")
-    ax4.set_title("d)", loc='left', fontsize='medium')
-    ax4.set_xlabel("Episodes")
-
-    ax5.plot(average_grad_norm, color="slateblue")
-    ax5.plot(grad_norm_moving_averages, color="k")
-    ax5.set_title("Average Gradient Norms")
-    ax5.set_title("e)", loc='left', fontsize='medium')
-    ax5.set_xlabel("Episodes")
+    try:
+        plot_results(save_dir, episode_length, figure_title)
+    except:
+        pass
 
     plt.tight_layout()
     plt.savefig(save_dir + "plot.png")
