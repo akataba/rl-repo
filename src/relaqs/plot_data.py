@@ -9,7 +9,10 @@ import matplotlib as mpl
 def plot_data(save_dir, episode_length, figure_title='Noisy Environment'): 
     """ Currently works for constant episode_length """
     #---------------------- Getting data from files  <--------------------------------------
-    df = pd.read_csv(save_dir + "env_data.csv", header=None)  # Results of learning
+
+    with open(save_dir + "env_data.npy", "rb") as f:
+        df = np.load(f)
+
     with open(save_dir + "train_results_data.json") as file:  # q values and gradient vector norms
         results = json.load(file)
 
@@ -20,8 +23,8 @@ def plot_data(save_dir, episode_length, figure_title='Noisy Environment'):
     q_values = list(chain.from_iterable(q_values))
     average_grad_norm = list(chain.from_iterable(average_grad_norm))
 
-    fidelities = df.iloc[:, 0]
-    rewards = df.iloc[:, 1]
+    fidelities = df[:, 0]
+    rewards = df[:, 1]
 
     print("max fidelity", max(fidelities))
     print("max reward", max(rewards))
@@ -30,10 +33,11 @@ def plot_data(save_dir, episode_length, figure_title='Noisy Environment'):
     final_infelity_per_episode = []
     sum_of_rewards_per_episode = []
 
+    # there is probably a numpy way to speed this up
     for i in range(episode_length - 1, len(fidelities), episode_length):
         final_fidelity_per_episode.append(fidelities[i])
         final_infelity_per_episode.append(1 - fidelities[i])
-        sum_of_rewards_per_episode.append(sum(rewards[i-2 : i+1]))
+        sum_of_rewards_per_episode.append(np.sum(rewards[i-2 : i+1]))
 
     # ----------------------> Moving average <--------------------------------------
     # Fidelity

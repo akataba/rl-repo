@@ -48,6 +48,9 @@ class SaveResults():
             writer = csv.writer(f)
             writer.writerows(self.env.transition_history)
 
+        with open(self.save_path + "env_data.npy", "wb") as f:
+            np.save(f, np.array(self.env.transition_history))
+
     def save_train_results_data(self):
         with open(self.save_path+'train_results_data.json', 'w') as f:
             json.dump(self.results,f, cls=NpEncoder)
