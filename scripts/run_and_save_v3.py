@@ -37,12 +37,12 @@ def run(n_training_iterations=1, save=True, plot=True):
     # ---------------------------------------------------------------------
 
     # ---------------------> Train Agent <-------------------------
-    for _ in range(n_training_iterations):
-        result = alg.train() 
+    results = [alg.train() for _ in range(n_training_iterations)]
+    result = results[-1]
     # ---------------------> Save Results <-------------------------
     if save is True:
         env = alg.workers.local_worker().env
-        sr = SaveResults(env, alg)
+        sr = SaveResults(env, alg, save_base_path="./")
         save_dir = sr.save_results()
         print("Results saved to:", save_dir)
     # --------------------------------------------------------------
