@@ -43,15 +43,17 @@ def plot_results(save_dir, episode_length, figure_title="Noisy Environment"):
 def plot_data(save_dir, episode_length, figure_title='Noisy Environment'): 
     """ Currently works for constant episode_length """
     #---------------------- Getting data from files  <--------------------------------------
+    try:
+        with open(save_dir + "env_data.npy", "rb") as f:
+            df = np.load(f)
+            fidelities = df[:, 0]
+            rewards = df[:, 1]
+    except:
+        df = pandas.read_csv(save_dir + "env_data.csv", header=None)
+        fidelity = np.array(df.iloc[:,0])
+        rewards = np.array(df.iloc[:,1])
 
-    with open(save_dir + "env_data.npy", "rb") as f:
-        df = np.load(f)
 
-
-
-
-    fidelities = df[:, 0]
-    rewards = df[:, 1]
 
     print("max fidelity", max(fidelities))
     print("max reward", max(rewards))
