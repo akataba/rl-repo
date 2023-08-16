@@ -2,12 +2,58 @@ import matplotlib.pyplot as plt
 from matplotlib import rcParams
 import pandas as pd
 import numpy as np
+import json
+from itertools import chain
+import matplotlib as mpl
 
-def plot_data(save_dir, episode_length): 
+def plot_results(save_dir, episode_length, figure_title="Noisy Environment"):
+    with open(save_dir + "train_results_data.json") as file:  # q values and gradient vector norms
+        results = json.load(file)
+
+    q_values = [r['q_values'] for r in results] 
+    average_grad_norm = [r["average_gradnorm"] for r in results]
+
+    # Flatten lists
+    q_values = list(chain.from_iterable(q_values))
+    average_grad_norm = list(chain.from_iterable(average_grad_norm))
+
+    # q values
+    q_series = pd.Series(q_values)
+    q_windows = q_series.rolling(rolling_average_window)
+    q_moving_averages = q_windows.mean().to_list()
+    
+    # gradient norms
+    grad_norm_series = pd.Series(average_grad_norm)
+    grad_norm_windows = grad_norm_series.rolling(rolling_average_window)
+    grad_norm_moving_averages = grad_norm_windows.mean().to_list()
+
+    # -------------------->  q values <--------------------------
+    ax4.plot(q_values, color="m")
+    ax4.plot(q_moving_averages, color="k")
+    ax4.set_title("Q Values")
+    ax4.set_title("d)", loc='left', fontsize='medium')
+    ax4.set_xlabel("Episodes")
+
+    ax5.plot(average_grad_norm, color="slateblue")
+    ax5.plot(grad_norm_moving_averages, color="k")
+    ax5.set_title("Average Gradient Norms")
+    ax5.set_title("e)", loc='left', fontsize='medium')
+    ax5.set_xlabel("Episodes")
+
+def plot_data(save_dir, episode_length, figure_title='Noisy Environment'): 
     """ Currently works for constant episode_length """
-    df = pd.read_csv(save_dir + "env_data.csv", header=None)
-    fidelities = df.iloc[:, 0]
-    rewards = df.iloc[:, 1]
+    #---------------------- Getting data from files  <--------------------------------------
+    try:
+        with open(save_dir + "env_data.npy", "rb") as f:
+            df = np.load(f)
+            fidelities = df[:, 0]
+            rewards = df[:, 1]
+    except:
+        df = pandas.read_csv(save_dir + "env_data.csv", header=None)
+        fidelity = np.array(df.iloc[:,0])
+        rewards = np.array(df.iloc[:,1])
+
+
 
     print("max fidelity", max(fidelities))
     print("max reward", max(rewards))
@@ -16,11 +62,14 @@ def plot_data(save_dir, episode_length):
     final_infelity_per_episode = []
     sum_of_rewards_per_episode = []
 
+    # there is probably a numpy way to speed this up
     for i in range(episode_length - 1, len(fidelities), episode_length):
         final_fidelity_per_episode.append(fidelities[i])
         final_infelity_per_episode.append(1 - fidelities[i])
-        sum_of_rewards_per_episode.append(sum(rewards[i-2 : i+1]))
+        sum_of_rewards_per_episode.append(np.sum(rewards[i-2 : i+1]))
 
+    # ----------------------> Moving average <--------------------------------------
+    # Fidelity
     rolling_average_window = 100
     avg_final_fidelity_per_episode = []
     avg_final_infelity_per_episode = []
@@ -30,26 +79,23 @@ def plot_data(save_dir, episode_length):
         avg_final_fidelity_per_episode.append(np.mean(final_fidelity_per_episode[start: i]))
         avg_final_infelity_per_episode.append(np.mean(final_infelity_per_episode[start: i]))
         avg_sum_of_rewards_per_episode.append(np.mean(sum_of_rewards_per_episode[start: i]))
+    
 
-
-    # ----------------> Plotting <----------------
+    # -------------------------------> Plotting <-------------------------------------
     rcParams['font.family'] = 'serif'
+    mpl.style.use('seaborn-v0_8')
 
-    fig, (ax1, ax2, ax3) = plt.subplots(1, 3) # w/ fidelity plot
-    #fig, (ax1, ax2) = plt.subplots(1, 2) # w/o fidelity plot
-    fig.suptitle('Noisy Environment')
-    fig.set_size_inches(9, 4)
+    fig,((ax1, ax2, ax3), (ax4, ax5, _)) = plt.subplots(2, 3) 
+    fig.suptitle(figure_title)
+    fig.set_size_inches(10, 5)
 
     # ----> fidelity <----
-    ax1.plot(final_fidelity_per_episode, color="b", label="a)")
+    ax1.plot(final_fidelity_per_episode, color="b")
     ax1.plot(avg_final_fidelity_per_episode, color="k")
     ax1.set_title("Fidelity")
-    #ax1.set_title("a)", fontfamily='serif', loc='left', fontsize='medium')
     ax1.set_title("a)", loc='left', fontsize='medium')
-    #ax1.legend(loc="upper right")
     ax1.set_xlabel("Episodes")
-    #ax1.set_xticks([5000, 10000, 15000])
-    # --------------------
+
 
     # ----> infidelity <----
     ax2.plot(final_infelity_per_episode, color="r")
@@ -59,33 +105,17 @@ def plot_data(save_dir, episode_length):
     ax2.set_title("b)", loc='left', fontsize='medium')
     ax2.set_xlabel("Episodes")
 
-    # ax1.plot(final_infelity_per_episode, color="r")
-    # ax1.plot(avg_final_infelity_per_episode, color="k")
-    # ax1.set_yscale("log")
-    # ax1.set_title("1 - Fidelity (log scale)")
-    # ax1.set_title("a)", loc='left', fontsize='medium')
-    # ax1.set_xlabel("Episodes")
-    # ----------------------
-
     # ----> reward <----
     ax3.plot(sum_of_rewards_per_episode, color="g")
     ax3.plot(avg_sum_of_rewards_per_episode, color="k")
     ax3.set_title("Sum of Rewards")
     ax3.set_title("c)", loc='left', fontsize='medium')
     ax3.set_xlabel("Episodes")
-
-    # ax2.plot(sum_of_rewards_per_episode, color="g")
-    # ax2.plot(avg_sum_of_rewards_per_episode, color="k")
-    # ax2.set_title("Sum of Rewards")
-    # ax2.set_title("b)", loc='left', fontsize='medium')
-    # ax2.set_xlabel("Episodes")
-    # ------------------
+    
+    try:
+        plot_results(save_dir, episode_length, figure_title)
+    except:
+        pass
 
     plt.tight_layout()
-    #plt.savefig("plots/noiseless_figure.png")
-    #plt.savefig("plots/noisy_infidelity_reward.png")
-    #plt.savefig("plots/noiseless_infidelity_reward.png")
-    #plt.savefig("plots/9x4_ratio_noiseless.png")
     plt.savefig(save_dir + "plot.png")
-    #plt.show()
-    # --------------------------------------------

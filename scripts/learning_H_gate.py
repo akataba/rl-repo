@@ -1,3 +1,4 @@
+# Construct H gate in Qutip
 """ For refactor of HaarBasis branch, based off of run_and_save_v2 """
 
 import ray
@@ -6,6 +7,7 @@ from ray.tune.registry import register_env
 from relaqs.environments.gate_synth_env_rllib_Haar import GateSynthEnvRLlibHaarNoisy
 from relaqs.save_results import SaveResults
 from relaqs.plot_data import plot_data
+import numpy as np
 
 def env_creator(config):
     return GateSynthEnvRLlibHaarNoisy(config)
@@ -13,11 +15,17 @@ def env_creator(config):
 def run(n_training_iterations=1, save=True, plot=True):
     ray.init()
     register_env("my_env", env_creator)
-
+    
     # ---------------------> Configure algorithm and Environment <-------------------------
     alg_config = DDPGConfig()
     alg_config.framework("torch")
-    alg_config.environment("my_env", env_config=GateSynthEnvRLlibHaarNoisy.get_default_env_config())
+
+    # Set H gate
+    H = 1/np.sqrt(2) * np.array([[1, 1], [1, -1]])
+    env_config = GateSynthEnvRLlibHaarNoisy.get_default_env_config()
+    env_config["U_target"] = H
+
+    alg_config.environment("my_env", env_config=env_config)
     #alg_config.environment(GateSynthEnvRLlibHaarNoisy, env_config=GateSynthEnvRLlibHaarNoisy.get_default_env_config())
 
     alg_config.rollouts(batch_mode="complete_episodes")
@@ -32,17 +40,19 @@ def run(n_training_iterations=1, save=True, plot=True):
     alg_config.num_steps_sampled_before_learning_starts = 1000
     alg_config.actor_hiddens = [30,30,30]
     alg_config.exploration_config["scale_timesteps"] = 10000
-
+    alg_config.target_network_update_freq=5
     alg = alg_config.build()
     # ---------------------------------------------------------------------
 
     # ---------------------> Train Agent <-------------------------
-    results = [alg.train() for _ in range(n_training_iterations)]
-    result = results[-1]
+    for _ in range(n_training_iterations):
+        result = alg.train()
+    # -------------------------------------------------------------
+
     # ---------------------> Save Results <-------------------------
     if save is True:
         env = alg.workers.local_worker().env
-        sr = SaveResults(env, alg, save_base_path="./")
+        sr = SaveResults(env, alg)
         save_dir = sr.save_results()
         print("Results saved to:", save_dir)
     # --------------------------------------------------------------
@@ -55,7 +65,7 @@ def run(n_training_iterations=1, save=True, plot=True):
     # --------------------------------------------------------------
 
 if __name__ == "__main__":
-    n_training_iterations = 1
+    n_training_iterations = 500
     save = True
     plot = True
     run(n_training_iterations, save, plot)
