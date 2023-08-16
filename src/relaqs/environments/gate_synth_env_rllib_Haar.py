@@ -139,19 +139,22 @@ class GateSynthEnvRLlibHaarNoisy(gym.Env):
     @classmethod
     def get_default_env_config(cls):
         return {
-            "observation_space_size": 35, # 2*16 = (complex number)*(density matrix elements = 4)^2, + 1 for fidelity + 2 for relaxation rate
             # "action_space_size": 3,
             "action_space_size": 2,
             "U_initial": I,  # staring with I
             "U_target": X,  # target for X
             "final_time": 0.3,
-            "num_Haar_basis": 1,  # number of Haar basis (need to update for odd combinations)
+            "num_Haar_basis": 3,  # number of Haar basis (need to update for odd combinations)
             "steps_per_Haar": 3,  # steps per Haar basis per episode
-            "delta": 0,  # qubit detuning
+            "delta": [0],  # qubit detuning
             "save_data_every_step": 1,
             "verbose": True,
-            "relaxation_rates_list": [[0.01,0.02],[0.05, 0.07]], # relaxation lists of list of floats to be sampled from when resetting environment.
-            "relaxation_ops": [sigmam(),sigmaz()] #relaxation operator lists for T1 and T2, respectively
+#            "relaxation_rates_list": [[0.01,0.02],[0.05, 0.07]], # relaxation lists of list of floats to be sampled from when resetting environment.
+#            "relaxation_ops": [sigmam(),sigmaz()] #relaxation operator lists for T1 and T2, respectively
+            "relaxation_rates_list": [[0.01]], # relaxation lists of list of floats to be sampled from when resetting environment.
+            "relaxation_ops": [sigmam()], #relaxation operator lists for T1 and T2, respectively
+#            "observation_space_size": 35, # 2*16 = (complex number)*(density matrix elements = 4)^2, + 1 for fidelity + 2 for relaxation rate
+            "observation_space_size": 35 # 2*16 = (complex number)*(density matrix elements = 4)^2, + 1 for fidelity + 1 for relaxation rate + 1 for detuning
         }
 
     def __init__(self, env_config):
@@ -160,7 +163,9 @@ class GateSynthEnvRLlibHaarNoisy(gym.Env):
         # self.action_space = gym.spaces.Box(low=np.array([-1, -1, -1]), high=np.array([1, 1, 1])) # for detuning included control
         self.action_space = gym.spaces.Box(low=np.array([-1, -1]), high=np.array([1, 1]))
 #        self.delta = [env_config["delta"]]  # detuning
-        self.delta = [0, 0.01, 0.02]  # detuning
+        self.delta = env_config["delta"]  # detuning
+        self.detuning = 0
+        self.detuning_update()
         self.U_target = self.unitary_to_superoperator(env_config["U_target"])
         self.U_initial = self.unitary_to_superoperator(env_config["U_initial"])
         self.num_Haar_basis = env_config["num_Haar_basis"]
@@ -182,6 +187,14 @@ class GateSynthEnvRLlibHaarNoisy(gym.Env):
         self.gamma_magnitude_max = 1.8 * np.pi / self.final_time / self.steps_per_Haar
         self.transition_history = []
 
+    def detuning_update(self):
+        # Random detuning selection
+        if len(self.delta)==1:
+            self.detuning = self.delta[0]
+        else:
+            self.detuning = random.sample(self.delta,k=1)[0]
+        
+
     def unitary_to_superoperator(self, U):
         return (spre(Qobj(U)) * spost(Qobj(U))).data.toarray()
 
@@ -195,7 +208,8 @@ class GateSynthEnvRLlibHaarNoisy(gym.Env):
         return sampled_rate_list
             
     def get_observation(self):
-        return np.append([self.compute_fidelity()]+self.relaxation_rate, self.unitary_to_observation(self.U))
+        normalizedDetuning = [(self.detuning - min(self.delta))/(max(self.delta)-min(self.delta))]
+        return np.append([self.compute_fidelity()]+self.relaxation_rate+normalizedDetuning, self.unitary_to_observation(self.U))
     
     def compute_fidelity(self):
         env_config = GateSynthEnvRLlibHaarNoisy.get_default_env_config()
@@ -220,6 +234,8 @@ class GateSynthEnvRLlibHaarNoisy(gym.Env):
         self.U = self.U_initial.copy()
         self.prev_fidelity = 0
         self.relaxation_rate = self.get_relaxation_rate()
+        self.detuning = 0
+        self.detuning_update()
         starting_observeration = self.get_observation()
         info = {}
         return starting_observeration, info
@@ -239,14 +255,8 @@ class GateSynthEnvRLlibHaarNoisy(gym.Env):
         for ii in range(len(self.relaxation_ops)):
             jump_ops.append(np.sqrt(self.relaxation_rate[ii]) * self.relaxation_ops[ii])
 
-        # Random detuning selection
-        if len(self.delta)==1:
-            detuning = self.delta[0]
-        else:
-            detuning = random.sample(self.delta,k=1)[0]
-
         # Hamiltonian with controls
-        H = self.hamiltonian(detuning, alpha, gamma_magnitude, gamma_phase)
+        H = self.hamiltonian(self.detuning, alpha, gamma_magnitude, gamma_phase)
         self.H_array.append(H)  # Array of Hs at each Haar wavelet
 
         # H_tot for adding Hs at each time bins
