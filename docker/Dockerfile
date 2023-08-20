@@ -1,10 +1,11 @@
 #FROM nvidia/cuda:12.1.1-cudnn8-runtime-ubuntu22.04
-FROM nvidia/cuda:11.8.0-cudnn8-runtime-ubuntu22.04
+#FROM nvidia/cuda:11.8.0-cudnn8-runtime-ubuntu22.04
+FROM ubuntu:22.04
 
 ARG USER_ID
 ARG GROUP_ID
 
-RUN addgroup --gid $GROUP_ID user
+RUN addgroup --gid $GROUP_ID user || true
 RUN adduser --disabled-password --gecos '' --uid $USER_ID --gid $GROUP_ID user
 RUN chmod -R 777 /home
 
