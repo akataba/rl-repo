@@ -209,7 +209,7 @@ class GateSynthEnvRLlibHaarNoisy(gym.Env):
             
     def get_observation(self):
         normalizedDetuning = [(self.detuning - min(self.delta)+1E-15)/(max(self.delta)-min(self.delta)+1E-15)]
-        return np.append([self.compute_fidelity()]+self.relaxation_rate/6283185+normalizedDetuning, self.unitary_to_observation(self.U)) #6283185 assuming 500 nanosecond relaxation is max
+        return np.append([self.compute_fidelity()]+[x//6283185 for x in self.relaxation_rate]+normalizedDetuning, self.unitary_to_observation(self.U)) #6283185 assuming 500 nanosecond relaxation is max
     
     def compute_fidelity(self):
         env_config = GateSynthEnvRLlibHaarNoisy.get_default_env_config()
