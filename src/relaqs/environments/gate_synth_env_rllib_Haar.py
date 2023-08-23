@@ -143,7 +143,7 @@ class GateSynthEnvRLlibHaarNoisy(gym.Env):
             "action_space_size": 2,
             "U_initial": I,  # staring with I
             "U_target": X,  # target for X
-            "final_time": 0.3,
+            "final_time": 35.5556E-9,
             "num_Haar_basis": 3,  # number of Haar basis (need to update for odd combinations)
             "steps_per_Haar": 3,  # steps per Haar basis per episode
             "delta": [0],  # qubit detuning
@@ -151,7 +151,7 @@ class GateSynthEnvRLlibHaarNoisy(gym.Env):
             "verbose": True,
 #            "relaxation_rates_list": [[0.01,0.02],[0.05, 0.07]], # relaxation lists of list of floats to be sampled from when resetting environment.
 #            "relaxation_ops": [sigmam(),sigmaz()] #relaxation operator lists for T1 and T2, respectively
-            "relaxation_rates_list": [[0.01]], # relaxation lists of list of floats to be sampled from when resetting environment.
+            "relaxation_rates_list": [[314159]], # relaxation lists of list of floats to be sampled from when resetting environment. (10 usec)
             "relaxation_ops": [sigmam()], #relaxation operator lists for T1 and T2, respectively
 #            "observation_space_size": 35, # 2*16 = (complex number)*(density matrix elements = 4)^2, + 1 for fidelity + 2 for relaxation rate
             "observation_space_size": 2*16 + 1 + 1 + 1 # 2*16 = (complex number)*(density matrix elements = 4)^2, + 1 for fidelity + 1 for relaxation rate + 1 for detuning
@@ -209,7 +209,7 @@ class GateSynthEnvRLlibHaarNoisy(gym.Env):
             
     def get_observation(self):
         normalizedDetuning = [(self.detuning - min(self.delta)+1E-15)/(max(self.delta)-min(self.delta)+1E-15)]
-        return np.append([self.compute_fidelity()]+self.relaxation_rate+normalizedDetuning, self.unitary_to_observation(self.U))
+        return np.append([self.compute_fidelity()]+self.relaxation_rate/6283185+normalizedDetuning, self.unitary_to_observation(self.U)) #6283185 assuming 500 nanosecond relaxation is max
     
     def compute_fidelity(self):
         env_config = GateSynthEnvRLlibHaarNoisy.get_default_env_config()
