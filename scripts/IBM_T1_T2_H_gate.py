@@ -58,7 +58,7 @@ def run(n_training_iterations=1, save=True, plot=True):
         t1_list, t2_list = get_month_of_all_qubit_data(path_to_file)        #in seconds
         # ------------------------------------------------------------------------
 
-        env_config["relaxation_rates_list"] = [t1_list, t2_list] # using real T1 data
+        env_config["relaxation_rates_list"] = [np.reciprocal(t1_list).tolist(), np.reciprocal(t2_list).tolist()] # using real T1 data
         env_config["relaxation_ops"] = [sigmam(),sigmaz()]
         env_config["observation_space_size"] = 2*16 + 1 + 2 + 1 # 2*16 = (complex number)*(density matrix elements = 4)^2, + 1 for fidelity + 2 for relaxation rate + 1 for detuning
         alg_config.environment("my_env", env_config=env_config)
