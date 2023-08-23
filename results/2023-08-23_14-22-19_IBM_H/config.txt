@@ -1,0 +1,154 @@
+extra_python_environs_for_driver: {}
+extra_python_environs_for_worker: {}
+num_gpus: 0
+num_cpus_per_worker: 1
+num_gpus_per_worker: 0
+_fake_gpus: False
+num_learner_workers: 0
+num_gpus_per_learner_worker: 0
+num_cpus_per_learner_worker: 1
+local_gpu_idx: 0
+custom_resources_per_worker: {}
+placement_strategy: PACK
+eager_tracing: False
+eager_max_retraces: 20
+tf_session_args: {'intra_op_parallelism_threads': 2, 'inter_op_parallelism_threads': 2, 'gpu_options': {'allow_growth': True}, 'log_device_placement': False, 'device_count': {'CPU': 1}, 'allow_soft_placement': True}
+local_tf_session_args: {'intra_op_parallelism_threads': 8, 'inter_op_parallelism_threads': 8}
+env: my_env
+env_config: {'action_space_size': 2, 'U_initial': array([[1, 0],
+       [0, 1]]), 'U_target': array([[ 0.70710678,  0.70710678],
+       [ 0.70710678, -0.70710678]]), 'final_time': 3.55556e-08, 'num_Haar_basis': 1, 'steps_per_Haar': 2, 'delta': [0], 'save_data_every_step': 1, 'verbose': True, 'relaxation_rates_list': [[6203.103274513748, 10782.407478581968, 8597.204059163876, 27164.24426363728, 9343.300815601688, 9758.254486971442, 8814.395062876094, 11283.321531127733, 11986.737115515709, 7311.912811362205, 12966.90499349564, 15754.445336300545, 16401.392885602956, 8893.059150910754, 9207.602462507233, 13081.989489650861, 9543.241754365532, 13516.899549393389, 9143.018811847582, 8199.357667618318, 11102.41373060696, 10450.739698403766, 11891.715017006542, 9671.750164774845, 8793.126202373991, 10340.686558580406, 11006.19782826535, 16249.751657049852, 6247.591998220334, 6551.146288383726, 6786.751880997896, 12157.18156100032, 9750.00706342628, 6072.332361568291, 10378.494341291318, 14166.186949459512, 11185.927150593496, 12459.498699356083, 8570.000151943148, 13198.325283801358, 13020.104734672128, 8945.395773478709, 10781.974814900557, 6399.136860071552, 7198.96572212227, 11011.062608109347, 11284.790767964367, 11497.545816826976, 7934.624956087987, 12189.573235620395, 11011.062608109347, 11284.790767964367, 11497.545816826976, 7934.624956087987, 12189.573235620395, 8985.116025724621, 9586.810479157646, 10434.78426575394, 8379.588611361536, 10598.458363023117, 8139.719809791975, 10073.090451540946, 10565.9238828399, 8605.388639633136, 6962.5477179013515, 9764.585224420942, 9923.457579349559, 13088.862326684304, 10852.587889984934, 9866.965584008163, 13362.88886156762, 8941.365540969513, 9281.776570212438, 10903.662296445931, 9351.680136337178, 10586.978664614466, 9388.123724069279, 10595.129437544558, 12598.77637131739, 8342.790849734884, 12001.76441072817, 8893.419990666043, 10053.357993240634, 8284.347458514423, 8128.4839940526845, 8870.755456653655, 9917.189651057779, 21862.198922524236, 22298.165288591976, 9295.802107910282, 18495.204757885153, 7781.73991573256, 15089.131321200013, 18373.05961637075, 10222.529805625838, 22442.227290093768, 7124.047218271164, 14050.624728099929, 22101.048275367135, 8284.586010156254, 10241.98166292801, 9769.325673238749, 10450.098635062352, 9392.711095079238, 11379.764300353934, 10377.204373477383, 8957.362214688927, 10607.002942342353, 8453.720022070278, 9402.965949026424, 11589.751792685869, 9714.281046386572, 11842.900466428126, 11321.290661677098, 17985.671385765076, 11589.751792685869, 9714.281046386572, 11842.900466428126, 11321.290661677098, 17985.671385765076, 10291.21548150479, 7291.124807644474, 9311.35839770523, 23332.610400108995, 11128.11902317186, 14790.50557256559, 7299.73591690616, 12310.988503503422, 9475.414028197492, 16414.013174720647, 11995.995682350145, 7337.502456559183, 12981.635481193436, 29307.008695712244, 8654.83968977289], [6949.430399564103, 8720.359178763592, 13701.745032364297, 13742.805949677817, 7686.433306915324, 6655.0320566644095, 7063.574268811658, 20688.56814917994, 7457.571834877711, 6133.704181057146, 10396.523536016786, 11583.579967420254, 17873.490293514442, 7728.547906708215, 8828.106090326975, 12226.499590027526, 7285.022395254675, 14527.853989773268, 7689.062723580897, 7805.394586559514, 18637.68773278611, 8037.14570675883, 17242.96023373129, 7560.935705712868, 33763.982048768805, 6993.666357606267, 8429.050115076823, 18765.12631063403, 4945.542353698639, 6425.137479703636, 8738.22164188708, 8233.913686872016, 17445.349781547702, 5885.650294671179, 8915.500005512655, 7129.70457172351, 9352.724440033882, 17152.672940588684, 6060.995525923312, 5587.162881910557, 7970.5312681470205, 8069.238951215967, 16949.28753939842, 8561.038156612787, 8320.300442979315, 8047.800494012426, 7493.809727055479, 15191.692344357612, 7209.212186628112, 6668.491860778173, 8047.800494012426, 7493.809727055479, 15191.692344357612, 7209.212186628112, 6668.491860778173, 7633.126822190063, 7772.754781569178, 14269.640510687263, 7541.19340693625, 6648.125117655782, 5984.901104875635, 6790.688375722664, 16227.028965987314, 5658.915381021717, 6034.858994810444, 7406.52033102627, 7432.411473090879, 15739.44854125631, 7523.364060004458, 25481.26403929122, 7952.153944577742, 9012.645766430827, 17204.52165677747, 8138.440238599731, 6911.182630766179, 7920.441162130232, 8364.205986350591, 16252.430314176645, 8739.170697699585, 6571.727445486483, 7739.329810330932, 9779.505991998352, 15208.158625572538, 7983.553966283868, 5447.495029487923, 8149.786029519825, 6725.721366133237, 17711.219470585747, 12979.324517687812, 6674.992618849482, 7516.761975919996, 6839.654281440833, 16271.41939892565, 12866.981176925425, 6458.4130444435, 12338.786038460172, 7862.981628175862, 27045.44466320826, 12836.04464748508, 8970.243787015916, 8020.340706097527, 8004.733012640338, 15066.815066171579, 8416.652353083897, 6076.825281180462, 7665.007421426646, 8095.181820378667, 18539.849234899862, 8228.724387548542, 8449.260597594797, 7724.047992906082, 9370.588491969278, 16177.646256543534, 7075.53528622111, 9560.764176987655, 7724.047992906082, 9370.588491969278, 16177.646256543534, 7075.53528622111, 9560.764176987655, 7080.302190492154, 7014.584608324042, 20673.10066019459, 7853.533194231857, 6664.060227468321, 8366.32673462678, 7325.252585162559, 19034.29781635896, 7874.264115130642, 10757.031264759951, 8550.883431856006, 8051.8343166403165, 18984.727732102732, 10437.00112716475, 7649.685042821093]], 'relaxation_ops': [Quantum object: dims = [[2], [2]], shape = (2, 2), type = oper, isherm = False
+Qobj data =
+[[0. 0.]
+ [1. 0.]], Quantum object: dims = [[2], [2]], shape = (2, 2), type = oper, isherm = True
+Qobj data =
+[[ 1.  0.]
+ [ 0. -1.]]], 'observation_space_size': 36}
+observation_space: None
+action_space: None
+env_task_fn: None
+render_env: False
+clip_rewards: None
+normalize_actions: True
+clip_actions: False
+disable_env_checking: False
+is_atari: False
+auto_wrap_old_gym_envs: True
+num_envs_per_worker: 1
+sample_collector: <class 'ray.rllib.evaluation.collectors.simple_list_collector.SimpleListCollector'>
+sample_async: False
+enable_connectors: True
+rollout_fragment_length: auto
+batch_mode: complete_episodes
+remote_worker_envs: False
+remote_env_batch_wait_ms: 0
+validate_workers_after_construction: True
+preprocessor_pref: deepmind
+observation_filter: NoFilter
+synchronize_filters: True
+compress_observations: False
+enable_tf1_exec_eagerly: False
+sampler_perf_stats_ema_coef: None
+gamma: 0.99
+lr: 0.0005
+train_batch_size: 2
+model: {'_disable_preprocessor_api': False, '_disable_action_flattening': False, 'fcnet_hiddens': [256, 256], 'fcnet_activation': 'tanh', 'conv_filters': None, 'conv_activation': 'relu', 'post_fcnet_hiddens': [], 'post_fcnet_activation': 'relu', 'free_log_std': False, 'no_final_linear': False, 'vf_share_layers': True, 'use_lstm': False, 'max_seq_len': 20, 'lstm_cell_size': 256, 'lstm_use_prev_action': False, 'lstm_use_prev_reward': False, '_time_major': False, 'use_attention': False, 'attention_num_transformer_units': 1, 'attention_dim': 64, 'attention_num_heads': 1, 'attention_head_dim': 32, 'attention_memory_inference': 50, 'attention_memory_training': 50, 'attention_position_wise_mlp_dim': 32, 'attention_init_gru_gate_bias': 2.0, 'attention_use_n_prev_actions': 0, 'attention_use_n_prev_rewards': 0, 'framestack': True, 'dim': 84, 'grayscale': False, 'zero_mean': True, 'custom_model': None, 'custom_model_config': {}, 'custom_action_dist': None, 'custom_preprocessor': None, 'encoder_latent_dim': None, 'lstm_use_prev_action_reward': -1, '_use_default_native_models': -1}
+optimizer: {}
+max_requests_in_flight_per_sampler_worker: 2
+learner_class: None
+_enable_learner_api: False
+_learner_hps: LearnerHPs()
+explore: True
+exploration_config: {'type': 'OrnsteinUhlenbeckNoise', 'random_timesteps': 1000, 'ou_base_scale': 0.1, 'ou_theta': 0.15, 'ou_sigma': 0.2, 'initial_scale': 1.0, 'final_scale': 0.02, 'scale_timesteps': 10000}
+policy_states_are_swappable: False
+input_config: {}
+actions_in_input_normalized: False
+postprocess_inputs: False
+shuffle_buffer_size: 0
+output: None
+output_config: {}
+output_compress_columns: ['obs', 'new_obs']
+output_max_file_size: 67108864
+offline_sampling: False
+evaluation_interval: None
+evaluation_duration: 10
+evaluation_duration_unit: episodes
+evaluation_sample_timeout_s: 180.0
+evaluation_parallel_to_training: False
+evaluation_config: {'explore': False}
+off_policy_estimation_methods: {}
+ope_split_batch_by_episode: True
+evaluation_num_workers: 0
+always_attach_evaluation_results: False
+enable_async_evaluation: False
+in_evaluation: False
+sync_filters_on_rollout_workers_timeout_s: 60.0
+keep_per_episode_custom_metrics: False
+metrics_episode_collection_timeout_s: 60.0
+metrics_num_episodes_for_smoothing: 100
+min_time_s_per_iteration: None
+min_train_timesteps_per_iteration: 0
+min_sample_timesteps_per_iteration: 1000
+export_native_model_files: False
+checkpoint_trainable_policies_only: False
+logger_creator: None
+logger_config: None
+log_level: WARN
+log_sys_usage: True
+fake_sampler: False
+seed: None
+worker_cls: None
+ignore_worker_failures: False
+recreate_failed_workers: False
+max_num_worker_restarts: 1000
+delay_between_worker_restarts_s: 60.0
+restart_failed_sub_environments: False
+num_consecutive_worker_failures_tolerance: 100
+worker_health_probe_timeout_s: 60
+worker_restore_timeout_s: 1800
+rl_module_spec: None
+_enable_rl_module_api: False
+_validate_exploration_conf_and_rl_modules: True
+_tf_policy_handles_more_than_one_loss: False
+_disable_preprocessor_api: False
+_disable_action_flattening: False
+_disable_execution_plan_api: True
+simple_optimizer: False
+replay_sequence_length: None
+horizon: -1
+soft_horizon: -1
+no_done_at_end: -1
+target_network_update_freq: 0
+replay_buffer_config: {'type': <class 'ray.rllib.utils.replay_buffers.multi_agent_prioritized_replay_buffer.MultiAgentPrioritizedReplayBuffer'>, 'capacity': 50000, 'prioritized_replay': -1, 'prioritized_replay_alpha': 0.6, 'prioritized_replay_beta': 0.4, 'prioritized_replay_eps': 1e-06, 'worker_side_prioritization': False}
+num_steps_sampled_before_learning_starts: 1000
+store_buffer_in_checkpoints: False
+lr_schedule: None
+adam_epsilon: 1e-08
+grad_clip: None
+tau: 0.002
+twin_q: False
+policy_delay: 1
+smooth_target_policy: False
+target_noise: 0.2
+target_noise_clip: 0.5
+use_state_preprocessor: False
+actor_hiddens: [30, 30, 30]
+actor_hidden_activation: relu
+critic_hiddens: [400, 300]
+critic_hidden_activation: relu
+n_step: 1
+training_intensity: None
+critic_lr: 0.0005
+actor_lr: 4e-05
+use_huber: False
+huber_threshold: 1.0
+l2_reg: 1e-06
+worker_side_prioritization: -1
+input: sampler
+multiagent: {'policies': {'default_policy': (None, None, None, None)}, 'policy_mapping_fn': <function AlgorithmConfig.DEFAULT_POLICY_MAPPING_FN at 0x00000209B6DE53F0>, 'policies_to_train': None, 'policy_map_capacity': 100, 'policy_map_cache': -1, 'count_steps_by': 'env_steps', 'observation_fn': None}
+callbacks: <class 'ray.rllib.algorithms.callbacks.DefaultCallbacks'>
+create_env_on_driver: False
+custom_eval_function: None
+framework: torch
+num_cpus_for_driver: 1
+num_workers: 0

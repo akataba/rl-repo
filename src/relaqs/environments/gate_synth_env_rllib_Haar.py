@@ -144,8 +144,8 @@ class GateSynthEnvRLlibHaarNoisy(gym.Env):
             "U_initial": I,  # staring with I
             "U_target": X,  # target for X
             "final_time": 35.5556E-9,
-            "num_Haar_basis": 3,  # number of Haar basis (need to update for odd combinations)
-            "steps_per_Haar": 3,  # steps per Haar basis per episode
+            "num_Haar_basis": 1,  # number of Haar basis (need to update for odd combinations)
+            "steps_per_Haar": 2,  # steps per Haar basis per episode
             "delta": [0],  # qubit detuning
             "save_data_every_step": 1,
             "verbose": True,

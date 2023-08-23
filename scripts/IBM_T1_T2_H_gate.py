@@ -105,7 +105,7 @@ def run(n_training_iterations=1, save=True, plot=True):
         ray.shutdown()
 
 if __name__ == "__main__":
-    n_training_iterations = 50
+    n_training_iterations = 100
     save = True
     plot = True
     run(n_training_iterations, save, plot)
