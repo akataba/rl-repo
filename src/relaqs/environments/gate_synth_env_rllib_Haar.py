@@ -154,7 +154,7 @@ class GateSynthEnvRLlibHaarNoisy(gym.Env):
             "relaxation_rates_list": [[0.01]], # relaxation lists of list of floats to be sampled from when resetting environment.
             "relaxation_ops": [sigmam()], #relaxation operator lists for T1 and T2, respectively
 #            "observation_space_size": 35, # 2*16 = (complex number)*(density matrix elements = 4)^2, + 1 for fidelity + 2 for relaxation rate
-            "observation_space_size": 35 # 2*16 = (complex number)*(density matrix elements = 4)^2, + 1 for fidelity + 1 for relaxation rate + 1 for detuning
+            "observation_space_size": 2*16 + 1 + 1 + 1 # 2*16 = (complex number)*(density matrix elements = 4)^2, + 1 for fidelity + 1 for relaxation rate + 1 for detuning
         }
 
     def __init__(self, env_config):
@@ -208,7 +208,7 @@ class GateSynthEnvRLlibHaarNoisy(gym.Env):
         return sampled_rate_list
             
     def get_observation(self):
-        normalizedDetuning = [(self.detuning - min(self.delta))/(max(self.delta)-min(self.delta))]
+        normalizedDetuning = [(self.detuning - min(self.delta)+1E-15)/(max(self.delta)-min(self.delta)+1E-15)]
         return np.append([self.compute_fidelity()]+self.relaxation_rate+normalizedDetuning, self.unitary_to_observation(self.U))
     
     def compute_fidelity(self):
