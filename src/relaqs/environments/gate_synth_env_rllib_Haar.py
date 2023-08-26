@@ -18,14 +18,16 @@ class GateSynthEnvRLlibHaar(gym.Env):
     @classmethod
     def get_default_env_config(cls):
         return {
-            "observation_space_size": 8,
-            "action_space_size": 3,
+            "action_space_size": 2,
             "U_initial": I,
             "U_target": X,
-            "final_time": 0.3,
-            "num_Haar_basis": 5,
-            "delta": 0,
+            "final_time": 35.5556E-9, # in seconds
+            "num_Haar_basis": 1,
+            "steps_per_Haar": 2,  # steps per Haar basis per episode
+            "delta": [0],
+            "save_data_every_step": 1,
             "verbose": True
+            "observation_space_size": 8,
         }
     def __init__(self, env_config):
         self.final_time = env_config["final_time"]  # Final time for the gates
@@ -143,7 +145,7 @@ class GateSynthEnvRLlibHaarNoisy(gym.Env):
             "action_space_size": 2,
             "U_initial": I,  # staring with I
             "U_target": X,  # target for X
-            "final_time": 35.5556E-9,
+            "final_time": 35.5556E-9, # in seconds
             "num_Haar_basis": 1,  # number of Haar basis (need to update for odd combinations)
             "steps_per_Haar": 2,  # steps per Haar basis per episode
             "delta": [0],  # qubit detuning
