@@ -24,7 +24,7 @@ class GateSynthEnvRLlibHaar(gym.Env):
             "final_time": 35.5556E-9, # in seconds
             "num_Haar_basis": 1,
             "steps_per_Haar": 2,  # steps per Haar basis per episode
-            "delta": [0],
+            "delta": 0,
             "save_data_every_step": 1,
             "verbose": True,
             "observation_space_size": 8,
@@ -54,7 +54,7 @@ class GateSynthEnvRLlibHaar(gym.Env):
     def unitary_to_observation(self, U):
         return (
             np.array(
-                [(abs(x), cmath.phase(x) / np.pi) for x in U.flatten()],
+                [(abs(x), (cmath.phase(x) / np.pi + 1) / 2) for x in U.flatten()], 
                 dtype=np.float64,
             )
             .squeeze()
@@ -69,7 +69,7 @@ class GateSynthEnvRLlibHaar(gym.Env):
         self.state = self.unitary_to_observation(self.U_initial)
         self.U = self.U_initial
         starting_observeration = self.unitary_to_observation(self.U_initial)
-        self.current_Haar_num = 0
+        self.current_Haar_num = 1
         self.current_step_per_Haar = 1
         self.H_array = []
         self.H_tot = []
@@ -121,16 +121,14 @@ class GateSynthEnvRLlibHaar(gym.Env):
         if self.verbose is True:
             print(
                 "Step: ", f"{self.current_step_per_Haar}",
-                "Relaxation rates:")
-            for rate in self.relaxation_rate:
-                print(f"{rate:7.6f}")
-            print(
                 "F: ", f"{fidelity:7.3f}",
                 "R: ", f"{reward:7.3f}",
                 "amp: " f"{action[0]:7.3f}",
                 "phase: " f"{action[1]:7.3f}",
             )
 
+        self.transition_history.append([fidelity, reward, *action, *self.U.flatten()])
+        
         # Determine if episode is over
         truncated = False
         terminated = False
