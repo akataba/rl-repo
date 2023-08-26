@@ -26,31 +26,50 @@ class GateSynthEnvRLlibHaar(gym.Env):
             "steps_per_Haar": 2,  # steps per Haar basis per episode
             "delta": [0],
             "save_data_every_step": 1,
-            "verbose": True
+            "verbose": True,
             "observation_space_size": 8,
         }
     def __init__(self, env_config):
         self.final_time = env_config["final_time"]  # Final time for the gates
         self.observation_space = gym.spaces.Box(low=-1, high=1, shape=(env_config["observation_space_size"],))
-        self.action_space = gym.spaces.Box(low=np.array([-0.1, 0, -np.pi]), high=np.array([0.1, 10, np.pi]))
+        self.action_space = gym.spaces.Box(low=np.array([-1, -1]), high=np.array([1, 1]))
         self.delta = env_config["delta"]  # detuning
         self.U_target = env_config["U_target"]
         self.U_initial = env_config["U_initial"] # future todo, can make random initial state
         self.U = env_config["U_initial"]
         self.num_Haar_basis = env_config["num_Haar_basis"]
+        self.steps_per_Haar = env_config["steps_per_Haar"]
         self.verbose = env_config["verbose"]
         self.current_Haar_num = 0
+        self.current_step_per_Haar = 1
         self.H_array = []
         self.H_tot = []
         self.U_array = []
         self.state = self.unitary_to_observation(self.U)
         self.prev_fidelity = 0
+        self.gamma_phase_max = 1.1675 * np.pi
+        self.gamma_magnitude_max = 1.8 * np.pi / self.final_time / self.steps_per_Haar
         self.transition_history = []
+
+    def unitary_to_observation(self, U):
+        return (
+            np.array(
+                [(abs(x), cmath.phase(x) / np.pi) for x in U.flatten()],
+                dtype=np.float64,
+            )
+            .squeeze()
+            .reshape(-1)
+        )
+
+    def hamiltonian(self, delta, alpha, gamma_magnitude, gamma_phase):
+        """Alpha and gamma are complex. This function could be made a callable class attribute."""
+        return (delta + alpha) * Z + gamma_magnitude * (np.cos(gamma_phase) * X + np.sin(gamma_phase) * Y)
 
     def reset(self, *, seed=None, options=None):
         self.U = self.U_initial
         starting_observeration = self.unitary_to_observation(self.U_initial)
         self.current_Haar_num = 0
+        self.current_step_per_Haar = 1
         self.H_array = []
         self.H_tot = []
         self.U_array = []
@@ -121,20 +140,6 @@ class GateSynthEnvRLlibHaar(gym.Env):
             terminated = False
 
         return (self.state, reward, terminated, truncated, info)
-
-    def unitary_to_observation(self, U):
-        return (
-            np.array(
-                [(abs(x), cmath.phase(x) / np.pi) for x in U.flatten()],
-                dtype=np.float64,
-            )
-            .squeeze()
-            .reshape(-1)
-        )
-
-    def hamiltonian(self, delta, alpha, gamma_magnitude, gamma_phase):
-        """Alpha and gamma are complex. This function could be made a callable class attribute."""
-        return (delta + alpha) * Z + gamma_magnitude * (np.cos(gamma_phase) * X + np.sin(gamma_phase) * Y)
 
 
 class GateSynthEnvRLlibHaarNoisy(gym.Env):
@@ -219,7 +224,14 @@ class GateSynthEnvRLlibHaarNoisy(gym.Env):
         return float(np.abs(np.trace(U_target_dagger @ self.U))) / (self.U.shape[0])
 
     def unitary_to_observation(self, U):
-        return np.array([(abs(x), (cmath.phase(x) / np.pi + 1) / 2) for x in U.flatten()], dtype=np.float64,).squeeze().reshape(-1)  # cmath phase gives -pi to pi
+        return (
+            np.array(
+                [(abs(x), cmath.phase(x) / np.pi) for x in U.flatten()], 
+                dtype=np.float64,
+                )
+            .squeeze()
+            .reshape(-1)  # cmath phase gives -pi to pi
+        )
 
     def hamiltonian(self, delta, alpha, gamma_magnitude, gamma_phase):
         """Alpha and gamma are complex. This function could be made a callable class attribute."""
