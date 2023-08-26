@@ -71,7 +71,7 @@ def run(n_training_iterations=1, save=True, plot=True):
         # ---------------------> Save Results <-------------------------
         if save is True:
             env = alg.workers.local_worker().env
-            sr = SaveResults(env, alg, results=list_of_results, save_path = RESULTS_DIR + "QCE2023/"+"01_noiseless_X" + datetime.datetime.now().strftime("%Y-%m-%d_%H-%M-%S/"))
+            sr = SaveResults(env, alg, results=list_of_results, save_path = RESULTS_DIR + "QCE2023/"+"01_noiseless_X__" + datetime.datetime.now().strftime("%Y-%m-%d_%H-%M-%S/"))
             save_dir = sr.save_results()
             print("Results saved to:", save_dir)
         # --------------------------------------------------------------
