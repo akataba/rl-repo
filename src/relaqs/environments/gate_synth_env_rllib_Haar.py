@@ -66,6 +66,7 @@ class GateSynthEnvRLlibHaar(gym.Env):
         return (delta + alpha) * Z + gamma_magnitude * (np.cos(gamma_phase) * X + np.sin(gamma_phase) * Y)
 
     def reset(self, *, seed=None, options=None):
+        self.state = self.unitary_to_observation(self.U_initial)
         self.U = self.U_initial
         starting_observeration = self.unitary_to_observation(self.U_initial)
         self.current_Haar_num = 0
@@ -78,17 +79,14 @@ class GateSynthEnvRLlibHaar(gym.Env):
         return starting_observeration, info
 
     def step(self, action):
-        truncated = False
-        info = {}
+        num_time_bins = 2 ** (self.current_Haar_num - 1) # Haar number decides the number of time bins
 
-        self.current_Haar_num += 1
-        num_time_bins = 2 ** (self.current_Haar_num - 1)
-        self.U = self.U_initial
+        # action space setting
+        alpha = 0  # in current simulation we do not adjust the detuning
 
-        # Get actions
-        alpha = action[0]
-        gamma_magnitude = action[1]
-        gamma_phase = action[2]
+        # gamma is the complex amplitude of the control field
+        gamma_magnitude = self.gamma_magnitude_max / 2 * (action[0] + 1)
+        gamma_phase = self.gamma_phase_max * action[1]
 
         H = self.hamiltonian(self.delta, alpha, gamma_magnitude, gamma_phase)
         self.H_array.append(H)
@@ -97,48 +95,59 @@ class GateSynthEnvRLlibHaar(gym.Env):
 
         for ii, H_elem in enumerate(self.H_array):
             for jj in range(0, num_time_bins):
-                Haar_num = self.current_Haar_num - ii
+                Haar_num = self.current_Haar_num - np.floor(ii / self.steps_per_Haar) # Haar_num: label which Haar wavelet, current_Haar_num: order in the array
                 factor = (-1) ** np.floor(jj / (2 ** (Haar_num - 1)))
                 if ii > 0:
                     self.H_tot[jj] += factor * H_elem
                 else:
                     self.H_tot.append(factor * H_elem)
 
+        self.U = self.U_initial
+
         for jj in range(0, num_time_bins):
             Ut = la.expm(-1j * self.final_time / num_time_bins * self.H_tot[jj])
             self.U = Ut @ self.U
 
-        self.state = self.unitary_to_observation(self.U)
         self.U_array.append(self.U)
 
         # Get reward (fidelity)
         fidelity = float(np.abs(np.trace(self.U_target.conjugate().transpose() @ self.U))) / (self.U.shape[0])
-        reward = -(np.log10(1.0 - fidelity) - np.log10(1.0 - self.prev_fidelity))
+        reward = (-3 * np.log10(1.0 - fidelity) + np.log10(1.0 - self.prev_fidelity)) + (3 * fidelity - self.prev_fidelity)
         self.prev_fidelity = fidelity
+
+        self.state = self.unitary_to_observation(self.U)
 
         # printing on the command line for quick viewing
         if self.verbose is True:
             print(
-                "Step: ", f"{self.current_Haar_num}",
+                "Step: ", f"{self.current_step_per_Haar}",
+                "Relaxation rates:")
+            for rate in self.relaxation_rate:
+                print(f"{rate:7.6f}")
+            print(
                 "F: ", f"{fidelity:7.3f}",
                 "R: ", f"{reward:7.3f}",
-                "alpha: " f"{action[0]:7.3f}",
-                "gamma mag: " f"{action[0]:7.3f}",
-                "gamma phase: " f"{action[1]:7.3f}",
+                "amp: " f"{action[0]:7.3f}",
+                "phase: " f"{action[1]:7.3f}",
             )
-
-        self.transition_history.append([fidelity, reward, *action, *self.U.flatten()])
 
         # Determine if episode is over
         truncated = False
         terminated = False
-        if self.current_Haar_num >= self.num_Haar_basis:
-            truncated = True
-        elif fidelity >= 1:
+        if fidelity >= 1:
+            truncated = True  # truncated when target fidelity reached
+        elif (self.current_Haar_num >= self.num_Haar_basis) and (self.current_step_per_Haar >= self.steps_per_Haar):  # terminate when all Haar is tested
             terminated = True
         else:
             terminated = False
 
+        if (self.current_step_per_Haar == self.steps_per_Haar):  # For each Haar basis, if all trial steps ends, them move to next haar wavelet
+            self.current_Haar_num += 1
+            self.current_step_per_Haar = 1
+        else:
+            self.current_step_per_Haar += 1
+
+        info = {}
         return (self.state, reward, terminated, truncated, info)
 
 
