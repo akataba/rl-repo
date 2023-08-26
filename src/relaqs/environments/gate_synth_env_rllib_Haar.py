@@ -235,7 +235,7 @@ class GateSynthEnvRLlibHaarNoisy(gym.Env):
     def unitary_to_observation(self, U):
         return (
             np.array(
-                [(abs(x), cmath.phase(x) / np.pi) for x in U.flatten()], 
+                [(abs(x), (cmath.phase(x) / np.pi + 1) / 2) for x in U.flatten()], 
                 dtype=np.float64,
                 )
             .squeeze()
