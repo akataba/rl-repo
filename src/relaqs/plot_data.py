@@ -6,7 +6,7 @@ import json
 from itertools import chain
 import matplotlib as mpl
 
-def plot_results(save_dir, episode_length, figure_title="Noisy Environment"):
+def plot_results(save_dir, episode_length, ax4, ax5, figure_title="Noisy Environment"):
     with open(save_dir + "train_results_data.json") as file:  # q values and gradient vector norms
         results = json.load(file)
 
@@ -113,7 +113,7 @@ def plot_data(save_dir, episode_length, figure_title='Noisy Environment'):
     ax3.set_xlabel("Episodes")
     
     try:
-        plot_results(save_dir, episode_length, figure_title)
+        plot_results(save_dir, episode_length, ax4, ax5, figure_title)
     except:
         pass
 
