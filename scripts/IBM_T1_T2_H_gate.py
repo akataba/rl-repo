@@ -81,16 +81,17 @@ def run(n_training_iterations=1, save=True, plot=True):
         alg = alg_config.build()
         inject_logging(alg, save_grad_to_file)
         # ---------------------------------------------------------------------
-
+        list_of_results = []
         # ---------------------> Train Agent <-------------------------
         for _ in range(n_training_iterations):
             result = alg.train()
+            list_of_results.append(result['hist_stats'])
         # -------------------------------------------------------------
 
         # ---------------------> Save Results <-------------------------
         if save is True:
             env = alg.workers.local_worker().env
-            sr = SaveResults(env, alg)
+            sr = SaveResults(env, alg, results=list_of_results)
             save_dir = sr.save_results()
             print("Results saved to:", save_dir)
         # --------------------------------------------------------------
