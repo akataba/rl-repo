@@ -124,10 +124,5 @@ def plot_data(save_dir, episode_length, figure_title='Noisy Environment'):
     ax3.set_title("c)", loc='left', fontsize='medium')
     ax3.set_xlabel("Episodes")
     
-    try:
-        plot_results(save_dir, episode_length, ax4, ax5, figure_title)
-    except:
-        pass
-
     plt.tight_layout()
     plt.savefig(save_dir + "plot.png")
