@@ -6,7 +6,7 @@ import json
 from itertools import chain
 import matplotlib as mpl
 
-def plot_results(save_dir, episode_length, ax4, ax5, figure_title="Noisy Environment"):
+def plot_results(save_dir, figure_title="Noisy Environment"):
     with open(save_dir + "train_results_data.json") as file:  # q values and gradient vector norms
         results = json.load(file)
 
@@ -18,6 +18,7 @@ def plot_results(save_dir, episode_length, ax4, ax5, figure_title="Noisy Environ
     average_grad_norm = list(chain.from_iterable(average_grad_norm))
 
     # q values
+    rolling_average_window = 100
     q_series = pd.Series(q_values)
     q_windows = q_series.rolling(rolling_average_window)
     q_moving_averages = q_windows.mean().to_list()
@@ -28,17 +29,28 @@ def plot_results(save_dir, episode_length, ax4, ax5, figure_title="Noisy Environ
     grad_norm_moving_averages = grad_norm_windows.mean().to_list()
 
     # -------------------->  q values <--------------------------
-    ax4.plot(q_values, color="m")
-    ax4.plot(q_moving_averages, color="k")
-    ax4.set_title("Q Values")
-    ax4.set_title("d)", loc='left', fontsize='medium')
-    ax4.set_xlabel("Episodes")
+    # -------------------------------> Plotting <-------------------------------------
+    rcParams['font.family'] = 'serif'
+    mpl.style.use('seaborn-v0_8')
 
-    ax5.plot(average_grad_norm, color="slateblue")
-    ax5.plot(grad_norm_moving_averages, color="k")
-    ax5.set_title("Average Gradient Norms")
-    ax5.set_title("e)", loc='left', fontsize='medium')
-    ax5.set_xlabel("Episodes")
+    fig,(ax1, ax2,) = plt.subplots(1, 2) 
+    fig.suptitle(figure_title)
+    fig.set_size_inches(10, 5)
+
+    ax1.plot(q_values, color="m")
+    ax1.plot(q_moving_averages, color="k")
+    ax1.set_title("Q Values")
+    ax1.set_title("a)", loc='left', fontsize='medium')
+    ax1.set_xlabel("Episodes")
+
+    ax2.plot(average_grad_norm, color="slateblue")
+    ax2.plot(grad_norm_moving_averages, color="k")
+    ax2.set_title("Average Gradient Norms")
+    ax2.set_title("b)", loc='left', fontsize='medium')
+    ax2.set_xlabel("Episodes")
+    plt.tight_layout()
+    plt.savefig(save_dir + "gradient_and_q_values.png")
+
 
 def plot_data(save_dir, episode_length, figure_title='Noisy Environment'): 
     """ Currently works for constant episode_length """
@@ -85,7 +97,7 @@ def plot_data(save_dir, episode_length, figure_title='Noisy Environment'):
     rcParams['font.family'] = 'serif'
     mpl.style.use('seaborn-v0_8')
 
-    fig,((ax1, ax2, ax3), (ax4, ax5, _)) = plt.subplots(2, 3) 
+    fig,(ax1, ax2, ax3) = plt.subplots(1, 3) 
     fig.suptitle(figure_title)
     fig.set_size_inches(10, 5)
 
@@ -112,10 +124,5 @@ def plot_data(save_dir, episode_length, figure_title='Noisy Environment'):
     ax3.set_title("c)", loc='left', fontsize='medium')
     ax3.set_xlabel("Episodes")
     
-    try:
-        plot_results(save_dir, episode_length, ax4, ax5, figure_title)
-    except:
-        pass
-
     plt.tight_layout()
     plt.savefig(save_dir + "plot.png")
