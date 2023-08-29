@@ -18,7 +18,7 @@ class GateSynthEnvRLlibHaar(gym.Env):
     @classmethod
     def get_default_env_config(cls):
         return {
-            "action_space_size": 2,
+            "action_space_size": 3,
             "U_initial": I,
             "U_target": X,
             "final_time": 35.5556E-9, # in seconds
@@ -27,12 +27,12 @@ class GateSynthEnvRLlibHaar(gym.Env):
             "delta": 0,
             "save_data_every_step": 1,
             "verbose": True,
-            "observation_space_size": 8,
+            "observation_space_size": 9,  # 1 (fidelity) + 8 (flattened unitary)
         }
     def __init__(self, env_config):
         self.final_time = env_config["final_time"]  # Final time for the gates
         self.observation_space = gym.spaces.Box(low=-1, high=1, shape=(env_config["observation_space_size"],))
-        self.action_space = gym.spaces.Box(low=np.array([-1, -1]), high=np.array([1, 1]))
+        self.action_space = gym.spaces.Box(low=np.array([-1, -1, -1]), high=np.array([1, 1, 1]))
         self.delta = env_config["delta"]  # detuning
         self.U_target = env_config["U_target"]
         self.U_initial = env_config["U_initial"] # future todo, can make random initial state
@@ -40,7 +40,7 @@ class GateSynthEnvRLlibHaar(gym.Env):
         self.num_Haar_basis = env_config["num_Haar_basis"]
         self.steps_per_Haar = env_config["steps_per_Haar"]
         self.verbose = env_config["verbose"]
-        self.current_Haar_num = 0
+        self.current_Haar_num = 1
         self.current_step_per_Haar = 1
         self.H_array = []
         self.H_tot = []
@@ -49,6 +49,7 @@ class GateSynthEnvRLlibHaar(gym.Env):
         self.prev_fidelity = 0
         self.gamma_phase_max = 1.1675 * np.pi
         self.gamma_magnitude_max = 1.8 * np.pi / self.final_time / self.steps_per_Haar
+        self.gamma_detuning_max = 0.05E9      #detuning of the control pulse in Hz 
         self.transition_history = []
 
     def unitary_to_observation(self, U):
@@ -61,6 +62,12 @@ class GateSynthEnvRLlibHaar(gym.Env):
             .reshape(-1)
         )
 
+    def get_observation(self):
+        return np.append([self.compute_fidelity()], self.unitary_to_observation(self.U))
+    
+    def compute_fidelity(self):
+        return float(np.abs(np.trace(self.U_target.conjugate().transpose() @ self.U))) / (self.U.shape[0])
+
     def hamiltonian(self, delta, alpha, gamma_magnitude, gamma_phase):
         """Alpha and gamma are complex. This function could be made a callable class attribute."""
         return (delta + alpha) * Z + gamma_magnitude * (np.cos(gamma_phase) * X + np.sin(gamma_phase) * Y)
@@ -68,7 +75,7 @@ class GateSynthEnvRLlibHaar(gym.Env):
     def reset(self, *, seed=None, options=None):
         self.state = self.unitary_to_observation(self.U_initial)
         self.U = self.U_initial
-        starting_observeration = self.unitary_to_observation(self.U_initial)
+        starting_observeration = self.get_observation()
         self.current_Haar_num = 1
         self.current_step_per_Haar = 1
         self.H_array = []
@@ -81,12 +88,10 @@ class GateSynthEnvRLlibHaar(gym.Env):
     def step(self, action):
         num_time_bins = 2 ** (self.current_Haar_num - 1) # Haar number decides the number of time bins
 
-        # action space setting
-        alpha = 0  # in current simulation we do not adjust the detuning
-
         # gamma is the complex amplitude of the control field
         gamma_magnitude = self.gamma_magnitude_max / 2 * (action[0] + 1)
         gamma_phase = self.gamma_phase_max * action[1]
+        alpha = self.gamma_detuning_max * action[2]
 
         H = self.hamiltonian(self.delta, alpha, gamma_magnitude, gamma_phase)
         self.H_array.append(H)
@@ -111,11 +116,11 @@ class GateSynthEnvRLlibHaar(gym.Env):
         self.U_array.append(self.U)
 
         # Get reward (fidelity)
-        fidelity = float(np.abs(np.trace(self.U_target.conjugate().transpose() @ self.U))) / (self.U.shape[0])
+        fidelity = self.compute_fidelity()
         reward = (-3 * np.log10(1.0 - fidelity) + np.log10(1.0 - self.prev_fidelity)) + (3 * fidelity - self.prev_fidelity)
         self.prev_fidelity = fidelity
 
-        self.state = self.unitary_to_observation(self.U)
+        self.state = self.get_observation()
 
         # printing on the command line for quick viewing
         if self.verbose is True:
@@ -125,6 +130,7 @@ class GateSynthEnvRLlibHaar(gym.Env):
                 "R: ", f"{reward:7.3f}",
                 "amp: " f"{action[0]:7.3f}",
                 "phase: " f"{action[1]:7.3f}",
+                "detuning: " f"{action[2]:7.3f}"
             )
 
         self.transition_history.append([fidelity, reward, *action, *self.U.flatten()])
