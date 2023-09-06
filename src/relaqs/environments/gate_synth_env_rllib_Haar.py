@@ -213,6 +213,7 @@ class GateSynthEnvRLlibHaarNoisy(gym.Env):
             self.detuning = self.delta[0]
         else:
             self.detuning = random.sample(self.delta,k=1)[0]
+            print("detuning: ", f"{self.detuning}")
         
 
     def unitary_to_superoperator(self, U):
