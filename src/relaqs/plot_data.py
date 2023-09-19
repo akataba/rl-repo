@@ -52,7 +52,7 @@ def plot_results(save_dir, figure_title="Noisy Environment"):
     plt.savefig(save_dir + "gradient_and_q_values.png")
 
 
-def plot_data(save_dir, episode_length, figure_title='Noisy Environment'): 
+def plot_data(save_dir, episode_length, figure_title=''):
     """ Currently works for constant episode_length """
     #---------------------- Getting data from files  <--------------------------------------
     try:
