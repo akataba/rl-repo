@@ -45,6 +45,23 @@ def get_month_of_all_qubit_data(file_name):
     return t1_list, t2_list
 
 
+def get_single_qubit_detuning(file_name, machine_name = None, qubit_label=None):
+    """ If qubit_label is None, returns detunings for the first qubit. """
+    noise_data = None
+    with open(file_name) as f:
+        noise_data = json.load(f)
+    
+    if machine_name is None:
+        machine_name = "ibm_nairobi"
+
+    if qubit_label is None:
+        qubit_label="1"
+    
+    detuning = noise_data[machine_name][qubit_label]
+
+    return detuning
+
+
 if __name__ == "__main__":
     #t1, t2 = get_single_qubit_data('april/ibm_lagos_month_is_4.json')
     from relaqs import QUANTUM_NOISE_DATA_DIR
