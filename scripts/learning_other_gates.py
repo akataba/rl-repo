@@ -6,7 +6,7 @@ from ray.tune.registry import register_env
 from relaqs.environments.gate_synth_env_rllib_Haar import GateSynthEnvRLlibHaarNoisy
 from relaqs.save_results import SaveResults
 from relaqs.plot_data import plot_data
-from relaqs.api.gates import Gate
+from relaqs.api.gates import Gate, get_haar_random_SU2
 import numpy as np
 
 def env_creator(config):
@@ -22,7 +22,8 @@ def run(n_training_iterations=1, save=True, plot=True):
 
     env_config = GateSynthEnvRLlibHaarNoisy.get_default_env_config()
 
-    env_config["U_target"] = Gate.H
+    #env_config["U_target"] = Gate.H
+    env_config["U_target"] = get_haar_random_SU2()
 
     alg_config.environment("my_env", env_config=env_config)
     #alg_config.environment(GateSynthEnvRLlibHaarNoisy, env_config=GateSynthEnvRLlibHaarNoisy.get_default_env_config())
@@ -64,7 +65,8 @@ def run(n_training_iterations=1, save=True, plot=True):
     # --------------------------------------------------------------
 
 if __name__ == "__main__":
-    n_training_iterations = 500
+    #n_training_iterations = 500
+    n_training_iterations = 250
     save = True
     plot = True
     run(n_training_iterations, save, plot)
