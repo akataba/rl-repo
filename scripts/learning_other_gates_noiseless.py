@@ -6,7 +6,7 @@ from ray.tune.registry import register_env
 from relaqs.environments.gate_synth_env_rllib_Haar import GateSynthEnvRLlibHaar
 from relaqs.save_results import SaveResults
 from relaqs.plot_data import plot_data
-from relaqs.api.gates import Gate
+import relaqs.api.gates as gates
 import numpy as np
 
 def env_creator(config):
@@ -22,7 +22,8 @@ def run(n_training_iterations=1, save=True, plot=True):
 
     env_config = GateSynthEnvRLlibHaar.get_default_env_config()
 
-    env_config["U_target"] = Gate.H
+    target_gate = gates.RandomSU2()
+    env_config["U_target"] = target_gate.get_matrix()
 
     alg_config.environment("my_env", env_config=env_config)
     #alg_config.environment(GateSynthEnvRLlibHaar, env_config=GateSynthEnvRLlibHaar.get_default_env_config())
@@ -50,7 +51,7 @@ def run(n_training_iterations=1, save=True, plot=True):
     # ---------------------> Save Results <-------------------------
     if save is True:
         env = alg.workers.local_worker().env
-        sr = SaveResults(env, alg)
+        sr = SaveResults(env, alg, target_gate_string=str(target_gate))
         save_dir = sr.save_results()
         print("Results saved to:", save_dir)
     # --------------------------------------------------------------
