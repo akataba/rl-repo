@@ -5,8 +5,9 @@ import numpy as np
 import json
 from itertools import chain
 import matplotlib as mpl
+from relaqs import RESULTS_DIR
 
-def plot_results(save_dir, figure_title="Noisy Environment"):
+def plot_results(save_dir, figure_title=""):
     with open(save_dir + "train_results_data.json") as file:  # q values and gradient vector norms
         results = json.load(file)
 
@@ -97,7 +98,7 @@ def plot_data(save_dir, episode_length, figure_title=''):
     rcParams['font.family'] = 'serif'
     mpl.style.use('seaborn-v0_8')
 
-    fig,(ax1, ax2, ax3) = plt.subplots(1, 3) 
+    fig,(ax1, ax2, ax3) = plt.subplots(1, 3)
     fig.suptitle(figure_title)
     fig.set_size_inches(10, 5)
 
@@ -126,3 +127,7 @@ def plot_data(save_dir, episode_length, figure_title=''):
     
     plt.tight_layout()
     plt.savefig(save_dir + "plot.png")
+
+if __name__ == "__main__":
+    save_dir = RESULTS_DIR + "2023-09-19_14-21-02/"
+    plot_data(save_dir, episode_length=2, figure_title="Random Target Gate")
