@@ -48,13 +48,15 @@ class SaveResults():
         self.results = results
 
     def get_new_directory(self, save_base_path=None):
-        path_suffix = datetime.datetime.now().strftime("%Y-%m-%d_%H-%M-%S/")
-        if self.target_gate_string is not None:
-            path_suffix = self.target_gate_string + "-" + path_suffix
         if save_base_path is None:
-            return RESULTS_DIR + path_suffix
-        else:
-            return save_base_path + path_suffix
+            save_base_path = RESULTS_DIR
+
+        path = save_base_path + datetime.datetime.now().strftime("%Y-%m-%d_%H-%M-%S/")
+
+        if self.target_gate_string is not None:
+            path = path[:-1] + "_"  + self.target_gate_string + "/"
+
+        return path
 
     def save_env_transitions(self):
         # TODO add header labels
