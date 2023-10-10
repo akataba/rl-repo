@@ -16,6 +16,15 @@ Z = np.array([[1, 0], [0, -1]])
 I = np.array([[1, 0], [0, 1]])
 Y = np.array([[0, 1j], [-1j, 0]])
 
+
+#two-qubit single qubit gates
+X1 = tensor(Qobj(X),Qobj(I)).data.toarray()
+X2 = tensor(Qobj(I),Qobj(X)).data.toarray()
+Y1 = tensor(Qobj(Y),Qobj(I)).data.toarray()
+Y2 = tensor(Qobj(I),Qobj(Y)).data.toarray()
+Z1 = tensor(Qobj(Z),Qobj(I)).data.toarray()
+Z2 = tensor(Qobj(I),Qobj(Z)).data.toarray()
+
 #two-qubit gate basis
 XX = tensor(Qobj(X),Qobj(X)).data.toarray()
 YY = tensor(Qobj(Y),Qobj(Y)).data.toarray()
@@ -366,14 +375,28 @@ class GateSynthEnvRLlibHaarNoisy(gym.Env):
 class TwoQubitGateSynth(gym.Env):
     @classmethod
 
-    #physics: https://journals.aps.org/prapplied/pdf/10.1103/PhysRevApplied.10.054062
+    #physics: https://journals.aps.org/prapplied/pdf/10.1103/PhysRevApplied.10.054062, eq(2)
     #parameters: https://journals.aps.org/prx/pdf/10.1103/PhysRevX.11.021058
     #30 ns duration, g1 = 72.5 MHz, g2 = 71.5 MHz, g12 = 5 MHz
     #T1 = 60 us, 30 us
     #T2* = 66 us, 5 us
 
-    def hamiltonian(self, delta, alpha1, alpha2, alphaC, gamma_magnitude, gamma_phase, g1 = 72.5E6, g2 = 71.5E6, g12 = 5E6):
-        return (delta + alpha) * Z + gamma_magnitude * (np.cos(gamma_phase) * X + np.sin(gamma_phase) * Y)
+    def hamiltonian(self, delta1, delta2, alpha1, alpha2, alphaC, gamma_magnitude1, gamma_phase1, gamma_magnitude2, gamma_phase2, g1 = 72.5E6, g2 = 71.5E6, g12 = 5E6):
+        selfEnergyTerms = (delta1 + alpha1) * Z1 + (delta2 + alpha2) * Z2
+        Qubit1ControlTerms = gamma_magnitude1 * (np.cos(gamma_phase1) * X1 + np.sin(gamma_phase1) * Y1)
+        Qubit2ControlTerms = gamma_magnitude2 * (np.cos(gamma_phase2) * X1 + np.sin(gamma_phase2) * Y1)
+
+        #omega1 = delta1+alpha1, omega2 = delta2+alpha2, omegaC = alphaC
+        Delta1 = delta1+alpha1-alphaC
+        Delta2 = delta2+alpha2-alphaC
+        twoQubitDetuning = (1/Delta1 + 1/Delta2)/2
+        
+        g_eff = g1*g2/twoQubitDetuning + g12
+        interactionEnergy = g_eff*exchangeOperator
+
+        energyTotal = selfEnergyTerms + interactionEnergy
+
+        return energyTotal
 
     def get_default_env_config(cls):
         return {
