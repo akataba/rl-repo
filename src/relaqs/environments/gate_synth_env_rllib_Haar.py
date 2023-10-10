@@ -4,7 +4,7 @@ import scipy.linalg as la
 import cmath
 import random
 from qutip.superoperator import liouvillian, spre, spost
-from qutip import Qobj
+from qutip import Qobj, tensor
 from qutip.operators import *
 #from relaqs.api.reward_functions import negative_matrix_difference_norm
 
@@ -14,6 +14,13 @@ X = np.array([[0, 1], [1, 0]])
 Z = np.array([[1, 0], [0, -1]])
 I = np.array([[1, 0], [0, 1]])
 Y = np.array([[0, 1j], [-1j, 0]])
+
+#two-qubit gate basis
+XX = tensor(Qobj(X),Qobj(X)).data.toarray()
+YY = tensor(Qobj(Y),Qobj(Y)).data.toarray()
+ZZ = tensor(Qobj(Z),Qobj(Z)).data.toarray()
+exchangeOperator = tensor(Qobj(sig_p),Qobj(sig_m)).data.toarray() + tensor(Qobj(sig_m),Qobj(sig_p)).data.toarray()
+
 class GateSynthEnvRLlibHaar(gym.Env):
     @classmethod
     def get_default_env_config(cls):
