@@ -6,6 +6,7 @@ import random
 from qutip.superoperator import liouvillian, spre, spost
 from qutip import Qobj, tensor
 from qutip.operators import *
+from qutip import cnot, cphase
 #from relaqs.api.reward_functions import negative_matrix_difference_norm
 
 sig_p = np.array([[0, 1], [0, 0]])
@@ -20,6 +21,9 @@ XX = tensor(Qobj(X),Qobj(X)).data.toarray()
 YY = tensor(Qobj(Y),Qobj(Y)).data.toarray()
 ZZ = tensor(Qobj(Z),Qobj(Z)).data.toarray()
 exchangeOperator = tensor(Qobj(sig_p),Qobj(sig_m)).data.toarray() + tensor(Qobj(sig_m),Qobj(sig_p)).data.toarray()
+
+CNOT = cnot().data.toarray()
+CZ = cphase(np.pi).data.toarray()
 
 class GateSynthEnvRLlibHaar(gym.Env):
     @classmethod
