@@ -102,6 +102,8 @@ def run(n_training_iterations=1, save=True, plot=True):
             plot_data(save_dir, episode_length=alg._episode_history[0].episode_length)
             print("Plots Created")
         # --------------------------------------------------------------
+
+        assert list_of_results, "train function did not run"
     finally:
         ray.shutdown()
 

@@ -85,13 +85,14 @@ def run(n_training_iterations=1, save=True, plot=True):
             save_dir = sr.save_results()
             print("Results saved to:", save_dir)
         # --------------------------------------------------------------
-
+        
         # ---------------------> Plot Data <-------------------------
         if plot is True:
             assert save is True, "If plot=True, then save must also be set to True"
             plot_data(save_dir, episode_length=alg._episode_history[0].episode_length)
             print("Plots Created")
         # --------------------------------------------------------------
+        assert alg._episode_history[0], "The _episode_history list is attrubute is empty"
     finally:
         ray.shutdown()
 

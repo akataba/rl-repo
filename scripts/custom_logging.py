@@ -49,7 +49,9 @@ def run(n_training_iterations=1, save=True, plot=True, plot_q_and_gradients=True
         save_dir = sr.save_results()
         print("Results saved to:", save_dir)
     # --------------------------------------------------------------
-
+    
+    assert list_of_results, "train function did not run"
+    
     # ---------------------> Plot Data <-------------------------
     if plot is True:
         assert save is True, "If plot=True, then save must also be set to True"
@@ -62,7 +64,7 @@ def run(n_training_iterations=1, save=True, plot=True, plot_q_and_gradients=True
     # --------------------------------------------------------------
 
 if __name__ == "__main__":
-    n_training_iterations = 2
+    n_training_iterations = 1
     save = True
     plot = True
     plot_q_and_gradients = True
