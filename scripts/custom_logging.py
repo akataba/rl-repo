@@ -10,7 +10,7 @@ from relaqs.api.callbacks import GateSynthesisCallbacks
 def env_creator(config):
     return GateSynthEnvRLlibHaarNoisy(config)
 
-def run(n_training_iterations=1, save=True, plot=True, plot_q_and_gradients=True, figure_title=None):
+def run(n_training_iterations=1, save=False, plot=False, plot_q_and_gradients=False, figure_title=None):
     ray.init()
     register_env("my_env", env_creator)
 
@@ -60,6 +60,7 @@ def run(n_training_iterations=1, save=True, plot=True, plot_q_and_gradients=True
         plot_results(save_dir, figure_title=figure_title)
         print("Plots of Average Gradients and Q values Created")
     # --------------------------------------------------------------
+    ray.shutdown()
 
 if __name__ == "__main__":
     n_training_iterations = 2

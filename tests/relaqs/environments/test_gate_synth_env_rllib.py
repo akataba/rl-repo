@@ -1,7 +1,5 @@
 import numpy as np
 import pytest
-import sys
-sys.path.append('../src')
 
 from relaqs.environments.gate_synth_env_rllib import GateSynthEnvRLlib
 
