@@ -18,6 +18,7 @@ Y = np.array([[0, 1j], [-1j, 0]])
 
 
 #two-qubit single qubit gates
+II = tensor(Qobj(I),Qobj(I)).data.toarray()
 X1 = tensor(Qobj(X),Qobj(I)).data.toarray()
 X2 = tensor(Qobj(I),Qobj(X)).data.toarray()
 Y1 = tensor(Qobj(Y),Qobj(I)).data.toarray()
@@ -562,7 +563,6 @@ class TwoQubitGateSynth(gym.Env):
         # Reward and fidelity calculation
         fidelity = self.compute_fidelity()
         reward = (-3 * np.log10(1.0 - fidelity) + np.log10(1.0 - self.prev_fidelity)) + (3 * fidelity - self.prev_fidelity)
-        #reward = negative_matrix_difference_norm(self.U_target, self.U)
         self.prev_fidelity = fidelity
 
         self.state = self.get_observation()
