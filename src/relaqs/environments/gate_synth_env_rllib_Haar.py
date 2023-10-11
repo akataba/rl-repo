@@ -429,7 +429,7 @@ class TwoQubitGateSynth(gym.Env):
         self.observation_space = gym.spaces.Box(low=0, high=1, shape=(env_config["observation_space_size"],))  # propagation operator elements + fidelity + relaxation + detuning
         self.action_space = gym.spaces.Box(low=-1*np.ones(7), high=np.ones(7)) #alpha1, alpha2, alphaC, gamma_magnitude1, gamma_phase1, gamma_magnitude2, gamma_phase2
         self.delta = env_config["delta"]  # detuning
-        self.detuning = 0
+        self.detuning = [0, 0]
         self.detuning_update()
         self.U_target = self.unitary_to_superoperator(env_config["U_target"])
         self.U_initial = self.unitary_to_superoperator(env_config["U_initial"])
@@ -454,11 +454,21 @@ class TwoQubitGateSynth(gym.Env):
 
     def detuning_update(self):
         # Random detuning selection
-        if len(self.delta)==1:
-            self.detuning = self.delta[0]
+        if len(self.delta[0])==1:
+            detuning1 = self.delta[0]
         else:
-            self.detuning = random.sample(self.delta,k=1)[0]
-            print("detuning: ", f"{self.detuning}")
+            detuning1 = random.sample(self.delta[0],k=1)[0]
+            
+        # Random detuning selection
+        if len(self.delta[1])==1:
+            detuning2 = self.delta[0]
+        else:
+            detuning2 = random.sample(self.delta[1],k=1)[0]
+
+        self.detuning = [detuning1, detuning2]
+        
+        print("detuning: ", f"{self.detuning}")
+        
         
 
     def unitary_to_superoperator(self, U):
