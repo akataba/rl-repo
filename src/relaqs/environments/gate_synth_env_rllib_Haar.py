@@ -449,6 +449,9 @@ class TwoQubitGateSynth(gym.Env):
         self.U = self.U_initial.copy()  # multiplied propagtion operators
         self.state = self.unitary_to_observation(self.U_initial)  # starting observation space
         self.prev_fidelity = 0  # previous step' fidelity for rewarding
+        self.alpha_max = 0.05E9
+        self.alphaC_mod_max = 1.5E9  ## see https://journals.aps.org/prx/pdf/10.1103/PhysRevX.11.021058
+        self.alphaC0 = 1.04E9 # couper center frequency : 5.2GHz, qubit 1 center frequency: 4.16 GHz
         self.gamma_phase_max = 1.1675 * np.pi
         self.gamma_magnitude_max = 1.8 * np.pi / self.final_time / self.steps_per_Haar
         self.transition_history = []
@@ -523,12 +526,17 @@ class TwoQubitGateSynth(gym.Env):
     def step(self, action):
         num_time_bins = 2 ** (self.current_Haar_num - 1) # Haar number decides the number of time bins
 
-        # action space setting
-        alpha = 0  # in current simulation we do not adjust the detuning
+        ### action space setting
+        alpha1 = self.alpha_max * action[0] 
+        alpha2 = self.alpha_max * action[1] 
+        alphaC = self.alphaC0 + self.alphaC_mod_max * action[2] 
 
         # gamma is the complex amplitude of the control field
-        gamma_magnitude = self.gamma_magnitude_max / 2 * (action[0] + 1)
-        gamma_phase = self.gamma_phase_max * action[1]
+        gamma_magnitude1 = self.gamma_magnitude_max / 2 * (action[3] + 1)
+        gamma_magnitude2 = self.gamma_magnitude_max / 2 * (action[4] + 1)
+
+        gamma_phase1 = self.gamma_phase_max * action[5] 
+        gamma_phase2 = self.gamma_phase_max * action[6]
 
         # Set noise opertors
         jump_ops = []
@@ -536,7 +544,7 @@ class TwoQubitGateSynth(gym.Env):
             jump_ops.append(np.sqrt(self.relaxation_rate[ii]) * self.relaxation_ops[ii])
 
         # Hamiltonian with controls
-        H = self.hamiltonian(self.detuning, alpha, gamma_magnitude, gamma_phase)
+        H = self.hamiltonian(self.delta[0][0], self.delta[1][0], alpha1, alpha2, alphaC, gamma_magnitude1, gamma_phase1, gamma_magnitude2, gamma_phase2):
         self.H_array.append(H)  # Array of Hs at each Haar wavelet
 
         # H_tot for adding Hs at each time bins
