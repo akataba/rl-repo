@@ -103,9 +103,9 @@ class GateSynthEnvRLlibHaar(gym.Env):
         return (delta + alpha) * Z + gamma_magnitude * (np.cos(gamma_phase) * X + np.sin(gamma_phase) * Y)
 
     def reset(self, *, seed=None, options=None):
-        self.state = self.unitary_to_observation(self.U_initial)
         self.U = self.U_initial
         starting_observeration = self.get_observation()
+        self.state = self.get_observation()
         self.current_Haar_num = 1
         self.current_step_per_Haar = 1
         self.H_array = []
@@ -282,14 +282,14 @@ class GateSynthEnvRLlibHaarNoisy(gym.Env):
         return (delta + alpha) * Z + gamma_magnitude * (np.cos(gamma_phase) * X + np.sin(gamma_phase) * Y)
 
     def reset(self, *, seed=None, options=None):
-        self.state = self.unitary_to_observation(self.U_initial)
+        self.U = self.U_initial.copy()
+        self.state = self.get_observation()
         self.current_Haar_num = 1
         self.current_step_per_Haar = 1
         self.H_array = []
         self.H_tot = []
         self.L_array = []
         self.U_array = []
-        self.U = self.U_initial.copy()
         self.prev_fidelity = 0
         self.relaxation_rate = self.get_relaxation_rate()
         self.detuning = 0
@@ -485,11 +485,11 @@ class TwoQubitGateSynth(gym.Env):
         return sampled_rate_list
             
     def get_observation(self):
-        normalizedDetuning = [(self.detuning - min(self.delta)+1E-15)/(max(self.delta)-min(self.delta)+1E-15)]
+        normalizedDetuning = [(self.detuning[0] - min(self.delta[0])+1E-15)/(max(self.delta[0])-min(self.delta[0])+1E-15), (self.detuning[1] - min(self.delta[1])+1E-15)/(max(self.delta[1])-min(self.delta[1])+1E-15)]
         return np.append([self.compute_fidelity()]+[x//6283185 for x in self.relaxation_rate]+normalizedDetuning, self.unitary_to_observation(self.U)) #6283185 assuming 500 nanosecond relaxation is max
     
     def compute_fidelity(self):
-        env_config = GateSynthEnvRLlibHaarNoisy.get_default_env_config()
+        env_config = TwoQubitGateSynth.get_default_env_config()
         U_target_dagger = self.unitary_to_superoperator(env_config["U_target"].conjugate().transpose())
         return float(np.abs(np.trace(U_target_dagger @ self.U))) / (self.U.shape[0])
 
@@ -504,14 +504,14 @@ class TwoQubitGateSynth(gym.Env):
         )
 
     def reset(self, *, seed=None, options=None):
-        self.state = self.unitary_to_observation(self.U_initial)
+        self.U = self.U_initial.copy()
+        self.state = self.get_observation()
         self.current_Haar_num = 1
         self.current_step_per_Haar = 1
         self.H_array = []
         self.H_tot = []
         self.L_array = []
         self.U_array = []
-        self.U = self.U_initial.copy()
         self.prev_fidelity = 0
         self.relaxation_rate = self.get_relaxation_rate()
         self.detuning = 0
