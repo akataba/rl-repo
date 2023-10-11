@@ -25,6 +25,15 @@ Y2 = tensor(Qobj(I),Qobj(Y)).data.toarray()
 Z1 = tensor(Qobj(Z),Qobj(I)).data.toarray()
 Z2 = tensor(Qobj(I),Qobj(Z)).data.toarray()
 
+sig_p1 = tensor(Qobj(sig_p),Qobj(I)).data.toarray()
+sig_p2 = tensor(Qobj(I),Qobj(sig_p)).data.toarray()
+sig_m1 = tensor(Qobj(sig_m),Qobj(I)).data.toarray()
+sig_m2 = tensor(Qobj(I),Qobj(sig_m)).data.toarray()
+sigmap1 = Qobj(sig_p1)
+sigmap2 = Qobj(sig_p2)
+sigmam1 = Qobj(sig_m1)
+sigmam2 = Qobj(sig_m2)
+
 #two-qubit gate basis
 XX = tensor(Qobj(X),Qobj(X)).data.toarray()
 YY = tensor(Qobj(Y),Qobj(Y)).data.toarray()
@@ -402,19 +411,19 @@ class TwoQubitGateSynth(gym.Env):
         return {
             "action_space_size": 2,
             "U_initial": I,  # staring with I
-            "U_target": X,  # target for X
-            "final_time": 35.5556E-9, # in seconds
-            "num_Haar_basis": 1,  # number of Haar basis (need to update for odd combinations)
+            "U_target": CZ,  # target for X
+            "final_time": 30E-9, # in seconds
+            "num_Haar_basis": 3,  # number of Haar basis (need to update for odd combinations)
             "steps_per_Haar": 2,  # steps per Haar basis per episode
-            "delta": [0],  # qubit detuning
+            "delta": [[0],[0]],  # qubit detuning
             "save_data_every_step": 1,
             "verbose": True,
 #            "relaxation_rates_list": [[0.01,0.02],[0.05, 0.07]], # relaxation lists of list of floats to be sampled from when resetting environment.
 #            "relaxation_ops": [sigmam(),sigmaz()] #relaxation operator lists for T1 and T2, respectively
-            "relaxation_rates_list": [[314159]], # relaxation lists of list of floats to be sampled from when resetting environment. (10 usec)
-            "relaxation_ops": [sigmam()], #relaxation operator lists for T1 and T2, respectively
+            "relaxation_rates_list": [[1/60E-6/2/np.pi],[1/30E-6/2/np.pi],[1/66E-6/2/np.pi],[1/5E-6/2/np.pi]], # relaxation lists of list of floats to be sampled from when resetting environment. (10 usec)
+            "relaxation_ops": [sigmam1,sigmam2,Qobj(Z1),Qobj(Z2)], #relaxation operator lists for T1 and T2, respectively
 #            "observation_space_size": 35, # 2*16 = (complex number)*(density matrix elements = 4)^2, + 1 for fidelity + 2 for relaxation rate
-            "observation_space_size": 2*16 + 1 + 1 + 1 # 2*16 = (complex number)*(density matrix elements = 4)^2, + 1 for fidelity + 1 for relaxation rate + 1 for detuning
+            "observation_space_size": 2*256 + 1 + 4 + 2 # 2*16 = (complex number)*(density matrix elements = 4)^2, + 1 for fidelity + 4 for relaxation rate + 2 for detuning
         }
 
     def __init__(self, env_config):
