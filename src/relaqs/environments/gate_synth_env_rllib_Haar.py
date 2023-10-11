@@ -418,9 +418,7 @@ class TwoQubitGateSynth(gym.Env):
             "delta": [[0],[0]],  # qubit detuning
             "save_data_every_step": 1,
             "verbose": True,
-#            "relaxation_rates_list": [[0.01,0.02],[0.05, 0.07]], # relaxation lists of list of floats to be sampled from when resetting environment.
-#            "relaxation_ops": [sigmam(),sigmaz()] #relaxation operator lists for T1 and T2, respectively
-            "relaxation_rates_list": [[1/60E-6/2/np.pi],[1/30E-6/2/np.pi],[1/66E-6/2/np.pi],[1/5E-6/2/np.pi]], # relaxation lists of list of floats to be sampled from when resetting environment. (10 usec)
+            "relaxation_rates_list": [[1/60E-6/2/np.pi],[1/30E-6/2/np.pi],[1/66E-6/2/np.pi],[1/5E-6/2/np.pi]], # relaxation lists of list of floats to be sampled from when resetting environment.
             "relaxation_ops": [sigmam1,sigmam2,Qobj(Z1),Qobj(Z2)], #relaxation operator lists for T1 and T2, respectively
 #            "observation_space_size": 35, # 2*16 = (complex number)*(density matrix elements = 4)^2, + 1 for fidelity + 2 for relaxation rate
             "observation_space_size": 2*256 + 1 + 4 + 2 # 2*16 = (complex number)*(density matrix elements = 4)^2, + 1 for fidelity + 4 for relaxation rate + 2 for detuning
@@ -428,10 +426,8 @@ class TwoQubitGateSynth(gym.Env):
 
     def __init__(self, env_config):
         self.final_time = env_config["final_time"]  # Final time for the gates
-        self.observation_space = gym.spaces.Box(low=0, high=1, shape=(env_config["observation_space_size"],))  # propagation operator elements + fidelity
-        # self.action_space = gym.spaces.Box(low=np.array([-1, -1, -1]), high=np.array([1, 1, 1])) # for detuning included control
-        self.action_space = gym.spaces.Box(low=np.array([-1, -1]), high=np.array([1, 1]))
-#        self.delta = [env_config["delta"]]  # detuning
+        self.observation_space = gym.spaces.Box(low=0, high=1, shape=(env_config["observation_space_size"],))  # propagation operator elements + fidelity + relaxation + detuning
+        self.action_space = gym.spaces.Box(low=-1*np.ones(7), high=np.ones(7)) #alpha1, alpha2, alphaC, gamma_magnitude1, gamma_phase1, gamma_magnitude2, gamma_phase2
         self.delta = env_config["delta"]  # detuning
         self.detuning = 0
         self.detuning_update()
