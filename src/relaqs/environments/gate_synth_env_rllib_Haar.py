@@ -560,7 +560,7 @@ class TwoQubitGateSynth(gym.Env):
                     self.H_tot.append(factor * H_elem)
 
         self.L = ([])  # at every step we calculate L again because minimal time bin changes
-        self.U = np.eye(4)  # identity
+        self.U = np.eye(16)  # identity
 
         for jj in range(0, num_time_bins):
             L = (liouvillian(Qobj(self.H_tot[jj]), jump_ops, data_only=False, chi=None)).data.toarray()  # Liouvillian calc
@@ -576,18 +576,18 @@ class TwoQubitGateSynth(gym.Env):
         self.state = self.get_observation()
 
         # printing on the command line for quick viewing
-        if self.verbose is True:
-            print(
-                "Step: ", f"{self.current_step_per_Haar}",
-                "Relaxation rates:")
-            for rate in self.relaxation_rate:
-                print(f"{rate:7.6f}")
-            print(
-                "F: ", f"{fidelity:7.3f}",
-                "R: ", f"{reward:7.3f}",
-                "amp: " f"{action[0]:7.3f}",
-                "phase: " f"{action[1]:7.3f}",
-            )
+        # if self.verbose is True:
+        #     print(
+        #         "Step: ", f"{self.current_step_per_Haar}",
+        #         "Relaxation rates:")
+        #     for rate in self.relaxation_rate:
+        #         print(f"{rate:7.6f}")
+        #     print(
+        #         "F: ", f"{fidelity:7.3f}",
+        #         "R: ", f"{reward:7.3f}",
+        #         "amp: " f"{action[0]:7.3f}",
+        #         "phase: " f"{action[1]:7.3f}",
+        #     )
 
         self.transition_history.append([fidelity, reward, *action, *self.U.flatten()])
 
