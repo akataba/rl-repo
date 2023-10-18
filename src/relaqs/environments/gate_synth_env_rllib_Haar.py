@@ -453,12 +453,9 @@ class TwoQubitGateSynth(gym.Env):
         self.U = self.U_initial.copy()  # multiplied propagtion operators
         self.state = self.unitary_to_observation(self.U_initial)  # starting observation space
         self.prev_fidelity = 0  # previous step' fidelity for rewarding
-        # self.alpha_max = 0.05E9
-        # self.alphaC_mod_max = 1.5E9  ## see https://journals.aps.org/prx/pdf/10.1103/PhysRevX.11.021058
-        # self.alphaC0 = 1.04E9 # couper center frequency : 5.2GHz, qubit 1 center frequency: 4.16 GHz
-        self.alpha_max = 0.05E9 #for now
-        self.alphaC_mod_max = 1.5E9 #for now
-        self.alphaC0 = 1.04E9 #for now
+        self.alpha_max = 0.05E9
+        self.alphaC_mod_max = 1.5E9  ## see https://journals.aps.org/prx/pdf/10.1103/PhysRevX.11.021058
+        self.alphaC0 = 1.04E9 # couper center frequency : 5.2GHz, qubit 1 center frequency: 4.16 GHz
         self.gamma_phase_max = 1.1675 * np.pi
         self.gamma_magnitude_max = 1.8 * np.pi / self.final_time / self.steps_per_Haar
         self.transition_history = []
