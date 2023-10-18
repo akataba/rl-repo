@@ -384,6 +384,22 @@ class GateSynthEnvRLlibHaarNoisy(gym.Env):
 
 class TwoQubitGateSynth(gym.Env):
     @classmethod
+    def get_default_env_config(cls):
+        return {
+            "action_space_size": 2,
+            "U_initial": II,  # staring with I
+            "U_target": CZ,  # target for X
+            "final_time": 30E-9, # in seconds
+            "num_Haar_basis": 3,  # number of Haar basis (need to update for odd combinations)
+            "steps_per_Haar": 2,  # steps per Haar basis per episode
+            "delta": [[0],[0]],  # qubit detuning
+            "save_data_every_step": 1,
+            "verbose": True,
+            "relaxation_rates_list": [[1/60E-6/2/np.pi],[1/30E-6/2/np.pi],[1/66E-6/2/np.pi],[1/5E-6/2/np.pi]], # relaxation lists of list of floats to be sampled from when resetting environment.
+            "relaxation_ops": [sigmam1,sigmam2,Qobj(Z1),Qobj(Z2)], #relaxation operator lists for T1 and T2, respectively
+#            "observation_space_size": 35, # 2*16 = (complex number)*(density matrix elements = 4)^2, + 1 for fidelity + 2 for relaxation rate
+            "observation_space_size": 2*256 + 1 + 4 + 2 # 2*16 = (complex number)*(density matrix elements = 4)^2, + 1 for fidelity + 4 for relaxation rate + 2 for detuning
+        }
 
     #physics: https://journals.aps.org/prapplied/pdf/10.1103/PhysRevApplied.10.054062, eq(2)
     #parameters: https://journals.aps.org/prx/pdf/10.1103/PhysRevX.11.021058
@@ -407,23 +423,6 @@ class TwoQubitGateSynth(gym.Env):
         energyTotal = selfEnergyTerms + interactionEnergy
 
         return energyTotal
-
-    def get_default_env_config(cls):
-        return {
-            "action_space_size": 2,
-            "U_initial": I,  # staring with I
-            "U_target": CZ,  # target for X
-            "final_time": 30E-9, # in seconds
-            "num_Haar_basis": 3,  # number of Haar basis (need to update for odd combinations)
-            "steps_per_Haar": 2,  # steps per Haar basis per episode
-            "delta": [[0],[0]],  # qubit detuning
-            "save_data_every_step": 1,
-            "verbose": True,
-            "relaxation_rates_list": [[1/60E-6/2/np.pi],[1/30E-6/2/np.pi],[1/66E-6/2/np.pi],[1/5E-6/2/np.pi]], # relaxation lists of list of floats to be sampled from when resetting environment.
-            "relaxation_ops": [sigmam1,sigmam2,Qobj(Z1),Qobj(Z2)], #relaxation operator lists for T1 and T2, respectively
-#            "observation_space_size": 35, # 2*16 = (complex number)*(density matrix elements = 4)^2, + 1 for fidelity + 2 for relaxation rate
-            "observation_space_size": 2*256 + 1 + 4 + 2 # 2*16 = (complex number)*(density matrix elements = 4)^2, + 1 for fidelity + 4 for relaxation rate + 2 for detuning
-        }
 
     def __init__(self, env_config):
         self.final_time = env_config["final_time"]  # Final time for the gates
@@ -449,9 +448,12 @@ class TwoQubitGateSynth(gym.Env):
         self.U = self.U_initial.copy()  # multiplied propagtion operators
         self.state = self.unitary_to_observation(self.U_initial)  # starting observation space
         self.prev_fidelity = 0  # previous step' fidelity for rewarding
-        self.alpha_max = 0.05E9
-        self.alphaC_mod_max = 1.5E9  ## see https://journals.aps.org/prx/pdf/10.1103/PhysRevX.11.021058
-        self.alphaC0 = 1.04E9 # couper center frequency : 5.2GHz, qubit 1 center frequency: 4.16 GHz
+        # self.alpha_max = 0.05E9
+        # self.alphaC_mod_max = 1.5E9  ## see https://journals.aps.org/prx/pdf/10.1103/PhysRevX.11.021058
+        # self.alphaC0 = 1.04E9 # couper center frequency : 5.2GHz, qubit 1 center frequency: 4.16 GHz
+        self.alpha_max = 1E4 #for now
+        self.alphaC_mod_max = 1E6 #for now
+        self.alphaC0 = 1E4 #for now
         self.gamma_phase_max = 1.1675 * np.pi
         self.gamma_magnitude_max = 1.8 * np.pi / self.final_time / self.steps_per_Haar
         self.transition_history = []
@@ -459,19 +461,17 @@ class TwoQubitGateSynth(gym.Env):
     def detuning_update(self):
         # Random detuning selection
         if len(self.delta[0])==1:
-            detuning1 = self.delta[0]
+            detuning1 = self.delta[0][0]
         else:
             detuning1 = random.sample(self.delta[0],k=1)[0]
             
         # Random detuning selection
         if len(self.delta[1])==1:
-            detuning2 = self.delta[0]
+            detuning2 = self.delta[0][0]
         else:
             detuning2 = random.sample(self.delta[1],k=1)[0]
 
         self.detuning = [detuning1, detuning2]
-        
-        print("detuning: ", f"{self.detuning}")
         
         
 
@@ -499,11 +499,11 @@ class TwoQubitGateSynth(gym.Env):
     def unitary_to_observation(self, U):
         return (
             np.array(
-                [(abs(x), (cmath.phase(x) / np.pi + 1) / 2) for x in U.flatten()], 
+                [(abs(x), (cmath.phase(x) / 2 / np.pi + 1) / 2) for x in U.flatten()], 
                 dtype=np.float64,
                 )
             .squeeze()
-            .reshape(-1)  # cmath phase gives -pi to pi
+            .reshape(-1)  # cmath phase gives -2pi to 2pi (?)
         )
 
     def reset(self, *, seed=None, options=None):
@@ -544,7 +544,7 @@ class TwoQubitGateSynth(gym.Env):
             jump_ops.append(np.sqrt(self.relaxation_rate[ii]) * self.relaxation_ops[ii])
 
         # Hamiltonian with controls
-        H = self.hamiltonian(self.delta[0][0], self.delta[1][0], alpha1, alpha2, alphaC, gamma_magnitude1, gamma_phase1, gamma_magnitude2, gamma_phase2):
+        H = self.hamiltonian(self.delta[0][0], self.delta[1][0], alpha1, alpha2, alphaC, gamma_magnitude1, gamma_phase1, gamma_magnitude2, gamma_phase2)
         self.H_array.append(H)  # Array of Hs at each Haar wavelet
 
         # H_tot for adding Hs at each time bins
@@ -575,19 +575,12 @@ class TwoQubitGateSynth(gym.Env):
 
         self.state = self.get_observation()
 
-        # printing on the command line for quick viewing
-        # if self.verbose is True:
-        #     print(
-        #         "Step: ", f"{self.current_step_per_Haar}",
-        #         "Relaxation rates:")
-        #     for rate in self.relaxation_rate:
-        #         print(f"{rate:7.6f}")
-        #     print(
-        #         "F: ", f"{fidelity:7.3f}",
-        #         "R: ", f"{reward:7.3f}",
-        #         "amp: " f"{action[0]:7.3f}",
-        #         "phase: " f"{action[1]:7.3f}",
-        #     )
+
+        if self.verbose is True:
+            print(
+                "F: ", f"{fidelity:7.3f}",
+                "R: ", f"{reward:7.3f}",
+            )
 
         self.transition_history.append([fidelity, reward, *action, *self.U.flatten()])
 
