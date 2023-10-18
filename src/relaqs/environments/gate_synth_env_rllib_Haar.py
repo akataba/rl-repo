@@ -415,12 +415,17 @@ class TwoQubitGateSynth(gym.Env):
         #omega1 = delta1+alpha1, omega2 = delta2+alpha2, omegaC = alphaC
         Delta1 = delta1+alpha1-alphaC
         Delta2 = delta2+alpha2-alphaC
-        twoQubitDetuning = (1/Delta1 + 1/Delta2)/2
+        twoQubitDetuning = 1/((1/Delta1 + 1/Delta2)/2)
         
         g_eff = g1*g2/twoQubitDetuning + g12
         interactionEnergy = g_eff*exchangeOperator
 
         energyTotal = selfEnergyTerms + interactionEnergy
+
+#        print("coupling: ", f"{g_eff:7.3f}")
+#        print("Delta1: ", f"{Delta1:7.3f}")
+#        print("Delta2: ", f"{Delta2:7.3f}")
+#        print("twoQubitDetuning: ", f"{twoQubitDetuning:7.3f}")
 
         return energyTotal
 
@@ -451,9 +456,9 @@ class TwoQubitGateSynth(gym.Env):
         # self.alpha_max = 0.05E9
         # self.alphaC_mod_max = 1.5E9  ## see https://journals.aps.org/prx/pdf/10.1103/PhysRevX.11.021058
         # self.alphaC0 = 1.04E9 # couper center frequency : 5.2GHz, qubit 1 center frequency: 4.16 GHz
-        self.alpha_max = 1E4 #for now
-        self.alphaC_mod_max = 1E6 #for now
-        self.alphaC0 = 1E4 #for now
+        self.alpha_max = 0.05E9 #for now
+        self.alphaC_mod_max = 1.5E9 #for now
+        self.alphaC0 = 1.04E9 #for now
         self.gamma_phase_max = 1.1675 * np.pi
         self.gamma_magnitude_max = 1.8 * np.pi / self.final_time / self.steps_per_Haar
         self.transition_history = []
