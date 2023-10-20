@@ -410,7 +410,7 @@ class TwoQubitGateSynth(gym.Env):
     def hamiltonian(self, delta1, delta2, alpha1, alpha2, alphaC, gamma_magnitude1, gamma_phase1, gamma_magnitude2, gamma_phase2, g1 = 72.5E6, g2 = 71.5E6, g12 = 5E6):
         selfEnergyTerms = (delta1 + alpha1) * Z1 + (delta2 + alpha2) * Z2
         Qubit1ControlTerms = gamma_magnitude1 * (np.cos(gamma_phase1) * X1 + np.sin(gamma_phase1) * Y1)
-        Qubit2ControlTerms = gamma_magnitude2 * (np.cos(gamma_phase2) * X1 + np.sin(gamma_phase2) * Y1)
+        Qubit2ControlTerms = gamma_magnitude2 * (np.cos(gamma_phase2) * X2 + np.sin(gamma_phase2) * Y2)
 
         #omega1 = delta1+alpha1, omega2 = delta2+alpha2, omegaC = alphaC
         Delta1 = delta1+alpha1-alphaC
