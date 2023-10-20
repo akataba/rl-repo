@@ -386,9 +386,9 @@ class TwoQubitGateSynth(gym.Env):
     @classmethod
     def get_default_env_config(cls):
         return {
-            "action_space_size": 2,
+            "action_space_size": 7,
             "U_initial": II,  # staring with I
-            "U_target": CZ,  # target for X
+            "U_target": CZ,  # target for CZ
             "final_time": 30E-9, # in seconds
             "num_Haar_basis": 3,  # number of Haar basis (need to update for odd combinations)
             "steps_per_Haar": 2,  # steps per Haar basis per episode
