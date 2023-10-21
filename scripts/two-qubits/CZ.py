@@ -67,9 +67,10 @@ def run(n_training_iterations=1, save=True, plot=True):
 
         alg_config.actor_hidden_activation = "relu"
         alg_config.critic_hidden_activation = "relu"
-        alg_config.num_steps_sampled_before_learning_starts = 1000
-        alg_config.actor_hiddens = [30,30,30]
-        alg_config.exploration_config["scale_timesteps"] = 10000
+        alg_config.num_steps_sampled_before_learning_starts = 10000
+        alg_config.actor_hiddens = [500,500,500,500]
+        alg_config.critic_hiddens = [500,500,500,500]
+        alg_config.exploration_config["scale_timesteps"] = 1E5
         print(alg_config.algo_class)
         print(alg_config["framework"])
 
@@ -101,7 +102,7 @@ def run(n_training_iterations=1, save=True, plot=True):
         ray.shutdown()
 
 if __name__ == "__main__":
-    n_training_iterations = 10
+    n_training_iterations = 100
     save = True
     plot = True
     run(n_training_iterations, save, plot)
