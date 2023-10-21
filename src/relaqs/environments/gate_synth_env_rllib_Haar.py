@@ -390,7 +390,7 @@ class TwoQubitGateSynth(gym.Env):
             "U_initial": II,  # staring with I
             "U_target": CZ,  # target for CZ
             "final_time": 30E-9, # in seconds
-            "num_Haar_basis": 3,  # number of Haar basis (need to update for odd combinations)
+            "num_Haar_basis": 4,  # number of Haar basis (need to update for odd combinations)
             "steps_per_Haar": 2,  # steps per Haar basis per episode
             "delta": [[0],[0]],  # qubit detuning
             "save_data_every_step": 1,
@@ -408,20 +408,21 @@ class TwoQubitGateSynth(gym.Env):
     #T1 = 60 us, 30 us
     #T2* = 66 us, 5 us
 
-    def hamiltonian(self, delta1, delta2, alpha1, alpha2, alphaC, gamma_magnitude1, gamma_phase1, gamma_magnitude2, gamma_phase2, g1 = 72.5E6, g2 = 71.5E6, g12 = 5E6):
+    def hamiltonian(self, delta1, delta2, alpha1, alpha2, twoQubitDetuning, gamma_magnitude1, gamma_phase1, gamma_magnitude2, gamma_phase2, g1 = 72.5E6, g2 = 71.5E6, g12 = 5E6):
         selfEnergyTerms = (delta1 + alpha1) * Z1 + (delta2 + alpha2) * Z2
         Qubit1ControlTerms = gamma_magnitude1 * (np.cos(gamma_phase1) * X1 + np.sin(gamma_phase1) * Y1)
         Qubit2ControlTerms = gamma_magnitude2 * (np.cos(gamma_phase2) * X2 + np.sin(gamma_phase2) * Y2)
 
         #omega1 = delta1+alpha1, omega2 = delta2+alpha2, omegaC = alphaC
-        Delta1 = delta1+alpha1-alphaC
-        Delta2 = delta2+alpha2-alphaC
-        twoQubitDetuning = 1/((1/Delta1 + 1/Delta2)/2)
+#        Delta1 = delta1+alpha1-alphaC
+#        Delta2 = delta2+alpha2-alphaC
+#        twoQubitDetuning = 1/((1/Delta1 + 1/Delta2)/2)
         
         g_eff = g1*g2/twoQubitDetuning + g12
         interactionEnergy = g_eff*exchangeOperator
 
-        energyTotal = selfEnergyTerms + interactionEnergy
+        energyTotal = selfEnergyTerms + interactionEnergy + Qubit1ControlTerms + Qubit2ControlTerms
+
 
 #        print("coupling: ", f"{g_eff:7.3f}")
 #        print("Delta1: ", f"{Delta1:7.3f}")
@@ -455,8 +456,13 @@ class TwoQubitGateSynth(gym.Env):
         self.state = self.unitary_to_observation(self.U_initial)  # starting observation space
         self.prev_fidelity = 0  # previous step' fidelity for rewarding
         self.alpha_max = 4*np.pi/self.final_time
-        self.alphaC_mod_max = 1.5E9  ## see https://journals.aps.org/prx/pdf/10.1103/PhysRevX.11.021058
-        self.alphaC0 = 1.04E9 # couper center frequency : 5.2GHz, qubit 1 center frequency: 4.16 GHz
+        #self.alpha_max = 0
+        #self.alphaC_mod_max = 1.5E9  ## see https://journals.aps.org/prx/pdf/10.1103/PhysRevX.11.021058
+        #self.alphaC_mod_max = 0.005E9  ## see https://journals.aps.org/prx/pdf/10.1103/PhysRevX.11.021058
+        #self.alphaC0 = 1.0367E9 # coupler center frequency : 5.2GHz, qubit 1 center frequency: 4.16 GHz
+        #self.alphaC0 = 0.01E9 # coupler center frequency : 5.2GHz, qubit 1 center frequency: 4.16 GHz        
+        self.Delta0 = 100E6 
+        self.Delta_mod_max = 25E6 
         self.gamma_phase_max = 1.1675 * np.pi
         self.gamma_magnitude_max = 1.8 * np.pi / self.final_time / self.steps_per_Haar
         self.transition_history = []
@@ -497,7 +503,8 @@ class TwoQubitGateSynth(gym.Env):
     def compute_fidelity(self):
         env_config = TwoQubitGateSynth.get_default_env_config()
         U_target_dagger = self.unitary_to_superoperator(env_config["U_target"].conjugate().transpose())
-        return float(np.abs(np.trace(U_target_dagger @ self.U))) / (self.U.shape[0])
+        F = float(np.abs(np.trace(U_target_dagger @ self.U))) / (self.U.shape[0])
+        return F
 
     def unitary_to_observation(self, U):
         return (
@@ -532,7 +539,8 @@ class TwoQubitGateSynth(gym.Env):
         ### action space setting
         alpha1 = self.alpha_max * action[0] 
         alpha2 = self.alpha_max * action[1] 
-        alphaC = self.alphaC0 + self.alphaC_mod_max * action[2] 
+        #alphaC = self.alphaC0 + self.alphaC_mod_max * action[2] 
+        Delta = self.Delta0 + self.Delta_mod_max * action[2]
 
         # gamma is the complex amplitude of the control field
         gamma_magnitude1 = self.gamma_magnitude_max / 2 * (action[3] + 1)
@@ -547,7 +555,7 @@ class TwoQubitGateSynth(gym.Env):
             jump_ops.append(np.sqrt(self.relaxation_rate[ii]) * self.relaxation_ops[ii])
 
         # Hamiltonian with controls
-        H = self.hamiltonian(self.delta[0][0], self.delta[1][0], alpha1, alpha2, alphaC, gamma_magnitude1, gamma_phase1, gamma_magnitude2, gamma_phase2)
+        H = self.hamiltonian(self.delta[0][0], self.delta[1][0], alpha1, alpha2, Delta, gamma_magnitude1, gamma_phase1, gamma_magnitude2, gamma_phase2)
         self.H_array.append(H)  # Array of Hs at each Haar wavelet
 
         # H_tot for adding Hs at each time bins
@@ -573,17 +581,17 @@ class TwoQubitGateSynth(gym.Env):
 
         # Reward and fidelity calculation
         fidelity = self.compute_fidelity()
-        reward = (-3 * np.log10(1.0 - fidelity) + np.log10(1.0 - self.prev_fidelity)) + (3 * fidelity - self.prev_fidelity)
+        reward = (-5 * np.log10(1.0 - fidelity) + np.log10(1.0 - self.prev_fidelity)) + (5 * fidelity - self.prev_fidelity)
         self.prev_fidelity = fidelity
 
         self.state = self.get_observation()
 
 
-        if self.verbose is True:
-            print(
-                "F: ", f"{fidelity:7.3f}",
-                "R: ", f"{reward:7.3f}",
-            )
+        # if self.verbose is True:
+        #     print(
+        #         "F: ", f"{fidelity:7.3f}",
+        #         "R: ", f"{reward:7.3f}",
+        #     )
 
         self.transition_history.append([fidelity, reward, *action, *self.U.flatten()])
 
