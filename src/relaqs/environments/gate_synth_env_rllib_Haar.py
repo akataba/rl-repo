@@ -104,7 +104,7 @@ class GateSynthEnvRLlibHaar(gym.Env):
 
     def reset(self, *, seed=None, options=None):
         self.U = self.U_initial
-        starting_observeration = self.get_observation()
+        starting_observeration = self.get_observation() # redundant?
         self.state = self.get_observation()
         self.current_Haar_num = 1
         self.current_step_per_Haar = 1
