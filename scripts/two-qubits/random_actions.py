@@ -40,4 +40,3 @@ def test_two_qubits():
 if __name__ == "__main__":
     test_one_qubit()
     #test_two_qubits()
-    
