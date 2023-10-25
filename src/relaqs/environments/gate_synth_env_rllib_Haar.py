@@ -216,7 +216,9 @@ class GateSynthEnvRLlibHaarNoisy(gym.Env):
         self.delta = env_config["delta"]  # detuning
         self.detuning = 0
         self.detuning_update()
-        self.U_target = self.unitary_to_superoperator(env_config["U_target"])
+        #self.U_target = self.unitary_to_superoperator(env_config["U_target"])
+        self.U_target = env_config["U_target"]
+        self.superoperator_target = self.unitary_to_superoperator(env_config["U_target"])
         self.U_initial = self.unitary_to_superoperator(env_config["U_initial"])
         self.num_Haar_basis = env_config["num_Haar_basis"]
         self.steps_per_Haar = env_config["steps_per_Haar"]
@@ -264,7 +266,7 @@ class GateSynthEnvRLlibHaarNoisy(gym.Env):
     
     def compute_fidelity(self):
         env_config = GateSynthEnvRLlibHaarNoisy.get_default_env_config()
-        U_target_dagger = self.unitary_to_superoperator(env_config["U_target"].conjugate().transpose())
+        U_target_dagger = self.unitary_to_superoperator(self.U_target.conjugate().transpose())
         return float(np.abs(np.trace(U_target_dagger @ self.U))) / (self.U.shape[0])
 
     def unitary_to_observation(self, U):
@@ -341,7 +343,7 @@ class GateSynthEnvRLlibHaarNoisy(gym.Env):
         # Reward and fidelity calculation
         fidelity = self.compute_fidelity()
         reward = (-3 * np.log10(1.0 - fidelity) + np.log10(1.0 - self.prev_fidelity)) + (3 * fidelity - self.prev_fidelity)
-        #reward = negative_matrix_difference_norm(self.U_target, self.U)
+        #reward = negative_matrix_difference_norm(self.U_target, self.U) # May not be updated with self.superoperator
         self.prev_fidelity = fidelity
 
         self.state = self.get_observation()
