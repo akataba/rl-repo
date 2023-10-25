@@ -5,25 +5,12 @@ from relaqs.environments.gate_synth_env_rllib_Haar import GateSynthEnvRLlibHaarN
 from relaqs.save_results import SaveResults
 from relaqs.plot_data import plot_data
 import numpy as np
-from relaqs.quantum_noise_data.get_data import get_month_of_single_qubit_data, get_month_of_all_qubit_data
-from relaqs import quantum_noise_data
-from relaqs import QUANTUM_NOISE_DATA_DIR
-from relaqs.api.utils import do_inferencing
-
+from relaqs.api.utils import do_inferencing, sample_noise_parameters
 from qutip.operators import *
 
 def env_creator(config):
     return GateSynthEnvRLlibHaarNoisy(config)
 
-def sampling_noise_parameters(path_to_file):
-    # ---------------------> Get quantum noise data <-------------------------
-    t1_list, t2_list = get_month_of_all_qubit_data(path_to_file)        #in seconds
-    mean = 0
-    std = 0.03
-    sample_size = 100
-    samples = np.random.normal(mean, std, sample_size)
-    samples_list = samples.tolist()
-    return t1_list, t2_list, samples_list
 
 def run(n_training_iterations=1, save=True, plot=True,figure_title="",inferencing=True, n_episodes_for_inferencing=10):
     ray.init()
@@ -34,7 +21,7 @@ def run(n_training_iterations=1, save=True, plot=True,figure_title="",inferencin
     env_config["U_target"] = H
 
     # ---------------------> Get quantum noise data <-------------------------
-    t1_list, t2_list, detuning_list = sampling_noise_parameters("/Users/amara/Dropbox/Zapata/rl_learn/src/relaqs/quantum_noise_data/april/ibmq_belem_month_is_4.json")
+    t1_list, t2_list, detuning_list = sample_noise_parameters("/Users/amara/Dropbox/Zapata/rl_learn/src/relaqs/quantum_noise_data/april/ibmq_belem_month_is_4.json")
     env_config["relaxation_rates_list"] = [np.reciprocal(t1_list).tolist(), np.reciprocal(t2_list).tolist()] # using real T1 data
     env_config["delta"] = detuning_list
     env_config["relaxation_ops"] = [sigmam(),sigmaz()]
@@ -65,7 +52,7 @@ def run(n_training_iterations=1, save=True, plot=True,figure_title="",inferencin
         list_of_results.append(result['hist_stats'])
 
     if inferencing:
-        env, alg = do_inferencing(alg,n_episodes_for_inferencing)
+        env, alg = do_inferencing(alg,n_episodes_for_inferencing, "/Users/amara/Dropbox/Zapata/rl_learn/src/relaqs/quantum_noise_data/april/ibmq_manila_month_is_4.json")
 
     if save is True:
         sr = SaveResults(env, alg)
@@ -80,12 +67,12 @@ def run(n_training_iterations=1, save=True, plot=True,figure_title="",inferencin
     # -------------------------
 
 if __name__ == "__main__":
-    n_training_iterations = 500
-    save = True
-    plot = True
+    n_training_iterations = 1
+    save = False
+    plot = False
     figure_title ="Inferencing on multiple noisy environments with different detuning noise"
     inferencing=True,
-    n_episodes_for_inferencing=300
+    n_episodes_for_inferencing=3
 
     run(n_training_iterations, 
         save, 
