@@ -10,7 +10,6 @@ df = pandas.read_csv(csv_path)
 
 # get column names in search space
 hyperparam_names = [column_title for column_title in df.columns if "config" in column_title]
-alg_hyperparam_names = [name.replace("config/", "") for name in hyperparam_names] # removes "config/" from string
 
 # Get best performing hyperparameters
 metric = "max_fidelity"
