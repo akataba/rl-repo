@@ -1,0 +1,57 @@
+import warnings
+import pandas
+from relaqs import RESULTS_DIR
+from ray.rllib.algorithms.ddpg import DDPGConfig
+from relaqs.environments.gate_synth_env_rllib_Haar import TwoQubitGateSynth
+
+
+csv_path = RESULTS_DIR + "2023-10-22_03-17-55-HPT/hpt_results.csv"
+df = pandas.read_csv(csv_path)
+
+# get column names in search space
+hyperparam_names = [column_title for column_title in df.columns if "config" in column_title]
+alg_hyperparam_names = [name.replace("config/", "") for name in hyperparam_names] # removes "config/" from string
+
+# Get best performing hyperparameters
+metric = "max_fidelity"
+row_id_with_max_metric = df[metric].idxmax()
+row_with_max_metric = df.iloc[row_id_with_max_metric]
+best_hyperparams = row_with_max_metric[hyperparam_names]
+
+# Initialize algorithm config
+alg_config = DDPGConfig()
+
+# ---> Set hyperparams not directly in DDPG config <----
+# Set actor hidden layers
+if "config/actor_layer_size" in hyperparam_names and "config/actor_num_hiddens" in hyperparam_names:
+    print("actor")
+    actor_layer_size = best_hyperparams.pop("config/actor_layer_size")
+    actor_num_hiddens = int(best_hyperparams.pop("config/actor_num_hiddens"))
+    alg_config.actor_hiddens = [actor_layer_size] * actor_num_hiddens
+
+# Set critic hidden layers
+if "config/critic_layer_size" in hyperparam_names and "config/critic_num_hiddens" in hyperparam_names:
+    print("critic")
+    critic_layer_size = best_hyperparams.pop("config/critic_layer_size")
+    critic_num_hiddens = int(best_hyperparams.pop("config/critic_num_hiddens"))
+    alg_config.critic_hiddens = [critic_layer_size] * critic_num_hiddens
+# ------------------------------------------------------
+
+# Set values in DDPG config
+for name in best_hyperparams.index:
+    alg_name = name.replace("config/", "")
+    if alg_name not in alg_config.keys():
+        warnings.warn(f"Hyperparameter {alg_name} not in algorithm config and cannot bet set.")
+        continue
+    alg_config[alg_name] = best_hyperparams[name]
+
+# ---------------------> Configure algorithm and Environment <-------------------------
+#alg_config = DDPGConfig()
+alg_config.framework("torch")
+alg_config.environment(TwoQubitGateSynth, env_config=TwoQubitGateSynth.get_default_env_config())
+
+#alg_config.rollouts(batch_mode="complete_episodes")
+#alg_config.train_batch_size = TwoQubitGateSynth.get_default_env_config()["steps_per_Haar"]
+
+alg = alg_config.build()
+# ---------------------------------------------------------------------
