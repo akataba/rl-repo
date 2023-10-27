@@ -23,14 +23,12 @@ alg_config = DDPGConfig()
 # ---> Set hyperparams not directly in DDPG config <----
 # Set actor hidden layers
 if "config/actor_layer_size" in hyperparam_names and "config/actor_num_hiddens" in hyperparam_names:
-    print("actor")
     actor_layer_size = best_hyperparams.pop("config/actor_layer_size")
     actor_num_hiddens = int(best_hyperparams.pop("config/actor_num_hiddens"))
     alg_config.actor_hiddens = [actor_layer_size] * actor_num_hiddens
 
 # Set critic hidden layers
 if "config/critic_layer_size" in hyperparam_names and "config/critic_num_hiddens" in hyperparam_names:
-    print("critic")
     critic_layer_size = best_hyperparams.pop("config/critic_layer_size")
     critic_num_hiddens = int(best_hyperparams.pop("config/critic_num_hiddens"))
     alg_config.critic_hiddens = [critic_layer_size] * critic_num_hiddens
