@@ -485,7 +485,7 @@ def hamiltonian(delta1, delta2, alpha1, alpha2, twoQubitDetuning, gamma_magnitud
         
 
 def unitary_to_superoperator(U):
-    return (spre(Qobj(U)) * spost(Qobj(U))).data.toarray()
+    return (spre(Qobj(U)) * spost(Qobj(U.conjugate().transpose()))).data.toarray()
 
     def get_relaxation_rate(self):
         relaxation_size = len(self.relaxation_ops)      #get number of relaxation ops
