@@ -484,8 +484,8 @@ def hamiltonian(delta1, delta2, alpha1, alpha2, twoQubitDetuning, gamma_magnitud
         
         
 
-    def unitary_to_superoperator(self, U):
-        return (spre(Qobj(U)) * spost(Qobj(U))).data.toarray()
+def unitary_to_superoperator(U):
+    return (spre(Qobj(U)) * spost(Qobj(U))).data.toarray()
 
     def get_relaxation_rate(self):
         relaxation_size = len(self.relaxation_ops)      #get number of relaxation ops
@@ -500,11 +500,10 @@ def hamiltonian(delta1, delta2, alpha1, alpha2, twoQubitDetuning, gamma_magnitud
         normalizedDetuning = [(self.detuning[0] - min(self.delta[0])+1E-15)/(max(self.delta[0])-min(self.delta[0])+1E-15), (self.detuning[1] - min(self.delta[1])+1E-15)/(max(self.delta[1])-min(self.delta[1])+1E-15)]
         return np.append([self.compute_fidelity()]+[x//6283185 for x in self.relaxation_rate]+normalizedDetuning, self.unitary_to_observation(self.U)) #6283185 assuming 500 nanosecond relaxation is max
     
-    def compute_fidelity(self):
-        env_config = TwoQubitGateSynth.get_default_env_config()
-        U_target_dagger = self.unitary_to_superoperator(env_config["U_target"].conjugate().transpose())
-        F = float(np.abs(np.trace(U_target_dagger @ self.U))) / (self.U.shape[0])
-        return F
+def compute_fidelity(U_target,U):
+    U_target_dagger = unitary_to_superoperator(U_target.conjugate().transpose())
+    F = float(np.abs(np.trace(U_target_dagger @ U))) / (U.shape[0])
+    return F
 
     def unitary_to_observation(self, U):
         return (
@@ -572,10 +571,11 @@ for ii, H_elem in enumerate(H_array):
             H_tot.append(factor * H_elem)
 
 L = ([])  # at every step we calculate L again because minimal time bin changes
-U = np.eye(16)  # identity
+
 
 L = liouvillian(Qobj(H_tot[0]), jump_ops, data_only=False, chi=None)
 Ut = L.expm().data.toarray()  # time evolution (propagation operator)
+U = np.eye(16)  # identity
 U = Ut @ U  # calculate total propagation until the time we are at
 
         # Reward and fidelity calculation
