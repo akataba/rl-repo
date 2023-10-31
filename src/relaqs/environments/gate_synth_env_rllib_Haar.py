@@ -95,8 +95,8 @@ class GateSynthEnvRLlibHaar(gym.Env):
     def get_observation(self):
         return np.append([self.compute_fidelity()], self.unitary_to_observation(self.U))
     
-    def compute_fidelity(self):
-        return float(np.abs(np.trace(self.U_target.conjugate().transpose() @ self.U))) / (self.U.shape[0])
+def compute_fidelity(U_target,U):
+    return float(np.abs(np.trace(U_target.conjugate().transpose() @ U))) / (U.shape[0])
 
     def hamiltonian(self, delta, alpha, gamma_magnitude, gamma_phase):
         """Alpha and gamma are complex. This function could be made a callable class attribute."""
@@ -388,10 +388,10 @@ class TwoQubitGateSynth(gym.Env):
         return {
             "action_space_size": 7,
             "U_initial": II,  # staring with I
-            "U_target": CZ,  # target for CZ
-            "final_time": 30E-9, # in seconds
-            "num_Haar_basis": 4,  # number of Haar basis (need to update for odd combinations)
-            "steps_per_Haar": 2,  # steps per Haar basis per episode
+            "U_target": la.expm(-1j*exchangeOperator),  # target for CZ
+            "final_time": 1, # in seconds
+            "num_Haar_basis": 1,  # number of Haar basis (need to update for odd combinations)
+            "steps_per_Haar": 1,  # steps per Haar basis per episode
             "delta": [[0],[0]],  # qubit detuning
             "save_data_every_step": 1,
             "verbose": True,
@@ -408,7 +408,7 @@ class TwoQubitGateSynth(gym.Env):
     #T1 = 60 us, 30 us
     #T2* = 66 us, 5 us
 
-    def hamiltonian(self, delta1, delta2, alpha1, alpha2, twoQubitDetuning, gamma_magnitude1, gamma_phase1, gamma_magnitude2, gamma_phase2, g1 = 72.5E6, g2 = 71.5E6, g12 = 5E6):
+def hamiltonian(delta1, delta2, alpha1, alpha2, twoQubitDetuning, gamma_magnitude1, gamma_phase1, gamma_magnitude2, gamma_phase2, g1 = 1, g2 = 1, g12 = 0):
         selfEnergyTerms = (delta1 + alpha1) * Z1 + (delta2 + alpha2) * Z2
         Qubit1ControlTerms = gamma_magnitude1 * (np.cos(gamma_phase1) * X1 + np.sin(gamma_phase1) * Y1)
         Qubit2ControlTerms = gamma_magnitude2 * (np.cos(gamma_phase2) * X2 + np.sin(gamma_phase2) * Y2)
@@ -455,16 +455,16 @@ class TwoQubitGateSynth(gym.Env):
         self.U = self.U_initial.copy()  # multiplied propagtion operators
         self.state = self.unitary_to_observation(self.U_initial)  # starting observation space
         self.prev_fidelity = 0  # previous step' fidelity for rewarding
-        self.alpha_max = 4*np.pi/self.final_time
+        self.alpha_max = 0
         #self.alpha_max = 0
         #self.alphaC_mod_max = 1.5E9  ## see https://journals.aps.org/prx/pdf/10.1103/PhysRevX.11.021058
         #self.alphaC_mod_max = 0.005E9  ## see https://journals.aps.org/prx/pdf/10.1103/PhysRevX.11.021058
         #self.alphaC0 = 1.0367E9 # coupler center frequency : 5.2GHz, qubit 1 center frequency: 4.16 GHz
         #self.alphaC0 = 0.01E9 # coupler center frequency : 5.2GHz, qubit 1 center frequency: 4.16 GHz        
-        self.Delta0 = 100E6 
-        self.Delta_mod_max = 25E6 
-        self.gamma_phase_max = 1.1675 * np.pi
-        self.gamma_magnitude_max = 1.8 * np.pi / self.final_time / self.steps_per_Haar
+        self.Delta0 = 1
+        self.Delta_mod_max = 0
+        self.gamma_phase_max = 0
+        self.gamma_magnitude_max = 0
         self.transition_history = []
 
     def detuning_update(self):
@@ -550,9 +550,10 @@ class TwoQubitGateSynth(gym.Env):
         gamma_phase2 = self.gamma_phase_max * action[6]
 
         # Set noise opertors
-        jump_ops = []
-        for ii in range(len(self.relaxation_ops)):
-            jump_ops.append(np.sqrt(self.relaxation_rate[ii]) * self.relaxation_ops[ii])
+jump_ops = []
+
+for ii in range(len(relaxation_ops)):
+    jump_ops.append(relaxation_ops[ii])
 
         # Hamiltonian with controls
         H = self.hamiltonian(self.delta[0][0], self.delta[1][0], alpha1, alpha2, Delta, gamma_magnitude1, gamma_phase1, gamma_magnitude2, gamma_phase2)
@@ -561,23 +562,21 @@ class TwoQubitGateSynth(gym.Env):
         # H_tot for adding Hs at each time bins
         self.H_tot = []
 
-        for ii, H_elem in enumerate(self.H_array):
-            for jj in range(0, num_time_bins):
-                Haar_num = self.current_Haar_num - np.floor(ii / self.steps_per_Haar) # Haar_num: label which Haar wavelet, current_Haar_num: order in the array
-                factor = (-1) ** np.floor(jj / (2 ** (Haar_num - 1))) # factor flips the sign every 2^(Haar_num-1)
-                if ii > 0:
-                    self.H_tot[jj] += factor * H_elem
-                else:  # Because H_tot[jj] does not exist
-                    self.H_tot.append(factor * H_elem)
+for ii, H_elem in enumerate(H_array):
+    for jj in range(0, 1):
+        Haar_num = 1 - np.floor(ii) # Haar_num: label which Haar wavelet, current_Haar_num: order in the array
+        factor = (-1) ** np.floor(jj) # factor flips the sign every 2^(Haar_num-1)
+        if ii > 0:
+            H_tot[jj] += factor * H_elem
+        else:  # Because H_tot[jj] does not exist
+            H_tot.append(factor * H_elem)
 
-        self.L = ([])  # at every step we calculate L again because minimal time bin changes
-        self.U = np.eye(16)  # identity
+L = ([])  # at every step we calculate L again because minimal time bin changes
+U = np.eye(16)  # identity
 
-        for jj in range(0, num_time_bins):
-            L = (liouvillian(Qobj(self.H_tot[jj]), jump_ops, data_only=False, chi=None)).data.toarray()  # Liouvillian calc
-            self.L_array.append(L)
-            Ut = la.expm(self.final_time / num_time_bins * L)  # time evolution (propagation operator)
-            self.U = Ut @ self.U  # calculate total propagation until the time we are at
+L = liouvillian(Qobj(H_tot[0]), jump_ops, data_only=False, chi=None)
+Ut = L.expm().data.toarray()  # time evolution (propagation operator)
+U = Ut @ U  # calculate total propagation until the time we are at
 
         # Reward and fidelity calculation
         fidelity = self.compute_fidelity()
