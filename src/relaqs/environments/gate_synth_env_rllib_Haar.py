@@ -247,7 +247,7 @@ class GateSynthEnvRLlibHaarNoisy(gym.Env):
         
 
     def unitary_to_superoperator(self, U):
-        return (spre(Qobj(U)) * spost(Qobj(U))).data.toarray()
+        return (spre(Qobj(U)) * spost(Qobj(U.dagger()))).data.toarray()
 
     def get_relaxation_rate(self):
         relaxation_size = len(self.relaxation_ops)      #get number of relaxation ops
@@ -485,7 +485,7 @@ class TwoQubitGateSynth(gym.Env):
         
 
     def unitary_to_superoperator(self, U):
-        return (spre(Qobj(U)) * spost(Qobj(U))).data.toarray()
+        return (spre(Qobj(U)) * spost(Qobj(U.dagger()))).data.toarray()
 
     def get_relaxation_rate(self):
         relaxation_size = len(self.relaxation_ops)      #get number of relaxation ops
