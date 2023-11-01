@@ -1,3 +1,6 @@
+import sys
+sys.path.append('./src/')
+
 import csv
 from relaqs import RESULTS_DIR
 import matplotlib.pyplot as plt
@@ -18,7 +21,7 @@ def get_fidelities(path):
     return fidelities
 
 if __name__ == "__main__":
-    one_qubit = True
+    one_qubit = False
 
     if one_qubit is True:
         path_to_random_fidelities = RESULTS_DIR + "one_qubit_fidelities_random_actions.csv"

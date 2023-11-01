@@ -1,3 +1,6 @@
+import sys
+sys.path.append('./src/')
+
 from relaqs.environments.gate_synth_env_rllib_Haar import TwoQubitGateSynth, GateSynthEnvRLlibHaarNoisy
 from relaqs import RESULTS_DIR
 import numpy as np
@@ -21,7 +24,7 @@ def test_one_qubit():
         writer.writerow(fidelities)
 
 def test_two_qubits():
-    n_episodes = 100_000 
+    n_episodes = 10_000 
 
     env = TwoQubitGateSynth(TwoQubitGateSynth.get_default_env_config())
     for _ in range(n_episodes):
@@ -38,6 +41,6 @@ def test_two_qubits():
         writer.writerow(fidelities)
 
 if __name__ == "__main__":
-    test_one_qubit()
-    #test_two_qubits()
+    #test_one_qubit()
+    test_two_qubits()
     
