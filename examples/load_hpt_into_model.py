@@ -3,7 +3,8 @@ import pandas
 from relaqs import RESULTS_DIR
 from ray.rllib.algorithms.ddpg import DDPGConfig
 from relaqs.environments.gate_synth_env_rllib_Haar import TwoQubitGateSynth
-
+from relaqs.save_results import SaveResults
+from relaqs.plot_data import plot_data
 
 csv_path = RESULTS_DIR + "2023-10-22_03-17-55-HPT/hpt_results.csv"
 df = pandas.read_csv(csv_path)
@@ -52,3 +53,15 @@ alg_config.environment(TwoQubitGateSynth, env_config=TwoQubitGateSynth.get_defau
 
 alg = alg_config.build()
 # ---------------------------------------------------------------------
+
+n_training_iterations = 1
+results = [alg.train() for _ in range(n_training_iterations)]
+
+# Save results
+env = alg.workers.local_worker().env
+sr = SaveResults(env, alg)
+save_dir = sr.save_results()
+print("Results saved to:", save_dir)
+
+# Plot results
+plot_data(save_dir, episode_length=alg._episode_history[0].episode_length)
