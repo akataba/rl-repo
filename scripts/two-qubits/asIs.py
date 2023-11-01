@@ -31,8 +31,7 @@ def save_grad_to_file(resultdict):
         with open("gradfile", "a") as f:
             f.write(f"{grad_gnorm}\n")
     except KeyError:
-        pass
-        # print(f"Failed to extract grad_gnorm from: {resultdict}")
+        print(f"Failed to extract grad_gnorm from: {resultdict}")
 
 def inject_logging(alg, logging_func):
     og_ts = alg.training_step
@@ -54,8 +53,6 @@ def run(n_training_iterations=1, save=True, plot=True):
         alg_config.framework("torch")
         
         env_config = TwoQubitGateSynth.get_default_env_config()
-        CZ = cphase(np.pi).data.toarray()
-        env_config["U_target"] = CZ
 
         alg_config.environment("my_env", env_config=env_config)
     
@@ -88,7 +85,7 @@ def run(n_training_iterations=1, save=True, plot=True):
         # ---------------------> Save Results <-------------------------
         if save is True:
             env = alg.workers.local_worker().env
-            sr = SaveResults(env, alg, results=list_of_results, save_path = RESULTS_DIR + "two-qubit gates/"+"CZ" + datetime.datetime.now().strftime("%Y-%m-%d_%H-%M-%S/"))
+            sr = SaveResults(env, alg, results=list_of_results, save_path = RESULTS_DIR + "two-qubit gates/"+"couplerHamiltonian" + datetime.datetime.now().strftime("%Y-%m-%d_%H-%M-%S/"))
             save_dir = sr.save_results()
             print("Results saved to:", save_dir)
         # --------------------------------------------------------------
@@ -103,7 +100,7 @@ def run(n_training_iterations=1, save=True, plot=True):
         ray.shutdown()
 
 if __name__ == "__main__":
-    n_training_iterations = 50
+    n_training_iterations = 2
     save = True
     plot = True
     run(n_training_iterations, save, plot)
