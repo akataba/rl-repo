@@ -5,7 +5,7 @@ Relqs is a Python framework for doing reinforcement learning for quantum control
 
 ## Install relaqs
 ```
-pip install .
+pip install -e .
 ```
 
 ### Required Packages:
