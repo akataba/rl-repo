@@ -587,11 +587,11 @@ class TwoQubitGateSynth(gym.Env):
         self.state = self.get_observation()
 
 
-        # if self.verbose is True:
-        #     print(
-        #         "F: ", f"{fidelity:7.3f}",
-        #         "R: ", f"{reward:7.3f}",
-        #     )
+        if self.verbose is True:
+            print(
+                "F: ", f"{fidelity:7.3f}",
+                "R: ", f"{reward:7.3f}",
+            )
 
         self.transition_history.append([fidelity, reward, *action, *self.U.flatten()])
 
