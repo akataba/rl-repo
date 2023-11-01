@@ -54,12 +54,12 @@ alg_config.environment(TwoQubitGateSynth, env_config=TwoQubitGateSynth.get_defau
 alg = alg_config.build()
 # ---------------------------------------------------------------------
 
-n_training_iterations = 1
+n_training_iterations = 2 
 results = [alg.train() for _ in range(n_training_iterations)]
 
 # Save results
 env = alg.workers.local_worker().env
-sr = SaveResults(env, alg)
+sr = SaveResults(env, alg, target_gate_string="CZ_HPT")
 save_dir = sr.save_results()
 print("Results saved to:", save_dir)
 
