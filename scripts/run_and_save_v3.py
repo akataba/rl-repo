@@ -6,6 +6,7 @@ from ray.tune.registry import register_env
 from relaqs.environments.gate_synth_env_rllib_Haar import GateSynthEnvRLlibHaarNoisy
 from relaqs.save_results import SaveResults
 from relaqs.plot_data import plot_data
+from relaqs.api import gates
 
 def env_creator(config):
     return GateSynthEnvRLlibHaarNoisy(config)
@@ -17,6 +18,9 @@ def run(n_training_iterations=1, save=True, plot=True):
     # ---------------------> Configure algorithm and Environment <-------------------------
     alg_config = DDPGConfig()
     alg_config.framework("torch")
+    env_config = GateSynthEnvRLlibHaarNoisy.get_default_env_config()
+    target_gate = gates.X()
+    env_config["target_gate"] = target_gate.get_matrix()
     alg_config.environment("my_env", env_config=GateSynthEnvRLlibHaarNoisy.get_default_env_config())
     #alg_config.environment(GateSynthEnvRLlibHaarNoisy, env_config=GateSynthEnvRLlibHaarNoisy.get_default_env_config())
 
@@ -42,7 +46,7 @@ def run(n_training_iterations=1, save=True, plot=True):
     # ---------------------> Save Results <-------------------------
     if save is True:
         env = alg.workers.local_worker().env
-        sr = SaveResults(env, alg)
+        sr = SaveResults(env, alg, target_gate_string=str(target_gate))
         save_dir = sr.save_results()
         print("Results saved to:", save_dir)
     # --------------------------------------------------------------
