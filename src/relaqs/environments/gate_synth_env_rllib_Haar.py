@@ -7,6 +7,7 @@ from qutip.superoperator import liouvillian, spre, spost
 from qutip import Qobj, tensor
 from qutip.operators import *
 from qutip import cnot, cphase
+import matplotlib.pyplot as plt
 #from relaqs.api.reward_functions import negative_matrix_difference_norm
 
 sig_p = np.array([[0, 1], [0, 0]])
@@ -388,10 +389,10 @@ class TwoQubitGateSynth(gym.Env):
         return {
             "action_space_size": 7,
             "U_initial": II,  # staring with I
-            "U_target": CZ,  # target for CZ
-            "final_time": 30E-9, # in seconds
-            "num_Haar_basis": 4,  # number of Haar basis (need to update for odd combinations)
-            "steps_per_Haar": 2,  # steps per Haar basis per episode
+            "U_target": exchangeOperator,  # target for CZ
+            "final_time": np.pi, # in seconds
+            "num_Haar_basis": 1,  # number of Haar basis (need to update for odd combinations)
+            "steps_per_Haar": 1,  # steps per Haar basis per episode
             "delta": [[0],[0]],  # qubit detuning
             "save_data_every_step": 1,
             "verbose": True,
@@ -402,32 +403,15 @@ class TwoQubitGateSynth(gym.Env):
             "observation_space_size": 2*256 + 1 + 4 + 2 # 2*16 = (complex number)*(density matrix elements = 4)^2, + 1 for fidelity + 4 for relaxation rate + 2 for detuning
         }
 
-    #physics: https://journals.aps.org/prapplied/pdf/10.1103/PhysRevApplied.10.054062, eq(2)
-    #parameters: https://journals.aps.org/prx/pdf/10.1103/PhysRevX.11.021058
-    #30 ns duration, g1 = 72.5 MHz, g2 = 71.5 MHz, g12 = 5 MHz
-    #T1 = 60 us, 30 us
-    #T2* = 66 us, 5 us
-
-    def hamiltonian(self, delta1, delta2, alpha1, alpha2, twoQubitDetuning, gamma_magnitude1, gamma_phase1, gamma_magnitude2, gamma_phase2, g1 = 72.5E6, g2 = 71.5E6, g12 = 5E6):
+    def hamiltonian(self, delta1, delta2, alpha1, alpha2, twoQubitDetuning, gamma_magnitude1, gamma_phase1, gamma_magnitude2, gamma_phase2, g1 = 0, g2 = 0, g12 = 1):
         selfEnergyTerms = (delta1 + alpha1) * Z1 + (delta2 + alpha2) * Z2
         Qubit1ControlTerms = gamma_magnitude1 * (np.cos(gamma_phase1) * X1 + np.sin(gamma_phase1) * Y1)
         Qubit2ControlTerms = gamma_magnitude2 * (np.cos(gamma_phase2) * X2 + np.sin(gamma_phase2) * Y2)
 
-        #omega1 = delta1+alpha1, omega2 = delta2+alpha2, omegaC = alphaC
-#        Delta1 = delta1+alpha1-alphaC
-#        Delta2 = delta2+alpha2-alphaC
-#        twoQubitDetuning = 1/((1/Delta1 + 1/Delta2)/2)
-        
         g_eff = g1*g2/twoQubitDetuning + g12
         interactionEnergy = g_eff*exchangeOperator
 
         energyTotal = selfEnergyTerms + interactionEnergy + Qubit1ControlTerms + Qubit2ControlTerms
-
-
-#        print("coupling: ", f"{g_eff:7.3f}")
-#        print("Delta1: ", f"{Delta1:7.3f}")
-#        print("Delta2: ", f"{Delta2:7.3f}")
-#        print("twoQubitDetuning: ", f"{twoQubitDetuning:7.3f}")
 
         return energyTotal
 
@@ -455,16 +439,11 @@ class TwoQubitGateSynth(gym.Env):
         self.U = self.U_initial.copy()  # multiplied propagtion operators
         self.state = self.unitary_to_observation(self.U_initial)  # starting observation space
         self.prev_fidelity = 0  # previous step' fidelity for rewarding
-        self.alpha_max = 4*np.pi/self.final_time
-        #self.alpha_max = 0
-        #self.alphaC_mod_max = 1.5E9  ## see https://journals.aps.org/prx/pdf/10.1103/PhysRevX.11.021058
-        #self.alphaC_mod_max = 0.005E9  ## see https://journals.aps.org/prx/pdf/10.1103/PhysRevX.11.021058
-        #self.alphaC0 = 1.0367E9 # coupler center frequency : 5.2GHz, qubit 1 center frequency: 4.16 GHz
-        #self.alphaC0 = 0.01E9 # coupler center frequency : 5.2GHz, qubit 1 center frequency: 4.16 GHz        
-        self.Delta0 = 100E6 
-        self.Delta_mod_max = 25E6 
-        self.gamma_phase_max = 1.1675 * np.pi
-        self.gamma_magnitude_max = 1.8 * np.pi / self.final_time / self.steps_per_Haar
+        self.alpha_max = 0
+        self.Delta0 = 1 
+        self.Delta_mod_max = 0
+        self.gamma_phase_max = 0
+        self.gamma_magnitude_max = 0
         self.transition_history = []
 
     def detuning_update(self):
@@ -586,6 +565,42 @@ class TwoQubitGateSynth(gym.Env):
 
         self.state = self.get_observation()
 
+        env_config = TwoQubitGateSynth.get_default_env_config()
+        U = self.U
+        Usp = self.unitary_to_superoperator(env_config["U_target"])
+
+        # Separate real and imaginary parts
+        U_real = np.real(U)
+        U_imag = np.imag(U)
+        Usp_real = np.real(Usp)
+        Usp_imag = np.imag(Usp)
+
+        # Create 2x2 subplots
+        fig, axs = plt.subplots(2, 2, figsize=(12, 12))
+
+        # Plot 2D histogram for Real U
+        c1 = axs[0, 0].imshow(U_real, cmap='jet', aspect='auto', vmin=-1, vmax=1)
+        axs[0, 0].set_title('2D Histogram for Real U')
+        plt.colorbar(c1, ax=axs[0, 0])
+
+        # Plot 2D histogram for Imaginary U
+        c2 = axs[0, 1].imshow(U_imag, cmap='jet', aspect='auto', vmin=-1, vmax=1)
+        axs[0, 1].set_title('2D Histogram for Imaginary U')
+        plt.colorbar(c2, ax=axs[0, 1])
+
+        # Plot 2D histogram for Real Usp
+        c3 = axs[1, 0].imshow(Usp_real, cmap='jet', aspect='auto', vmin=-1, vmax=1)
+        axs[1, 0].set_title('2D Histogram for Real Usp')
+        plt.colorbar(c3, ax=axs[1, 0])
+
+        # Plot 2D histogram for Imaginary Usp
+        c4 = axs[1, 1].imshow(Usp_imag, cmap='jet', aspect='auto', vmin=-1, vmax=1)
+        axs[1, 1].set_title('2D Histogram for Imaginary Usp')
+        plt.colorbar(c4, ax=axs[1, 1])
+
+        # Show the plots
+        plt.tight_layout()
+        plt.show()
 
         # if self.verbose is True:
         #     print(
