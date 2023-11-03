@@ -7,7 +7,6 @@ from relaqs.environments.gate_synth_env_rllib_Haar import GateSynthEnvRLlibHaarN
 from relaqs.save_results import SaveResults
 from relaqs.plot_data import plot_data
 from relaqs.api import gates
-import numpy as np
 
 def env_creator(config):
     return GateSynthEnvRLlibHaarNoisy(config)
