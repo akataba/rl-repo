@@ -3,9 +3,10 @@
 import os
 import ray
 from ray import tune
+from ray.air import RunConfig
 from ray.rllib.algorithms.ddpg import DDPGConfig
 from ray.tune.registry import register_env
-from relaqs.environments.gate_synth_env_rllib_Haar import TwoQubitGateSynth 
+from relaqs.environments.gate_synth_env_rllib_Haar import TwoQubitGateSynth
 from ray.tune.search.optuna import OptunaSearch
 from relaqs import RESULTS_DIR
 import datetime
@@ -19,15 +20,15 @@ def save_hpt_table(results: tune.ResultGrid):
     os.makedirs(path)
     df.to_csv(path + "hpt_results.csv")
 
-def run_ray_tune(n_configurations=100, save=True):
+def run_ray_tune(n_configurations=100, n_training_iterations=50, save=True):
     ray.init()
     register_env("my_env", env_creator)
     search_space = {
             "actor_lr" : tune.loguniform(1e-5,1e-3),
             "critic_lr" : tune.loguniform(1e-5,1e-3),
-            "actor_hiddens" : tune.choice([5, 10, 50]),
+            "actor_num_hiddens" : tune.choice([5, 10, 50]),
             "actor_layer_size" : tune.choice([50, 100, 300, 500]),
-            "critic_hiddens" : tune.choice([5, 10, 50]),
+            "critic_num_hiddens" : tune.choice([5, 10, 50]),
             "critic_layer_size" : tune.choice([50, 100, 300, 500])
             }
     algo = OptunaSearch()
@@ -38,8 +39,11 @@ def run_ray_tune(n_configurations=100, save=True):
             metric="max_fidelity",
             mode="max",
             search_alg=algo,
-            num_samples=n_configurations 
-            )
+            num_samples=n_configurations
+            ),
+        run_config=RunConfig(
+            stop={"training_iteration": n_training_iterations},
+        ),
         )
     results = tuner.fit()
     best_fidelity_config = results.get_best_result(metric="max_fidelity", mode="max").config
@@ -84,8 +88,9 @@ def objective(config):
     return results
 
 if __name__ == "__main__":
-    n_configurations = 100
+    n_configurations = 1
+    n_training_iterations = 1
     save = True
-    run_ray_tune(n_configurations=n_configurations, save=save)
+    run_ray_tune(n_configurations, n_training_iterations, save)
     ray.shutdown() # not sure if this is required
     
