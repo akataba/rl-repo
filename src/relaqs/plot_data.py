@@ -63,7 +63,7 @@ def plot_data(save_dir, episode_length, figure_title=''):
             rewards = df[:, 1]
     except:
         df = pd.read_csv(save_dir + "env_data.csv", header=None)
-        fidelity = np.array(df.iloc[:,0])
+        fidelities = np.array(df.iloc[:,0])
         rewards = np.array(df.iloc[:,1])
 
 
@@ -76,10 +76,13 @@ def plot_data(save_dir, episode_length, figure_title=''):
     sum_of_rewards_per_episode = []
 
     # there is probably a numpy way to speed this up
-    for i in range(episode_length - 1, len(fidelities), episode_length):
-        final_fidelity_per_episode.append(fidelities[i])
-        final_infelity_per_episode.append(1 - fidelities[i])
-        sum_of_rewards_per_episode.append(np.sum(rewards[i-2 : i+1]))
+    n_transitions = len(fidelities)
+    for i in range(episode_length, n_transitions, episode_length):
+        episode_start_index = i - episode_length
+        episode_end_index = i - 1 # 0-indexing
+        final_fidelity_per_episode.append(fidelities[episode_end_index])
+        final_infelity_per_episode.append(1 - fidelities[episode_end_index])
+        sum_of_rewards_per_episode.append(np.sum(rewards[episode_start_index : episode_end_index + 1])) # +1 to include end of episode
 
     # ----------------------> Moving average <--------------------------------------
     # Fidelity
