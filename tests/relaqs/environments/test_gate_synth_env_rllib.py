@@ -48,7 +48,7 @@ def test_training(gate_to_train):
     save = True
     plot = False
     figure_title ="Inferencing on multiple noisy environments with different detuning noise"
-    inferencing=True
+    inferencing=False
     n_episodes_for_inferencing=3
 
     _ , dir = run(gate_to_train, n_training_iterations, 
