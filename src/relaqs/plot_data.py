@@ -49,14 +49,14 @@ def plot_data(save_dir, episode_length, figure_title='Noisy Environment'):
             fidelities = df[:, 0]
             rewards = df[:, 1]
     except:
-        df = pd.read_csv(save_dir + "env_data.csv", header=None)
-        fidelity = np.array(df.iloc[:,0])
+        df = pd.read_csv(save_dir + "env_data.csv", header=0)
+        fidelities = np.array(df.iloc[:,0])
         rewards = np.array(df.iloc[:,1])
 
 
 
-    print("max fidelity", max(fidelities))
-    print("max reward", max(rewards))
+    print("max fidelity: ", max(fidelities))
+    print("max reward: ", max(rewards))
 
     final_fidelity_per_episode = []
     final_infelity_per_episode = []
