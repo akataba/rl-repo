@@ -79,8 +79,6 @@ def get_best_episode_information(filename):
     fidelity = df.iloc[max_fidelity_idx, 0]
     episode = df.iloc[max_fidelity_idx, 4]
     best_episodes = df[df["Episode Id"] == episode]
-    print(best_episodes.iloc[0,0])
-    print(best_episodes.iloc[1,0])
     return best_episodes
 
 def env_creator(config):
