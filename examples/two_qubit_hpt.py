@@ -10,6 +10,7 @@ from relaqs.environments.gate_synth_env_rllib_Haar import TwoQubitGateSynth
 from ray.tune.search.optuna import OptunaSearch
 from relaqs import RESULTS_DIR
 import datetime
+import numpy as np
 
 def env_creator(config):
     return TwoQubitGateSynth(config)
@@ -29,7 +30,9 @@ def run_ray_tune(n_configurations=100, n_training_iterations=50, save=True):
             "actor_num_hiddens" : tune.choice([5, 10, 50]),
             "actor_layer_size" : tune.choice([50, 100, 300, 500]),
             "critic_num_hiddens" : tune.choice([5, 10, 50]),
-            "critic_layer_size" : tune.choice([50, 100, 300, 500])
+            "critic_layer_size" : tune.choice([50, 100, 300, 500]),
+            "target_noise" : tune.uniform(0.0, 4),
+            "n_training_iterations" : n_training_iterations
             }
     algo = OptunaSearch()
     tuner = tune.Tuner(
@@ -50,8 +53,8 @@ def run_ray_tune(n_configurations=100, n_training_iterations=50, save=True):
     print("best_fidelity_config", best_fidelity_config)
     
     # Average within scope
-    #best_avg_fidelity_config = results.get_best_result(metric="fidelity", mode="max", scope="last-50-avg").config
-    #print("best_avg_fidelity_config", best_avg_fidelity_config)
+    # best_avg_fidelity_config = results.get_best_result(metric="fidelity", mode="max", scope="last-50-avg").config
+    # print("best_avg_fidelity_config", best_avg_fidelity_config)
     
     if save is True:
         save_hpt_table(results)
@@ -61,6 +64,7 @@ def objective(config):
     alg_config = DDPGConfig()
     alg_config.framework("torch")
     env_config = TwoQubitGateSynth.get_default_env_config()
+    env_config["verbose"] = False
     #env_config["U_target"] = gates.X().get_matrix()
     alg_config.environment("my_env", env_config=env_config)
 
@@ -69,27 +73,31 @@ def objective(config):
 
     alg_config.actor_hiddens = [config["actor_layer_size"]] * int(config["actor_num_hiddens"])
     alg_config.critic_hiddens = [config["critic_layer_size"]] * int(config["critic_num_hiddens"])
+    alg_config["target_noise"] = config["target_noise"]
 
     alg = alg_config.build()
     # ---------------------------------------------------------------------
 
     # Train
-    result = alg.train()
+    results = [alg.train() for _ in range(config["n_training_iterations"])]
 
     # Record
     env = alg.workers.local_worker().env
     fidelities = [transition[0] for transition in env.transition_history]
+    avg_final_fidelities = np.mean([fidelities[-50:]])
     results = {
             "max_fidelity": max(fidelities),
+            "avg_final_fidelities" : avg_final_fidelities,
             "final_fidelity" : fidelities[-1],
             "final_reward" : env.transition_history[-1][1]
         }
     print("\n\n\n", results)
+    print(len(env.transition_history))
     return results
 
 if __name__ == "__main__":
-    n_configurations = 1
-    n_training_iterations = 1
+    n_configurations = 20
+    n_training_iterations = 50
     save = True
     run_ray_tune(n_configurations, n_training_iterations, save)
     ray.shutdown() # not sure if this is required
