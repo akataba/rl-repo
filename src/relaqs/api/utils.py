@@ -1,8 +1,12 @@
 import ray
 import numpy as np
+from numpy.linalg import eigvalsh
 from ray.rllib.algorithms.algorithm import Algorithm
 from ray.rllib.algorithms.ddpg import DDPGConfig
-from relaqs.quantum_noise_data.get_data import get_month_of_single_qubit_data, get_month_of_all_qubit_data
+from relaqs.quantum_noise_data.get_data import (get_month_of_all_qubit_data, 
+get_single_qubit_detuning 
+)
+from relaqs import RESULTS_DIR
 import pandas as pd
 from scipy.linalg import sqrtm
 from relaqs import RESULTS_DIR
@@ -16,6 +20,7 @@ from relaqs.plot_data import plot_data
 import numpy as np
 from relaqs import QUANTUM_NOISE_DATA_DIR
 from qutip.operators import *
+import relaqs.api.gates as gates
 
 gate_fidelity = lambda U, V: float(np.abs(np.trace(U.conjugate().transpose() @ V))) / (U.shape[0])
 
@@ -24,15 +29,20 @@ def dm_fidelity(rho, sigma):
     #return np.abs(np.trace(sqrtm(sqrtm(rho) @ sigma @ sqrtm(rho))))**2
     return np.trace(sqrtm(sqrtm(rho) @ sigma @ sqrtm(rho))).real**2
 
-def sample_noise_parameters(path_to_file):
+def sample_noise_parameters(t1_t2_noise_file, detuning_noise_file = None):
     # ---------------------> Get quantum noise data <-------------------------
-    t1_list, t2_list = get_month_of_all_qubit_data(path_to_file)        #in seconds
-    mean = 0
-    std = 0.03
-    sample_size = 100
-    samples = np.random.normal(mean, std, sample_size)
-    samples_list = samples.tolist()
-    return t1_list, t2_list, samples_list
+    t1_list, t2_list = get_month_of_all_qubit_data(QUANTUM_NOISE_DATA_DIR + t1_t2_noise_file)        #in seconds
+
+    if detuning_noise_file is None:
+        mean = 0
+        std = 0.03
+        sample_size = 100
+        samples = np.random.normal(mean, std, sample_size)
+        detunings = samples.tolist()
+    else:
+        detunings = get_single_qubit_detuning(QUANTUM_NOISE_DATA_DIR + detuning_noise_file)
+
+    return t1_list, t2_list, detunings
 
 def do_inferencing(alg, n_episodes_for_inferencing, quantum_noise_file_path):
     """
@@ -41,7 +51,7 @@ def do_inferencing(alg, n_episodes_for_inferencing, quantum_noise_file_path):
     """
     
     assert n_episodes_for_inferencing > 0
-    env = alg.workers.local_worker().env
+    env = return_env_from_alg(alg)
     obs, info = env.reset()
     t1_list, t2_list, detuning_list = sample_noise_parameters(quantum_noise_file_path)
     env.relaxation_rates_list = [np.reciprocal(t1_list).tolist(), np.reciprocal(t2_list).tolist()]
@@ -84,14 +94,22 @@ def get_best_episode_information(filename):
 def env_creator(config):
     return GateSynthEnvRLlibHaarNoisy(config)
 
-def run(gate, n_training_iterations=1, save=True, plot=True,figure_title="",inferencing=True, n_episodes_for_inferencing=10):
+def run(gate, n_training_iterations=1, noise_file=""):
+    """Args
+       gate (Gate type):
+       n_training_iterations (int)
+       figure_title
+
+    Returns
+      alg (Algorithm)
+
+    """
     ray.init()
     register_env("my_env", env_creator)
     env_config = GateSynthEnvRLlibHaarNoisy.get_default_env_config()
-    env_config["U_target"] = gate
+    env_config["U_target"] = gate.get_matrix()
 
     # ---------------------> Get quantum noise data <-------------------------
-    noise_file = QUANTUM_NOISE_DATA_DIR + "april/ibmq_belem_month_is_4.json"
     t1_list, t2_list, detuning_list = sample_noise_parameters(noise_file)
 
     env_config["relaxation_rates_list"] = [np.reciprocal(t1_list).tolist(), np.reciprocal(t2_list).tolist()] # using real T1 data
@@ -124,23 +142,58 @@ def run(gate, n_training_iterations=1, save=True, plot=True,figure_title="",infe
         result = alg.train()
         list_of_results.append(result['hist_stats'])
 
-    # loaded_model = load_model(save_result)
-    if inferencing:
-        env, alg1 = do_inferencing(alg,n_episodes_for_inferencing, "/Users/amara/Dropbox/Zapata/rl_learn/src/relaqs/quantum_noise_data/april/ibmq_manila_month_is_4.json")
-    
-    if save is True:
-        sr = SaveResults(env, alg1)
-        save_dir = sr.save_results()
-        print("Results saved to:", save_dir)
-
-    # ---------------------> Plot Data <-------------------------
-    if plot is True:
-        assert save is True, "If plot=True, then save must also be set to True"
-        plot_data(save_dir, episode_length=alg1._episode_history[0].episode_length, figure_title=figure_title)
-        print("Plots Created")
-    # -------------------------
     ray.shutdown()
-    return alg, save_dir
+
+    return alg
+
+def return_env_from_alg(alg):
+    env = alg.workers.local_worker().env
+    return env
+
+def load_and_analyze_best_unitary(data_path, U_target):
+    df = pd.read_csv(data_path, names=['Fidelity', 'Reward', 'Actions', 'Flattened U', 'Episode Id'], header=0)
+    
+    fidelity = df["Fidelity"]
+    max_fidelity_idx = fidelity.argmax()
+    best_flattened_unitary = eval(df.iloc[max_fidelity_idx, 3])
+
+    best_fidelity_unitary = np.array([complex(x) for x in best_flattened_unitary]).reshape(4, 4)
+    max_fidelity = fidelity.iloc[max_fidelity_idx]
+
+    print("Max fidelity:", max_fidelity)
+    print("Max unitary:", best_fidelity_unitary)
+
+    zero = np.array([1, 0]).reshape(-1, 1)
+    zero_dm = zero @ zero.T.conjugate()
+    zero_dm_flat = zero_dm.reshape(-1, 1)
+
+    dm = best_fidelity_unitary @ zero_dm_flat
+    dm = dm.reshape(2, 2)
+    print("Density Matrix:\n", dm)
+
+    # Check trace = 1
+    dm_diagonal = np.diagonal(dm)
+    print("diagonal:", dm_diagonal)
+    trace = sum(np.diagonal(dm))
+    print("trace:", trace)
+
+    # # Check that all eigenvalues are positive
+    eigenvalues = eigvalsh(dm)
+    print("eigenvalues:", eigenvalues)
+    #assert (0 <= eigenvalues).all()
+
+    psi = U_target @ zero
+    true_dm = psi @ psi.T.conjugate()
+    print("true dm\n:", true_dm)
+
+    print("Density matrix fidelity:", dm_fidelity(true_dm, dm))
+
+if __name__ == "__main__":
+    data_path = RESULTS_DIR + '2023-11-08_11-09-45/env_data.csv' 
+    target = gates.H().get_matrix()
+    load_and_analyze_best_unitary(data_path, target)
+
+
 
 
 
