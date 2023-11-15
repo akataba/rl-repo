@@ -1,19 +1,13 @@
-# TODO: consider moving to scripts
-
 import os
 import ray
 from ray import tune
 from ray.air import RunConfig
 from ray.rllib.algorithms.ddpg import DDPGConfig
-from ray.tune.registry import register_env
 from relaqs.environments.gate_synth_env_rllib_Haar import TwoQubitGateSynth, GateSynthEnvRLlibHaarNoisy
 from ray.tune.search.optuna import OptunaSearch
 from relaqs import RESULTS_DIR
 import datetime
 import numpy as np
-
-def env_creator(config):
-    return TwoQubitGateSynth(config)
 
 def save_hpt_table(results: tune.ResultGrid):
     df = results.get_dataframe()
@@ -23,7 +17,6 @@ def save_hpt_table(results: tune.ResultGrid):
 
 def run_ray_tune(environment, n_configurations=100, n_training_iterations=50, save=True):
     ray.init()
-    #register_env("my_env", env_creator)
     search_space = {
             "actor_lr" : tune.loguniform(1e-5,1e-3),
             "critic_lr" : tune.loguniform(1e-5,1e-3),
@@ -53,10 +46,6 @@ def run_ray_tune(environment, n_configurations=100, n_training_iterations=50, sa
     best_fidelity_config = results.get_best_result(metric="max_fidelity", mode="max").config
     print("best_fidelity_config", best_fidelity_config)
     
-    # Average within scope
-    # best_avg_fidelity_config = results.get_best_result(metric="fidelity", mode="max", scope="last-50-avg").config
-    # print("best_avg_fidelity_config", best_avg_fidelity_config)
-    
     if save is True:
         save_hpt_table(results)
 
@@ -64,11 +53,8 @@ def objective(config):
     # ---------------------> Configure algorithm and Environment <-------------------------
     alg_config = DDPGConfig()
     alg_config.framework("torch")
-    #env_config = TwoQubitGateSynth.get_default_env_config()
     env_config = config["environment"].get_default_env_config()
     env_config["verbose"] = False
-    #env_config["U_target"] = gates.X().get_matrix()
-    #alg_config.environment("my_env", env_config=env_config)
     alg_config.environment(config["environment"], env_config=env_config)
 
     alg_config.actor_lr = config["actor_lr"]
@@ -99,7 +85,7 @@ def objective(config):
 
 if __name__ == "__main__":
     environment = GateSynthEnvRLlibHaarNoisy
-    n_configurations = 25 
+    n_configurations = 25
     n_training_iterations = 100
     save = True
     run_ray_tune(environment, n_configurations, n_training_iterations, save)
