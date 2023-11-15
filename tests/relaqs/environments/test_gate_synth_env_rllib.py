@@ -8,14 +8,10 @@ from relaqs.api.utils import (run,
     return_env_from_alg, 
     load_and_analyze_best_unitary
 )
-from relaqs.api.gates import H
+from relaqs.api.gates import H, I
 import pandas as pd
 from relaqs import RESULTS_DIR
 
-X = np.array([[0,1],[1,0]])
-Z = np.array([[1,0],[0,-1]])
-I = np.array([[1,0],[0,1]])
-Y = np.array([[0, 1j],[-1j, 0]])
 
 @pytest.fixture()
 def config():
@@ -30,9 +26,6 @@ def gate_to_train():
     return H().get_matrix()
 
 def test_environment(gate_environment, config):
-    # assert 8 == len(gate_environment.state)
-    # assert (8,) == gate_environment.observation_space.shape
-    # assert (4,) == gate_environment.action_space.shape
     
     # reset the environment
     gate_environment.reset()
@@ -44,7 +37,7 @@ def test_unitarity(gate_environment):
     for _ in range(10):
         action = gate_environment.action_space.sample()
         gate_environment.step(action)
-    assert np.allclose(gate_environment.U @ gate_environment.U.T.conjugate(), I)
+    assert np.allclose(gate_environment.U @ gate_environment.U.T.conjugate(), I().get_matrix())
 
 def test_training(gate_to_train):
 
