@@ -3,14 +3,14 @@ from ray.rllib.algorithms.ddpg import DDPGConfig
 from ray.tune.registry import register_env
 from relaqs.environments.gate_synth_env_rllib_Haar import GateSynthEnvRLlibHaarNoisy
 from relaqs.save_results import SaveResults
-from relaqs.plot_data import plot_data
+from relaqs.plot_data import plot_data, plot_results
 from relaqs.api.callbacks import GateSynthesisCallbacks
 
 
 def env_creator(config):
     return GateSynthEnvRLlibHaarNoisy(config)
 
-def run(n_training_iterations=1, save=True, plot=True, figure_title=None):
+def run(n_training_iterations=1, save=False, plot=False, plot_q_and_gradients=False, figure_title=None):
     ray.init()
     register_env("my_env", env_creator)
 
@@ -55,12 +55,18 @@ def run(n_training_iterations=1, save=True, plot=True, figure_title=None):
         assert save is True, "If plot=True, then save must also be set to True"
         plot_data(save_dir, episode_length=alg._episode_history[0].episode_length, figure_title=figure_title)
         print("Plots Created")
+    if plot_q_and_gradients:
+        assert save is True
+        plot_results(save_dir, figure_title=figure_title)
+        print("Plots of Average Gradients and Q values Created")
     # --------------------------------------------------------------
+    ray.shutdown()
 
 if __name__ == "__main__":
     n_training_iterations = 2
     save = True
     plot = True
+    plot_q_and_gradients = True
     figure_title ="Noisy environment"
-    run(n_training_iterations, save, plot, figure_title=figure_title)
+    run(n_training_iterations, save, plot, figure_title=figure_title, plot_q_and_gradients=plot_q_and_gradients)
     

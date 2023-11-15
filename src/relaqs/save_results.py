@@ -26,9 +26,17 @@ class NpEncoder(json.JSONEncoder):
         return super(NpEncoder, self).default(obj)
 
 class SaveResults():
-    def __init__(self, env=None, alg=None, results:List[Dict]=None, save_path=None, save_base_path=None):
+    def __init__(self,
+                 env=None,
+                 alg=None,
+                 results:List[Dict]=None,
+                 save_path=None,
+                 save_base_path=None,
+                 target_gate_string=None
+                ):
         self.env = env
         self.alg = alg
+        self.target_gate_string = target_gate_string
         if save_path is None:
             self.save_path = self.get_new_directory(save_base_path)
         else:
@@ -41,9 +49,14 @@ class SaveResults():
 
     def get_new_directory(self, save_base_path=None):
         if save_base_path is None:
-            return RESULTS_DIR + datetime.datetime.now().strftime("%Y-%m-%d_%H-%M-%S/")
-        else:
-            return save_base_path + datetime.datetime.now().strftime("%Y-%m-%d_%H-%M-%S/")
+            save_base_path = RESULTS_DIR
+
+        path = save_base_path + datetime.datetime.now().strftime("%Y-%m-%d_%H-%M-%S/")
+
+        if self.target_gate_string is not None:
+            path = path[:-1] + "_"  + self.target_gate_string + "/"
+
+        return path
 
     def save_env_transitions(self):
         second_row = self.env.transition_history[1]

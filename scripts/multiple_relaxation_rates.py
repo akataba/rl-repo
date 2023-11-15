@@ -49,6 +49,7 @@ def run(n_training_iterations=1, save=False):
         save_dir = sr.save_results()
         print("Results saved to:", save_dir)
     # --------------------------------------------------------------
+    ray.shutdown()
 
 if __name__ == "__main__":
     n_training_iterations = 1
