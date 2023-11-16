@@ -1,13 +1,7 @@
-import ray
-from ray.rllib.algorithms.ddpg import DDPGConfig
-from ray.tune.registry import register_env
-from relaqs.environments.gate_synth_env_rllib_Haar import GateSynthEnvRLlibHaarNoisy
 from relaqs.save_results import SaveResults
-from relaqs.plot_data import plot_data
 import numpy as np
 from relaqs.api.utils import (run,
     sample_noise_parameters,
-    do_inferencing,
     get_best_episode_information,
     return_env_from_alg
 )
@@ -28,7 +22,9 @@ alg = run(H(),
 
 # ----------------------- Creating the deterministic agent using actions from the best episode -------------------------------
 env = return_env_from_alg(alg)
-t1_list, t2_list, detuning_list = sample_noise_parameters(noise_file_2, detuning_noise_file=path_to_detuning)
+t1_list,t2_list,  = sample_noise_parameters(noise_file_2, detuning_noise_file=path_to_detuning)
+detuning_list = np.random.normal(1e8, 1e4, 9).tolist()
+# t2_list = np.random.normal(1e-9, 1e-5, 135)
 env.relaxation_rates_list = [np.reciprocal(t1_list).tolist(), np.reciprocal(t2_list).tolist()]
 env.delta = detuning_list 
 

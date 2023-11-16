@@ -23,7 +23,7 @@ def gate_environment(config):
 
 @pytest.fixture()
 def gate_to_train():
-    return H().get_matrix()
+    return H()
 
 def test_environment(gate_environment, config):
     
@@ -49,13 +49,13 @@ def test_training(gate_to_train):
             noise_file=noise_file 
         )
     env = return_env_from_alg(alg)  
-    sr = SaveResults(alg, env)
+    sr = SaveResults(env, alg)
     save_dir = sr.save_results()
     df = pd.read_csv(save_dir + "env_data.csv")
     last_100_rows = df.tail(100)
     fidelities = last_100_rows.iloc[:,0]
     average_fidelity = sum(fidelities)/len(fidelities)
-    assert average_fidelity > 0.98  
+    assert average_fidelity > 0.995 
 
 def test_loading_of_unitary(gate_to_train):
     data_path = RESULTS_DIR + '2023-11-08_11-09-45/env_data.csv' 

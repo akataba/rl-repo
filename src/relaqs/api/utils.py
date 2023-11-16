@@ -98,10 +98,9 @@ def run(gate, n_training_iterations=1, noise_file=""):
     """Args
        gate (Gate type):
        n_training_iterations (int)
-       figure_title
-
+       noise_file (str):
     Returns
-      alg (Algorithm)
+      alg (rllib.algorithms.algorithm)
 
     """
     ray.init()
@@ -182,7 +181,7 @@ def load_and_analyze_best_unitary(data_path, U_target):
     print("eigenvalues:", eigenvalues)
     #assert (0 <= eigenvalues).all()
 
-    psi = U_target @ zero
+    psi = U_target.get_matrix() @ zero
     true_dm = psi @ psi.T.conjugate()
     print("true dm\n:", true_dm)
 
