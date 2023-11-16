@@ -59,10 +59,39 @@ class SaveResults():
         return path
 
     def save_env_transitions(self):
-        # TODO add header labels
+        second_row = self.env.transition_history[1]
+        fidelity_n_space = len(str(second_row[0]))
+        fidelity = 'Fidelity'
+        fidelity = fidelity + ' '*(fidelity_n_space - len(fidelity))
+
+        rewards_n_space = len(str(second_row[1]))
+        rewards = 'Rewards'
+        rewards = rewards + ' '*(rewards_n_space - len(rewards))
+
+        actions_n_space = len(str(second_row[2]))
+        actions = 'Actions'
+        actions =  actions + ' '*(actions_n_space - len(actions))
+        
+        flattened_u_n_space = len( ','.join(map(str, second_row[3])))
+        flattened_u = 'Flattened U'
+        flattened_u =  flattened_u + ' '*(flattened_u_n_space - len(flattened_u))
+    
+        episode_n_space = len(str(second_row[4]))
+        episode = 'Episode Id'
+        episode = episode + ' '*(episode_n_space - len(episode)) 
+
+        column_headers = [fidelity, rewards, actions, flattened_u, episode] 
         with open(self.save_path + "env_data.csv", "w") as f:
             writer = csv.writer(f)
-            writer.writerows(self.env.transition_history)
+            writer.writerow(column_headers)
+          
+            # Iterate over each row in the transition history
+            for row in self.env.transition_history:
+                # Convert the 'flattened_u' list within the row to a string
+                # Assuming 'flattened_u' is the fourth item in the row
+                row[3] = ','.join(map(str, row[3]))
+                # Write the modified row to the CSV
+                writer.writerow(row)
 
         with open(self.save_path + "env_data.npy", "wb") as f:
             np.save(f, np.array(self.env.transition_history))

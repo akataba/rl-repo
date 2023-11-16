@@ -19,11 +19,11 @@ class GateSynthesisCallbacks(DefaultCallbacks):
         env_index: int,
         **kwargs
     ):
-
-        print("episode {} (env-idx={}) started.".format(episode.episode_id, env_index))
+        worker.env.episode_id = episode.episode_id
         episode.hist_data["q_values"]= []
         episode.hist_data["grad_gnorm"] = []
         episode.hist_data["average_gradnorm"] =[]
+        episode.hist_data["actions"]=[]
         
     def on_postprocess_trajectory(
             self,
@@ -41,6 +41,7 @@ class GateSynthesisCallbacks(DefaultCallbacks):
         if "num_batches" not in episode.custom_metrics:
             episode.custom_metrics["num_batches"] = 0
         episode.custom_metrics["num_batches"] += 1
+
         model = worker.get_policy("default_policy").model
         policy = worker.get_policy("default_policy")
         input_dict = SampleBatch(obs=torch.Tensor(postprocessed_batch['obs']))
@@ -48,6 +49,7 @@ class GateSynthesisCallbacks(DefaultCallbacks):
         model_out_t, _ = model(input_dict, [], None)
         q_values = model.get_q_values(model_out_t, torch.Tensor(postprocessed_batch['actions']))
         episode.hist_data["q_values"].append(q_values.detach().numpy()[0][0])
+
 
         #------------------------> getting gradients <--------------------------------------------------------
         batch = SampleBatch(obs=torch.Tensor(postprocessed_batch['obs']),
@@ -68,3 +70,16 @@ class GateSynthesisCallbacks(DefaultCallbacks):
         average_grad = average_grad/(len(gradients))
         episode.hist_data['grad_gnorm'].append(gradients_info['learner_stats']['grad_gnorm'])
         episode.hist_data["average_gradnorm"].append(average_grad.numpy())
+        
+        #----------------------------> Getting actions <-----------------------------------------------------
+        episode.hist_data["actions"].append(postprocessed_batch["actions"].tolist())
+
+    # def on_episode_end(self,
+    #     worker: RolloutWorker,
+    #     base_env: BaseEnv,
+    #     policies: Dict[str, Policy],
+    #     episode: Episode,
+    #     env_index: int,
+    #     **kwargs):
+    #     episode.custom_metrics["actions"] = episode.user_data
+       
