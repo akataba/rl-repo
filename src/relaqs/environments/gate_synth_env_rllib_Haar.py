@@ -389,7 +389,7 @@ class TwoQubitGateSynth(gym.Env):
         return {
             "action_space_size": 7,
             "U_initial": II,  # staring with I
-            "U_target": exchangeOperator,  # target for CZ
+            "U_target": la.expm(-1.3j*np.pi*exchangeOperator),  # target for CZ
             "final_time": np.pi, # in seconds
             "num_Haar_basis": 1,  # number of Haar basis (need to update for odd combinations)
             "steps_per_Haar": 1,  # steps per Haar basis per episode
@@ -403,7 +403,7 @@ class TwoQubitGateSynth(gym.Env):
             "observation_space_size": 2*256 + 1 + 4 + 2 # 2*16 = (complex number)*(density matrix elements = 4)^2, + 1 for fidelity + 4 for relaxation rate + 2 for detuning
         }
 
-    def hamiltonian(self, delta1, delta2, alpha1, alpha2, twoQubitDetuning, gamma_magnitude1, gamma_phase1, gamma_magnitude2, gamma_phase2, g1 = 0, g2 = 0, g12 = 1):
+    def hamiltonian(self, delta1, delta2, alpha1, alpha2, twoQubitDetuning, gamma_magnitude1, gamma_phase1, gamma_magnitude2, gamma_phase2, g1 = 0, g2 = 0, g12 = 1.3):
         selfEnergyTerms = (delta1 + alpha1) * Z1 + (delta2 + alpha2) * Z2
         Qubit1ControlTerms = gamma_magnitude1 * (np.cos(gamma_phase1) * X1 + np.sin(gamma_phase1) * Y1)
         Qubit2ControlTerms = gamma_magnitude2 * (np.cos(gamma_phase2) * X2 + np.sin(gamma_phase2) * Y2)
