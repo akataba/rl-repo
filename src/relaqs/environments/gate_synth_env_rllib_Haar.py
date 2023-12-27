@@ -386,7 +386,7 @@ class TwoQubitGateSynth(gym.Env):
     @classmethod
     def get_default_env_config(cls):
         return {
-            "action_space_size": 20,
+            "action_space_size": 27,
             "U_initial": II,  # staring with I
             "U_target": CZ,  # target for CZ
             "final_time": 30E-9, # in seconds, total time is final_time * 5 because of single qubit + two_qubit + single_qubit + two_qubit + single_qubit
@@ -423,7 +423,7 @@ class TwoQubitGateSynth(gym.Env):
     def __init__(self, env_config):
         self.final_time = env_config["final_time"]  # Final time for the gates
         self.observation_space = gym.spaces.Box(low=0, high=1, shape=(env_config["observation_space_size"],))  # propagation operator elements + fidelity + relaxation + detuning
-        self.action_space = gym.spaces.Box(low=-1*np.ones(20), high=np.ones(20)) #alpha1, alpha2, alphaC, gamma_magnitude1, gamma_phase1, gamma_magnitude2, gamma_phase2
+        self.action_space = gym.spaces.Box(low=-1*np.ones(27), high=np.ones(27)) #alpha1, alpha2, alphaC, gamma_magnitude1, gamma_phase1, gamma_magnitude2, gamma_phase2
         self.delta = env_config["delta"]  # detuning
         self.detuning = [0, 0]
         self.detuning_update()
@@ -511,12 +511,18 @@ class TwoQubitGateSynth(gym.Env):
         self.H2_1_array = []
         self.H1_2_array = []
         self.H2_2_array = []
-        self.H1_3_array = []        
+        self.H1_3_array = []
+        self.H2_3_array = []        
+        self.H1_4_array = []
+        
         self.H_tot1_1 = []
         self.H_tot2_1 = []
         self.H_tot1_2 = []
         self.H_tot2_2 = []
         self.H_tot1_3 = []        
+        self.H_tot2_3 = []
+        self.H_tot1_4 = []        
+        
         self.L_array = []
         self.U_array = []
         self.prev_fidelity = 0
@@ -568,6 +574,21 @@ class TwoQubitGateSynth(gym.Env):
         gamma_phase1_3 = self.gamma_phase_max * action[18] 
         gamma_phase2_3 = self.gamma_phase_max * action[19]
 
+        ### third two qubit gate
+
+        twoQubitDetuning3 = 1/(self.DeltaInverse0 + self.DeltaInverseModMax * action[20])
+
+        ### Fourth Single qubit gate
+        alpha1_4 = self.alpha_max * action[21] 
+        alpha2_4 = self.alpha_max * action[22] 
+
+        gamma_magnitude1_4 = self.gamma_magnitude_max / 2 * (action[23] + 1)
+        gamma_magnitude2_4 = self.gamma_magnitude_max / 2 * (action[24] + 1)
+
+        gamma_phase1_4 = self.gamma_phase_max * action[25] 
+        gamma_phase2_4 = self.gamma_phase_max * action[26]
+
+
         # Set noise opertors
         jump_ops = []
         for ii in range(len(self.relaxation_ops)):
@@ -580,12 +601,16 @@ class TwoQubitGateSynth(gym.Env):
         H1_2 = self.hamiltonian(self.delta[0][0], self.delta[1][0], alpha1_2, alpha2_2, nullInteractionDetuning, gamma_magnitude1_2, gamma_phase1_2, gamma_magnitude2_2, gamma_phase2_2)
         H2_2 = self.hamiltonian(self.delta[0][0], self.delta[1][0], 0, 0, twoQubitDetuning2, 0, 0, 0, 0)
         H1_3 = self.hamiltonian(self.delta[0][0], self.delta[1][0], alpha1_3, alpha2_3, nullInteractionDetuning, gamma_magnitude1_3, gamma_phase1_3, gamma_magnitude2_3, gamma_phase2_3)
-
+        H2_3 = self.hamiltonian(self.delta[0][0], self.delta[1][0], 0, 0, twoQubitDetuning3, 0, 0, 0, 0)
+        H1_4 = self.hamiltonian(self.delta[0][0], self.delta[1][0], alpha1_4, alpha2_4, nullInteractionDetuning, gamma_magnitude1_4, gamma_phase1_4, gamma_magnitude2_4, gamma_phase2_4)
+        
         self.H1_1_array.append(H1_1)  # Array of Hs at each Haar wavelet
         self.H2_1_array.append(H2_1)  # Array of Hs at each Haar wavelet
         self.H1_2_array.append(H1_2)  # Array of Hs at each Haar wavelet
         self.H2_2_array.append(H2_2)  # Array of Hs at each Haar wavelet
         self.H1_3_array.append(H1_3)  # Array of Hs at each Haar wavelet
+        self.H2_3_array.append(H2_2)  # Array of Hs at each Haar wavelet
+        self.H1_4_array.append(H1_3)  # Array of Hs at each Haar wavelet
 
         # H_tot for adding Hs at each time bins
         self.H_tot1_1 = []
@@ -593,6 +618,8 @@ class TwoQubitGateSynth(gym.Env):
         self.H_tot1_2 = []
         self.H_tot2_2 = []
         self.H_tot1_3 = []
+        self.H_tot2_3 = []
+        self.H_tot1_4 = []
 
         for ii, H_elem in enumerate(self.H1_1_array):
             for jj in range(0, num_time_bins):
@@ -639,6 +666,24 @@ class TwoQubitGateSynth(gym.Env):
                 else:  # Because H_tot[jj] does not exist
                     self.H_tot1_3.append(factor * H_elem)
 
+        for ii, H_elem in enumerate(self.H2_3_array):
+            for jj in range(0, num_time_bins):
+                Haar_num = self.current_Haar_num - np.floor(ii / self.steps_per_Haar) # Haar_num: label which Haar wavelet, current_Haar_num: order in the array
+                factor = (-1) ** np.floor(jj / (2 ** (Haar_num - 1))) # factor flips the sign every 2^(Haar_num-1)
+                if ii > 0:
+                    self.H_tot2_3[jj] += factor * H_elem
+                else:  # Because H_tot[jj] does not exist
+                    self.H_tot2_3.append(factor * H_elem)
+
+        for ii, H_elem in enumerate(self.H1_4_array):
+            for jj in range(0, num_time_bins):
+                Haar_num = self.current_Haar_num - np.floor(ii / self.steps_per_Haar) # Haar_num: label which Haar wavelet, current_Haar_num: order in the array
+                factor = (-1) ** np.floor(jj / (2 ** (Haar_num - 1))) # factor flips the sign every 2^(Haar_num-1)
+                if ii > 0:
+                    self.H_tot1_4[jj] += factor * H_elem
+                else:  # Because H_tot[jj] does not exist
+                    self.H_tot1_4.append(factor * H_elem)
+
 
         self.L = ([])  # at every step we calculate L again because minimal time bin changes
         self.U = np.eye(16)  # identity
@@ -672,6 +717,19 @@ class TwoQubitGateSynth(gym.Env):
             self.L_array.append(L)
             Ut = la.expm(self.final_time / num_time_bins * L)  # time evolution (propagation operator)
             self.U = Ut @ self.U  # calculate total propagation until the time we are at
+
+        for jj in range(0, num_time_bins):
+            L = (liouvillian(Qobj(self.H_tot2_3[jj]), jump_ops, data_only=False, chi=None)).data.toarray()  # Liouvillian calc
+            self.L_array.append(L)
+            Ut = la.expm(self.final_time / num_time_bins * L)  # time evolution (propagation operator)
+            self.U = Ut @ self.U  # calculate total propagation until the time we are at
+
+        for jj in range(0, num_time_bins):
+            L = (liouvillian(Qobj(self.H_tot1_4[jj]), jump_ops, data_only=False, chi=None)).data.toarray()  # Liouvillian calc
+            self.L_array.append(L)
+            Ut = la.expm(self.final_time / num_time_bins * L)  # time evolution (propagation operator)
+            self.U = Ut @ self.U  # calculate total propagation until the time we are at
+
 
         # Reward and fidelity calculation
         fidelity = self.compute_fidelity()
