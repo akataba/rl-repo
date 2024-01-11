@@ -266,8 +266,7 @@ class GateSynthEnvRLlibHaarNoisy(gym.Env):
         return np.append([self.compute_fidelity()]+[x//6283185 for x in self.relaxation_rate]+normalizedDetuning, self.unitary_to_observation(self.U)) #6283185 assuming 500 nanosecond relaxation is max
     
     def compute_fidelity(self):
-        env_config = GateSynthEnvRLlibHaarNoisy.get_default_env_config()
-        U_target_dagger = self.unitary_to_superoperator(env_config["U_target"].conjugate().transpose())
+        U_target_dagger = self.U_target.conjugate().transpose()
         return float(np.abs(np.trace(U_target_dagger @ self.U))) / (self.U.shape[0])
 
     def unitary_to_observation(self, U):
@@ -505,8 +504,7 @@ class TwoQubitGateSynth(gym.Env):
         return np.append([self.compute_fidelity()]+[x//6283185 for x in self.relaxation_rate]+normalizedDetuning, self.unitary_to_observation(self.U)) #6283185 assuming 500 nanosecond relaxation is max
     
     def compute_fidelity(self):
-        env_config = TwoQubitGateSynth.get_default_env_config()
-        U_target_dagger = self.unitary_to_superoperator(env_config["U_target"].conjugate().transpose())
+        U_target_dagger = self.U_target.conjugate().transpose()
         F = float(np.abs(np.trace(U_target_dagger @ self.U))) / (self.U.shape[0])
         return F
 
