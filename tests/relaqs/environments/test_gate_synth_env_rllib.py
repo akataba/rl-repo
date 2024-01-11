@@ -34,11 +34,9 @@ def test_compute_fidelity_one_qubit_noisy():
 
     env = GateSynthEnvRLlibHaarNoisy(one_qubit_config)
 
-    print("\n\n\nFidelity: ", env.compute_fidelity())
     assert env.compute_fidelity() == 1.0
 
     env.U_target = env.unitary_to_superoperator(H().get_matrix())
-    print("\n\n\nFidelity: ", env.compute_fidelity())
     assert env.compute_fidelity() == 0.0
 
 
