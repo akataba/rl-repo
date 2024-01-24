@@ -24,6 +24,8 @@ Z = np.array([[1., 0], [0, -1.]])
 I = np.array([[1., 0], [0, 1.]])
 Y = np.array([[0, 1.j], [-1.j, 0]])
 
+H = np.array([[1/np.sqrt(2),1/np.sqrt(2)],[1/np.sqrt(2),-1/np.sqrt(2)]])
+S = np.array([[1.,0],[0,1.j]])
 
 #two-qubit single qubit gates
 II = tensor(Qobj(I),Qobj(I)).data.toarray()
@@ -857,9 +859,53 @@ class TwoQubitGateSynth(gym.Env):
             # 8. Unpack Parameters and Put into Weyl chamber
             c0, c1, c2 = 2*a1, -2*a0, 2*a2 # Unpack parameters
             
+            CAN = lambda c0, c1, c2: expm(1j/2*(c0*np.kron(X, X) + c1*np.kron(Y, Y) + c2*np.kron(Z, Z)))
+            
             assert np.allclose(U, (phase1 * np.kron(L1, L2)) @ CAN(c0, c1, c2)
                             @ (phase2 * np.kron(R1, R2)), atol=1e-03), "U does not equal KAK"
             
             return phase1, L1, L2, phase2, R1, R2, c0, c1, c2
                         
         return KAK_2q(self.U_target)
+
+    def KakActionCalculation(self):
+        
+        phase1, L1, L2, phase2, R1, R2, c0, c1, c2 = self.canonicalDecomposition()
+        
+        initialActions = np.zeros(15)
+        
+        initialActions[0:2] = self.singleQubitActionCalculation(R1)
+        initialActions[3:5] = self.singleQubitActionCalculation(R2)
+        initialActions[6:8] = self.canonicalActionCalculation(c0,c1,c2,1)
+        initialActions[9:11]  = self.singleQubitActionCalculation(H)
+        initialActions[12:14] = self.singleQubitActionCalculation(H)
+        initialActions[15:17] = self.canonicalActionCalculation(c0,c1,c2,2)
+        initialActions[18:20]  = self.singleQubitActionCalculation(S)
+        initialActions[21:23] = self.singleQubitActionCalculation(S)
+        initialActions[24:26] = self.canonicalActionCalculation(c0,c1,c2,3)
+        initialActions[27:29] = self.singleQubitActionCalculation(L1)
+        initialActions[30:32] = self.singleQubitActionCalculation(L2)
+        
+        return initialActions
+    
+    def singleQubitActionCalculation(self, U):
+        
+        singleQubitActions = np.zeros(3)
+        
+        return singleQubitActions
+    
+    def canonicalActionCalculation(self, c0, c1, c2, index=1):
+        
+        twoQubitActions = np.zeros(3)
+        
+        if index == 1:
+            b = 1/4*(c0+c1-c2)
+        elif index ==2:
+            b = 1/4*(-c0+c1+c2)
+        elif index ==3:
+            b = 1/4*(c0-c1+c2)
+        else:
+            print("wrong input index")
+
+        return twoQubitActions
+    
