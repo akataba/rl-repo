@@ -23,15 +23,15 @@ import datetime
 def env_creator(config):
     return TwoQubitGateSynth(config)
 
-def save_grad_to_file(resultdict):
-    try:
-        policydict = resultdict["default_policy"]
-        stats = policydict["learner_stats"]
-        grad_gnorm = stats["grad_gnorm"]
-        with open("gradfile", "a") as f:
-            f.write(f"{grad_gnorm}\n")
-    except KeyError:
-        pass
+# def save_grad_to_file(resultdict):
+#     try:
+#         policydict = resultdict["default_policy"]
+#         stats = policydict["learner_stats"]
+#         grad_gnorm = stats["grad_gnorm"]
+#         with open("gradfile", "a") as f:
+#             f.write(f"{grad_gnorm}\n")
+#     except KeyError:
+#         pass
         # print(f"Failed to extract grad_gnorm from: {resultdict}")
 
 def inject_logging(alg, logging_func):
@@ -44,13 +44,15 @@ def inject_logging(alg, logging_func):
     alg.training_step = new_training_step
 
 def run(n_training_iterations=1, save=True, plot=True):
-    ray.init()
+    ray.init(num_gpus=1)
+    # ray.init()
     try:
         register_env("my_env", env_creator)
 
 
         # ---------------------> Configure algorithm and Environment <-------------------------
-        alg_config = DDPGConfig()
+        alg_config = DDPGConfig().training().resources(num_gpus=1)
+        # alg_config = DDPGConfig()
         alg_config.framework("torch")
         
         env_config = TwoQubitGateSynth.get_default_env_config()
@@ -63,26 +65,31 @@ def run(n_training_iterations=1, save=True, plot=True):
         alg_config.train_batch_size = TwoQubitGateSynth.get_default_env_config()["steps_per_Haar"]
 
         ### working 1-3 sets
-        alg_config.actor_lr = 4e-5
-        alg_config.critic_lr = 5e-4
+        alg_config.actor_lr = 4e-4
+        alg_config.critic_lr = 4e-4
 
         alg_config.actor_hidden_activation = "relu"
         alg_config.critic_hidden_activation = "relu"
-        alg_config.num_steps_sampled_before_learning_starts = 10000
-        alg_config.actor_hiddens = [500,500,500,500]
-        alg_config.critic_hiddens = [500,500,500,500]
-        alg_config.exploration_config["scale_timesteps"] = 1E5
+        alg_config.num_steps_sampled_before_learning_starts = 1000
+        # alg_config.actor_hiddens = [500,20000,500]
+        # alg_config.critic_hiddens = [500,20000,500]
+        alg_config.actor_hiddens = [150]
+        alg_config.critic_hiddens = [150]
+        # alg_config.exploration_config["scale_timesteps"] = 200000
+        alg_config.exploration_config["scale_timesteps"] = 100000
         print(alg_config.algo_class)
         print(alg_config["framework"])
 
         alg = alg_config.build()
-        inject_logging(alg, save_grad_to_file)
+        # inject_logging(alg, save_grad_to_file)
         # ---------------------------------------------------------------------
         list_of_results = []
         # ---------------------> Train Agent <-------------------------
-        for _ in range(n_training_iterations):
+        for ii in range(n_training_iterations):
             result = alg.train()
             list_of_results.append(result['hist_stats'])
+            if np.mod(ii,5)==0:
+                print("currently",ii,"/",n_training_iterations)
         # -------------------------------------------------------------
 
         # ---------------------> Save Results <-------------------------
@@ -103,7 +110,7 @@ def run(n_training_iterations=1, save=True, plot=True):
         ray.shutdown()
 
 if __name__ == "__main__":
-    n_training_iterations = 50
+    n_training_iterations = 100
     save = True
     plot = True
     run(n_training_iterations, save, plot)
