@@ -707,7 +707,7 @@ class TwoQubitGateSynth(gym.Env):
         info = {}
         return (self.state, reward, terminated, truncated, info)
     
-    def canonicalDecomposition(self)
+    def canonicalDecomposition(self):
         
         ## This part of the code is from https://github.com/mpham26uchicago/laughing-umbrella/
         
