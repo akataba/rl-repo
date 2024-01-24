@@ -1,6 +1,11 @@
 import gymnasium as gym
 import numpy as np
 import scipy.linalg as la
+from scipy.linalg import expm
+from scipy.stats import unitary_group
+from sympy import Matrix
+from typing import Tuple
+
 import cmath
 import random
 import matplotlib.pyplot as plt
@@ -12,12 +17,12 @@ from qutip.operators import *
 from qutip import cnot, cphase
 #from relaqs.api.reward_functions import negative_matrix_difference_norm
 
-sig_p = np.array([[0, 1], [0, 0]])
-sig_m = np.array([[0, 0], [1, 0]])
-X = np.array([[0, 1], [1, 0]])
-Z = np.array([[1, 0], [0, -1]])
-I = np.array([[1, 0], [0, 1]])
-Y = np.array([[0, 1j], [-1j, 0]])
+sig_p = np.array([[0, 1.], [0, 0]])
+sig_m = np.array([[0, 0], [1., 0]])
+X = np.array([[0, 1.], [1., 0]])
+Z = np.array([[1., 0], [0, -1.]])
+I = np.array([[1., 0], [0, 1.]])
+Y = np.array([[0, 1.j], [-1.j, 0]])
 
 
 #two-qubit single qubit gates
@@ -701,3 +706,160 @@ class TwoQubitGateSynth(gym.Env):
 
         info = {}
         return (self.state, reward, terminated, truncated, info)
+    
+    def canonicalDecomposition(self)
+        
+        ## This part of the code is from https://github.com/mpham26uchicago/laughing-umbrella/
+        
+        def decompose_one_qubit_product(
+            U: np.ndarray, validate_input: bool = True, atol: float = 1e-8, rtol: float = 1e-5
+        ):
+            """
+            Decompose a 4x4 unitary matrix to two 2x2 unitary matrices.
+            Args:
+                U (np.ndarray): input 4x4 unitary matrix to decompose.
+                validate_input (bool): if check input.
+            Returns:
+                phase (float): global phase.
+                U1 (np.ndarray): decomposed unitary matrix U1.
+                U2 (np.ndarray): decomposed unitary matrix U2.
+                atol (float): absolute tolerance of loss.
+                rtol (float): relative tolerance of loss.
+            Raises:
+                AssertionError: if the input is not a 4x4 unitary or
+                cannot be decomposed.
+            """
+
+            """if validate_input:
+                assert np.allclose(
+                    makhlin_invariants(U, atol=atol, rtol=rtol), (1, 0, 3), atol=atol, rtol=rtol
+                )"""
+
+            i, j = np.unravel_index(np.argmax(U, axis=None), U.shape)
+
+            def u1_set(i):
+                return (1, 3) if i % 2 else (0, 2)
+
+            def u2_set(i):
+                return (0, 1) if i < 2 else (2, 3)
+
+            u1 = U[np.ix_(u1_set(i), u1_set(j))]
+            u2 = U[np.ix_(u2_set(i), u2_set(j))]
+            
+            u1 = to_su(u1)
+            u2 = to_su(u2)
+
+            phase = U[i, j] / (u1[i // 2, j // 2] * u2[i % 2, j % 2])
+
+            return phase, u1, u2
+        
+        def to_su(u: np.ndarray) -> np.ndarray:
+            """
+            Given a unitary in U(N), return the
+            unitary in SU(N).
+            Args:
+                u (np.ndarray): The unitary in U(N).
+            Returns:
+                np.ndarray: The unitary in SU(N)
+            """
+
+            return u * complex(np.linalg.det(u)) ** (-1 / np.shape(u)[0])
+        
+        def KAK_2q(
+            U: np.ndarray,
+            rounding: int = 19
+        ) -> Tuple[float, np.ndarray, np.ndarray, float, np.ndarray, np.ndarray, float,
+                float, float]:
+            """
+            Decomposes a 2-qubit unitary matrix into the product of three matrices:
+            KAK = L @ CAN(theta_vec) @ R where L and R are two-qubit local unitaries, 
+            CAN is a 3-parameter canonical matrix, and theta_vec is a vector of 3 angles.
+
+            Args:
+                U (np.ndarray): 2-qubit unitary matrix
+                rounding (int): Number of decimal places to round intermediate 
+                matrices to (default 14)
+
+            Returns:
+                Tuple of 9 values:
+                    - phase1 (float): Global phase factor for left local unitary L
+                    - L1 (np.ndarray): Top 2x2 matrix of left local unitary L
+                    - L2 (np.ndarray): Bottom 2x2 matrix of left local unitary L
+                    - phase2 (float): Global phase factor for right local unitary R
+                    - R1 (np.ndarray): Top 2x2 matrix of right local unitary R
+                    - R2 (np.ndarray): Bottom 2x2 matrix of right local unitary R
+                    - c0 (float): XX canonical parameter in the Weyl chamber
+                    - c1 (float): YY canonical parameter in the Weyl chamber
+                    - c2 (float): ZZ canonical parameter in the Weyl chamber
+            """
+
+            # 0. Map U(4) to SU(4) (and phase)
+            U = U / np.linalg.det(U)**0.25 
+
+            assert np.isclose(np.linalg.det(U), 1), "Determinant of U is not 1"
+
+            # 1. Unconjugate U into the magic basis
+            B = 1 / np.sqrt(2) * np.array([[1., 0, 0, 1.j], [0, 1.j, 1., 0],
+                                        [0, 1.j, -1., 0], [1., 0, 0, -1.j]]) # Magic Basis
+            
+            U_prime = np.conj(B).T @ U @ B
+
+            # Isolating the maximal torus
+            Theta = lambda U: np.conj(U)
+            M_squared = Theta(np.conj(U_prime).T) @ U_prime
+            
+            if rounding is not None:
+                M_squared = np.round(M_squared, rounding)  # For numerical stability
+
+            ## 2. Diagonalizing M^2
+            D, P = np.linalg.eig(M_squared)
+            
+            ## Check and correct for det(P) = -1
+            if np.isclose(np.linalg.det(P), -1):
+                P[:, 0] *= -1  # Multiply the first eigenvector by -1
+
+            # 3. Extracting K2
+            K2 = np.conj(P).T
+
+            assert np.allclose(K2 @ K2.T, np.identity(4)), "K2 is not orthogonal"
+            assert np.isclose(np.linalg.det(K2), 1), "Determinant of K2 is not 1"
+
+            # 4. Extracting A
+            A = np.sqrt(D)
+            
+            ## Check and correct for det(A) = -1
+            if np.isclose(np.prod(A), -1):
+                A[0] *= -1  # Multiply the first eigenvalue by -1
+
+            A = np.diag(A)  # Turn the list of eigenvalues into a diagonal matrix
+            
+            assert np.isclose(np.linalg.det(A), 1), "Determinant of A is not 1"
+            
+            # 5. Extracting K1
+            K1 = U_prime @ np.conj(K2).T @ np.conj(A).T
+            
+            assert np.allclose(K1 @ K1.T, np.identity(4)), "K1 is not orthogonal"
+            assert np.isclose(np.linalg.det(K1), 1), "Determinant of K1 is not 1"
+
+            # 6. Extracting Local Gates
+            L = B @ K1 @ np.conj(B).T  # Left Local Product
+            R = B @ K2 @ np.conj(B).T  # Right Local Product
+            
+            phase1, L1, L2 = decompose_one_qubit_product(L)  # L1 (top), L2(bottom)
+            phase2, R1, R2 = decompose_one_qubit_product(R)  # R1 (top), R2(bottom)
+
+            # 7. Extracting the Canonical Parameters
+            C = np.array([[1, 1, 1], [-1, 1, -1], [1, -1, -1]])  # Coefficient Matrix
+
+            theta_vec = np.angle(np.diag(A))[:3]  # theta vector
+            a0, a1, a2 = np.linalg.inv(C) @ theta_vec  # Computing the "a"-vector
+
+            # 8. Unpack Parameters and Put into Weyl chamber
+            c0, c1, c2 = 2*a1, -2*a0, 2*a2 # Unpack parameters
+            
+            assert np.allclose(U, (phase1 * np.kron(L1, L2)) @ CAN(c0, c1, c2)
+                            @ (phase2 * np.kron(R1, R2)), atol=1e-03), "U does not equal KAK"
+            
+            return phase1, L1, L2, phase2, R1, R2, c0, c1, c2
+                        
+        return KAK_2q(self.U_target)
