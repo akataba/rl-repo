@@ -22,6 +22,10 @@ from relaqs import QUANTUM_NOISE_DATA_DIR
 from qutip.operators import *
 import relaqs.api.gates as gates
 
+def load_pickled_env_data(data_path):
+    df = pd.read_pickle(data_path)
+    return df
+
 gate_fidelity = lambda U, V: float(np.abs(np.trace(U.conjugate().transpose() @ V))) / (U.shape[0])
 
 def dm_fidelity(rho, sigma):

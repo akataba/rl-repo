@@ -81,7 +81,7 @@ class GateSynthEnvRLlibHaar(gym.Env):
         self.gamma_magnitude_max = 1.8 * np.pi / self.final_time / self.steps_per_Haar
         self.gamma_detuning_max = 0.05E9      #detuning of the control pulse in Hz 
         self.transition_history = []
-        self.episode_id = None
+        self.episode_id = 0
 
     def unitary_to_observation(self, U):
         return (
@@ -114,7 +114,7 @@ class GateSynthEnvRLlibHaar(gym.Env):
         self.U_array = []
         self.prev_fidelity = 0
         info = {}
-        self.episode_id = None
+        self.episode_id += 1
         return starting_observeration, info
 
     def step(self, action):
@@ -165,7 +165,7 @@ class GateSynthEnvRLlibHaar(gym.Env):
                 "detuning: " f"{action[2]:7.3f}"
             )
 
-        self.transition_history.append([fidelity, reward, action, self.U.flatten(), self.episode_id])
+        self.transition_history.append([fidelity, reward, action, self.U, self.episode_id])
         
         # Determine if episode is over
         truncated = False
@@ -238,7 +238,7 @@ class GateSynthEnvRLlibHaarNoisy(gym.Env):
         self.gamma_phase_max = 1.1675 * np.pi
         self.gamma_magnitude_max = 1.8 * np.pi / self.final_time / self.steps_per_Haar
         self.transition_history = []
-        self.episode_id = None
+        self.episode_id = 0
 
     def detuning_update(self):
         # Random detuning selection
@@ -293,7 +293,7 @@ class GateSynthEnvRLlibHaarNoisy(gym.Env):
         self.L_array = []
         self.U_array = []
         self.prev_fidelity = 0
-        self.episode_id = None
+        self.episode_id += 1
         self.relaxation_rate = self.get_relaxation_rate()
         self.detuning = 0
         self.detuning_update()
@@ -363,7 +363,7 @@ class GateSynthEnvRLlibHaarNoisy(gym.Env):
                 "phase: " f"{action[1]:7.3f}",
             )
 
-        self.transition_history.append([fidelity, reward, action.tolist(), self.U.flatten(), self.episode_id])
+        self.transition_history.append([fidelity, reward, action, self.U, self.episode_id])
 
         # Determine if episode is over
         truncated = False
@@ -469,6 +469,7 @@ class TwoQubitGateSynth(gym.Env):
         self.gamma_phase_max = 1.1675 * np.pi
         self.gamma_magnitude_max = 1.8 * np.pi / self.final_time / self.steps_per_Haar
         self.transition_history = []
+        self.episode_id = 0
 
     def detuning_update(self):
         # Random detuning selection
@@ -533,6 +534,7 @@ class TwoQubitGateSynth(gym.Env):
         self.detuning_update()
         starting_observeration = self.get_observation()
         info = {}
+        self.episode_id += 1
         return starting_observeration, info
 
     def step(self, action):
@@ -595,7 +597,7 @@ class TwoQubitGateSynth(gym.Env):
         #         "R: ", f"{reward:7.3f}",
         #     )
 
-        self.transition_history.append([fidelity, reward, *action, *self.U.flatten()])
+        self.transition_history.append([fidelity, reward, action, self.U, self.episode_id])
 
         # Determine if episode is over
         truncated = False
