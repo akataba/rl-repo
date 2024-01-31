@@ -1,7 +1,7 @@
 import datetime
 import os
 import csv
-from relaqs import RESULTS_DIR
+from . import get_results_dir
 from typing import List, Dict
 import json
 import numpy as np
@@ -50,23 +50,26 @@ class SaveResults():
 
     def get_new_directory(self, save_base_path=None):
         if save_base_path is None:
-            save_base_path = RESULTS_DIR
+            save_base_path = get_results_dir()
 
         path = save_base_path + datetime.datetime.now().strftime("%Y-%m-%d_%H-%M-%S/")
 
         if self.target_gate_string is not None:
-            path = path[:-1] + "_"  + self.target_gate_string + "/"
+            path = os.path.join(path, "_"  + self.target_gate_string)
 
+        # for backwards compatability
+        if path[-1] not in ['/\\']:
+            path += "/"
         return path
 
     def save_env_transitions(self):
         columns = ['Fidelity', 'Rewards', 'Actions', 'Operator', 'Episode Id']
         df = pd.DataFrame(self.env.transition_history, columns=columns)
-        df.to_pickle(self.save_path + "env_data.pkl") # easier to load than csv
-        df.to_csv(self.save_path + "env_data.csv", index=False) # backup in case pickle doesn't work
+        df.to_pickle(os.path.join(self.save_path, "env_data.pkl")) # easier to load than csv
+        df.to_csv(os.path.join(self.save_path, "env_data.csv", index=False)) # backup in case pickle doesn't work
     
     def save_train_results_data(self):
-        with open(self.save_path+'train_results_data.json', 'w') as f:
+        with open(os.path.join(self.save_path, 'train_results_data.json', 'w')) as f:
             json.dump(self.results,f, cls=NpEncoder)
 
     def save_config(self, config_dict):
@@ -76,7 +79,7 @@ class SaveResults():
                 file.write(f"{key}: {value}\n")
 
     def save_model(self):
-        save_model_path = self.save_path + "model_checkpoints/"
+        save_model_path = os.path.join(self.save_path, "model_checkpoints/")
         self.alg.save(save_model_path)
 
     def save_results(self):
