@@ -483,6 +483,7 @@ class TwoQubitGateSynth(gym.Env):
 
     def __init__(self, env_config):
         self.final_time = env_config["final_time"]  # Final time for the gates
+        self.PiFreq = np.pi / self.final_time
         self.observation_space = gym.spaces.Box(low=0, high=1, shape=(env_config["observation_space_size"],))  # propagation operator elements + fidelity + relaxation + detuning
         self.action_space = gym.spaces.Box(low=-1*np.ones(3), high=np.ones(3)) #alpha1, alpha2, alphaC, gamma_magnitude1, gamma_phase1, gamma_magnitude2, gamma_phase2
         self.delta = env_config["delta"]  # detuning
@@ -505,12 +506,13 @@ class TwoQubitGateSynth(gym.Env):
         self.U = self.U_initial.copy()  # multiplied propagtion operators
         self.state = self.unitary_to_observation(self.U_initial)  # starting observation space
         self.prev_fidelity = 0  # previous step' fidelity for rewarding
-        self.alpha_max = 2*np.pi / self.final_time
-        self.g_eff_max = 4*np.pi / self.final_time / self.steps_per_Haar
-        self.gamma_phase_max = 1.1675 * np.pi
-        self.gamma_magnitude_max = 1.8 * np.pi / self.final_time / self.steps_per_Haar
+        self.alpha_max = self.PiFreq
+        self.g_eff_max = self.PiFreq
+        self.gamma_phase_max = np.pi
+        self.gamma_magnitude_max = self.PiFreq
         self.transition_history = []
         self.env_config = env_config
+        self.initialActions = self.KakActionCalculation()
 
     def detuning_update(self):
         # Random detuning selection
@@ -596,15 +598,15 @@ class TwoQubitGateSynth(gym.Env):
 
         ### First two qubit gate
 
-        g_eff1 = self.g_eff_max * action[0]
+        g_eff1 = self.g_eff_max * (action[0]+self.initialActions[0])
 
         ### second two qubit gate
 
-        g_eff2 = self.g_eff_max * action[1]
+        g_eff2 = self.g_eff_max * (action[1]+self.initialActions[1])
         
         ### third two qubit gate
 
-        g_eff3 = self.g_eff_max * action[2]
+        g_eff3 = self.g_eff_max * (action[2]+self.initialActions[2])
 
 
         # Set noise opertors
@@ -898,9 +900,9 @@ class TwoQubitGateSynth(gym.Env):
         
         x_angle , z_angle_after, z_angle_before, globalPhase = OneQubitEulerDecomposer(basis='ZXZ').angles_and_phase(U)
         
-        singleQubitActions[0] = z_angle_after ##!!Need to be normalized
-        singleQubitActions[1] = z_angle_before ##!!Need to be normalized
-        singleQubitActions[2] = x_angle ##!!Need to be normalized
+        singleQubitActions[0] = z_angle_after / np.pi ## alpha
+        singleQubitActions[1] = z_angle_before / self.final_time ## gamma_phase
+        singleQubitActions[2] = x_angle / self.final_time ## gamma_magnitude
         
         return singleQubitActions
     
@@ -917,7 +919,6 @@ class TwoQubitGateSynth(gym.Env):
         else:
             print("wrong input index")
             
-        twoQubitAction = b  ##!!Need to be normalized
+        twoQubitAction = b / self.final_time 
 
         return twoQubitAction
-    
