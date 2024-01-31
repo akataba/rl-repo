@@ -880,15 +880,15 @@ class TwoQubitGateSynth(gym.Env):
         
         initialActions[0:2] = self.singleQubitActionCalculation(R1)
         initialActions[3:5] = self.singleQubitActionCalculation(R2)
-        initialActions[6:8] = self.canonicalActionCalculation(c0,c1,c2,1)
-        initialActions[9:11]  = self.singleQubitActionCalculation(H)
-        initialActions[12:14] = self.singleQubitActionCalculation(H)
-        initialActions[15:17] = self.canonicalActionCalculation(c0,c1,c2,2)
-        initialActions[18:20]  = self.singleQubitActionCalculation(S)
-        initialActions[21:23] = self.singleQubitActionCalculation(S)
-        initialActions[24:26] = self.canonicalActionCalculation(c0,c1,c2,3)
-        initialActions[27:29] = self.singleQubitActionCalculation(L1)
-        initialActions[30:32] = self.singleQubitActionCalculation(L2)
+        initialActions[6] = self.canonicalActionCalculation(c0,c1,c2,1)
+        initialActions[7:9]  = self.singleQubitActionCalculation(H)
+        initialActions[10:12] = self.singleQubitActionCalculation(H)
+        initialActions[13] = self.canonicalActionCalculation(c0,c1,c2,2)
+        initialActions[14:16]  = self.singleQubitActionCalculation(S)
+        initialActions[17:19] = self.singleQubitActionCalculation(S)
+        initialActions[20] = self.canonicalActionCalculation(c0,c1,c2,3)
+        initialActions[21:23] = self.singleQubitActionCalculation(L1)
+        initialActions[24:26] = self.singleQubitActionCalculation(L2)
         
         return initialActions
     
@@ -898,7 +898,7 @@ class TwoQubitGateSynth(gym.Env):
         
         x_angle , z_angle_after, z_angle_before, globalPhase = OneQubitEulerDecomposer(basis='ZXZ').angles_and_phase(U)
         
-        singleQubitActions[1] = z_angle_after ##!!Need to be normalized
+        singleQubitActions[0] = z_angle_after ##!!Need to be normalized
         singleQubitActions[1] = z_angle_before ##!!Need to be normalized
         singleQubitActions[2] = x_angle ##!!Need to be normalized
         
@@ -906,7 +906,7 @@ class TwoQubitGateSynth(gym.Env):
     
     def canonicalActionCalculation(self, c0, c1, c2, index=1):
         
-        twoQubitActions = np.zeros(3)
+        twoQubitAction = 0
         
         if index == 1:
             b = 1/4*(c0+c1-c2)
@@ -916,6 +916,8 @@ class TwoQubitGateSynth(gym.Env):
             b = 1/4*(c0-c1+c2)
         else:
             print("wrong input index")
+            
+        twoQubitAction = b  ##!!Need to be normalized
 
-        return twoQubitActions
+        return twoQubitAction
     
