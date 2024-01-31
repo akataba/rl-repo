@@ -3,6 +3,7 @@ import numpy as np
 import scipy.linalg as la
 from scipy.linalg import expm
 from scipy.stats import unitary_group
+from scipy.spatial.transform import Rotation as R
 from sympy import Matrix
 from typing import Tuple
 
@@ -15,6 +16,9 @@ from qutip.superoperator import liouvillian, spre, spost
 from qutip import Qobj, tensor
 from qutip.operators import *
 from qutip import cnot, cphase
+
+from qiskit.quantum_info import OneQubitEulerDecomposer
+
 #from relaqs.api.reward_functions import negative_matrix_difference_norm
 
 sig_p = np.array([[0, 1.], [0, 0]])
@@ -891,6 +895,12 @@ class TwoQubitGateSynth(gym.Env):
     def singleQubitActionCalculation(self, U):
         
         singleQubitActions = np.zeros(3)
+        
+        x_angle , z_angle_after, z_angle_before, globalPhase = OneQubitEulerDecomposer(basis='ZXZ').angles_and_phase(U)
+        
+        singleQubitActions[1] = z_angle_after ##!!Need to be normalized
+        singleQubitActions[1] = z_angle_before ##!!Need to be normalized
+        singleQubitActions[2] = x_angle ##!!Need to be normalized
         
         return singleQubitActions
     
