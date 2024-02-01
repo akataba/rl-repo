@@ -87,7 +87,7 @@ def load_model(path):
     return loaded_model
 
 def get_best_episode_information(filename):
-    df = pd.read_csv(filename, names=['Fidelity', 'Reward', 'Actions', 'Flattened U', 'Episode Id'], header=0)
+    df = pd.read_pickle(filename)
     fidelity = df.iloc[:, 0]
     max_fidelity_idx = fidelity.argmax()
     fidelity = df.iloc[max_fidelity_idx, 0]

@@ -52,7 +52,7 @@ class SaveResults():
         if save_base_path is None:
             save_base_path = get_results_dir()
 
-        path = save_base_path + datetime.datetime.now().strftime("%Y-%m-%d_%H-%M-%S/")
+        path = os.path.join(save_base_path, datetime.datetime.now().strftime("%Y-%m-%d_%H-%M-%S/"))
 
         if self.target_gate_string is not None:
             path = os.path.join(path, "_"  + self.target_gate_string)
@@ -66,7 +66,7 @@ class SaveResults():
         columns = ['Fidelity', 'Rewards', 'Actions', 'Operator', 'Episode Id']
         df = pd.DataFrame(self.env.transition_history, columns=columns)
         df.to_pickle(os.path.join(self.save_path, "env_data.pkl")) # easier to load than csv
-        df.to_csv(os.path.join(self.save_path, "env_data.csv", index=False)) # backup in case pickle doesn't work
+        df.to_csv(os.path.join(self.save_path, "env_data.csv"), index=False) # backup in case pickle doesn't work
     
     def save_train_results_data(self):
         with open(os.path.join(self.save_path, 'train_results_data.json', 'w')) as f:

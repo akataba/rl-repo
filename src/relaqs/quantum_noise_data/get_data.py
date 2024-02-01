@@ -1,5 +1,6 @@
 import json
 from random import randrange
+import os
 
 def get_single_qubit_data(file_name, day=None, qubit_label=None):
     """ If day is None, returns T1 and T2 times for a random day.
@@ -65,7 +66,7 @@ def get_single_qubit_detuning(file_name, machine_name = None, qubit_label=None):
 if __name__ == "__main__":
     #t1, t2 = get_single_qubit_data('april/ibm_lagos_month_is_4.json')
     from relaqs import QUANTUM_NOISE_DATA_DIR
-    path_to_file = QUANTUM_NOISE_DATA_DIR + "april/ibmq_belem_month_is_4.json"
+    path_to_file = os.path.join(QUANTUM_NOISE_DATA_DIR, "april/ibmq_belem_month_is_4.json")
     t1_list, t2_list = get_month_of_single_qubit_data(path_to_file, qubit_label=0)
     print(t1_list)
     print(t2_list)

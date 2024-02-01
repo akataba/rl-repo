@@ -19,11 +19,15 @@ def script_path(request):
     return request.param
 
 def test_scripts_dir(script_path):
+    #script_path = collect_scripts_to_test()[0]
     spec = importlib.util.spec_from_file_location("relaqs_test_script", script_path)
     module = importlib.util.module_from_spec(spec)
-    #sys.modules["relaqs_test_script"] = module
+
+    # If the script is written as a basic script, it will get run upon import
     spec.loader.exec_module(module)
 
-    if hasattr(module, 'run'):
+    # If the script is written with a run() function called from if __name__ == "__main__", this code will run it
+    # We have to check that this is a run function defined in the script of interest and not the run function from relaqs.api.utils
+    if hasattr(module, 'run') and module.__name__ == module.run.__module__:
         module.run()
     ray.shutdown()
