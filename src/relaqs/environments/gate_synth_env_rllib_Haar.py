@@ -55,7 +55,7 @@ class GateSynthEnvRLlibHaar(gym.Env):
             "num_Haar_basis": 1,
             "steps_per_Haar": 2,  # steps per Haar basis per episode
             "delta": 0,
-            "save_data_every_step": 1,
+            "save_data_every_step": 1, # unused?
             "verbose": True,
             "observation_space_size": 9,  # 1 (fidelity) + 8 (flattened unitary)
         }
@@ -191,8 +191,8 @@ class GateSynthEnvRLlibHaarNoisy(gym.Env):
     @classmethod
     def get_default_env_config(cls):
         return {
-            # "action_space_size": 3,
-            "action_space_size": 2,
+            "action_space_size": 3,
+            #"action_space_size": 2,
             "U_initial": I,  # staring with I
             "U_target": X,  # target for X
             "final_time": 35.5556E-9, # in seconds
@@ -212,12 +212,12 @@ class GateSynthEnvRLlibHaarNoisy(gym.Env):
     def __init__(self, env_config):
         self.final_time = env_config["final_time"]  # Final time for the gates
         self.observation_space = gym.spaces.Box(low=0, high=1, shape=(env_config["observation_space_size"],))  # propagation operator elements + fidelity
-        # self.action_space = gym.spaces.Box(low=np.array([-1, -1, -1]), high=np.array([1, 1, 1])) # for detuning included control
-        self.action_space = gym.spaces.Box(low=np.array([-1, -1]), high=np.array([1, 1]))
+        self.action_space = gym.spaces.Box(low=np.array([-1, -1, -1]), high=np.array([1, 1, 1])) # for detuning included control
+        #self.action_space = gym.spaces.Box(low=np.array([-1, -1]), high=np.array([1, 1]))
 #        self.delta = [env_config["delta"]]  # detuning
         self.delta = env_config["delta"]  # detuning
         self.detuning = 0
-        self.detuning_update()
+        self.detuning_update() # ???
         self.U_target = self.unitary_to_superoperator(env_config["U_target"])
         self.U_initial = self.unitary_to_superoperator(env_config["U_initial"])
         self.num_Haar_basis = env_config["num_Haar_basis"]
@@ -237,6 +237,7 @@ class GateSynthEnvRLlibHaarNoisy(gym.Env):
         self.prev_fidelity = 0  # previous step' fidelity for rewarding
         self.gamma_phase_max = 1.1675 * np.pi
         self.gamma_magnitude_max = 1.8 * np.pi / self.final_time / self.steps_per_Haar
+        self.gamma_detuning_max = 0.05E9      #detuning of the control pulse in Hz 
         self.transition_history = []
         self.episode_id = 0
 
@@ -310,6 +311,7 @@ class GateSynthEnvRLlibHaarNoisy(gym.Env):
         # gamma is the complex amplitude of the control field
         gamma_magnitude = self.gamma_magnitude_max / 2 * (action[0] + 1)
         gamma_phase = self.gamma_phase_max * action[1]
+        alpha = self.gamma_detuning_max * action[2]
 
         # Set noise opertors
         jump_ops = []
