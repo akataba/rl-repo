@@ -1,5 +1,6 @@
 from relaqs.save_results import SaveResults
 import numpy as np
+import os
 from relaqs.api.utils import (run,
     sample_noise_parameters,
     get_best_episode_information,
@@ -7,8 +8,11 @@ from relaqs.api.utils import (run,
 )
 from relaqs.api.gates import H
 
-
-n_training_iterations = 250
+if __name__ == "__main__":
+    n_training_iterations = 250
+else:
+    n_training_iterations = 1
+n_training_iterations = 1
 figure_title ="Inferencing on multiple noisy environments with different detuning noise"
 noise_file = "april/ibmq_belem_month_is_4.json"
 noise_file_2 = "april/ibmq_quito_month_is_4.json"
@@ -22,7 +26,7 @@ alg = run(H(),
 
 # ----------------------- Creating the deterministic agent using actions from the best episode -------------------------------
 env = return_env_from_alg(alg)
-t1_list,t2_list,  = sample_noise_parameters(noise_file_2, detuning_noise_file=path_to_detuning)
+t1_list,t2_list,detunings  = sample_noise_parameters(noise_file_2, detuning_noise_file=path_to_detuning)
 detuning_list = np.random.normal(1e8, 1e4, 9).tolist()
 # t2_list = np.random.normal(1e-9, 1e-5, 135)
 env.relaxation_rates_list = [np.reciprocal(t1_list).tolist(), np.reciprocal(t2_list).tolist()]
@@ -32,9 +36,9 @@ sr = SaveResults(env, alg)
 save_dir = sr.save_results()
 print("Results saved to:", save_dir)
 
-best_episode_information = get_best_episode_information(save_dir + "env_data.csv")
+best_episode_information = get_best_episode_information(os.path.join(save_dir, "env_data.pkl"))
 
-actions = [np.asarray(eval(best_episode_information.iloc[0,2])), np.asarray(eval(best_episode_information.iloc[1,2]))]
+actions = [best_episode_information.iloc[0,2], best_episode_information.iloc[1,2]]
 
 num_episodes = 0
 episode_reward = 0.0
