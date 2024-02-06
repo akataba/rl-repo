@@ -6,7 +6,7 @@ import random
 from qutip.superoperator import liouvillian, spre, spost
 from qutip import Qobj, tensor
 from qutip.operators import *
-from qutip import cnot, cphase
+from qutip.qip.operations import cnot, cphase
 #from relaqs.api.reward_functions import negative_matrix_difference_norm
 
 sig_p = np.array([[0, 1], [0, 0]])

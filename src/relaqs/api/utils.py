@@ -107,7 +107,7 @@ def run(gate, n_training_iterations=1, noise_file=""):
       alg (rllib.algorithms.algorithm)
 
     """
-    ray.init()
+    # ray.init()
     register_env("my_env", env_creator)
     env_config = GateSynthEnvRLlibHaarNoisy.get_default_env_config()
     env_config["U_target"] = gate.get_matrix()
@@ -145,7 +145,7 @@ def run(gate, n_training_iterations=1, noise_file=""):
         result = alg.train()
         list_of_results.append(result['hist_stats'])
 
-    ray.shutdown()
+    # ray.shutdown()
 
     return alg
 
