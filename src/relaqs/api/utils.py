@@ -22,6 +22,7 @@ from relaqs import QUANTUM_NOISE_DATA_DIR
 from qutip.operators import *
 import relaqs.api.gates as gates
 
+
 def load_pickled_env_data(data_path):
     df = pd.read_pickle(data_path)
     return df
@@ -87,12 +88,12 @@ def load_model(path):
     return loaded_model
 
 def get_best_episode_information(filename):
-    df = pd.read_csv(filename, names=['Fidelity', 'Reward', 'Actions', 'Flattened U', 'Episode Id'], header=0)
-    fidelity = df.iloc[:, 0]
+    data = load_pickled_env_data(filename)
+    fidelity = data["Fidelity"]
     max_fidelity_idx = fidelity.argmax()
-    fidelity = df.iloc[max_fidelity_idx, 0]
-    episode = df.iloc[max_fidelity_idx, 4]
-    best_episodes = df[df["Episode Id"] == episode]
+    fidelity = data.iloc[max_fidelity_idx, 0]
+    episode = data.iloc[max_fidelity_idx, 4]
+    best_episodes = data[data["Episode Id"] == episode]
     return best_episodes
 
 def env_creator(config):
