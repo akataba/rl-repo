@@ -1,4 +1,3 @@
-import ray
 import numpy as np
 from numpy.linalg import eigvalsh
 from ray.rllib.algorithms.algorithm import Algorithm
@@ -12,9 +11,7 @@ from scipy.linalg import sqrtm
 from relaqs import RESULTS_DIR
 import ast
 from ray.tune.registry import register_env
-from relaqs.environments.gate_synth_env_rllib import GateSynthEnvRLlib
-from relaqs.environments.gate_synth_env_rllib_Haar import GateSynthEnvRLlibHaarNoisy
-from relaqs.save_results import SaveResults
+from relaqs.environments.gate_synth_env_rllib_Haar import GateSynthEnvRLlibHaarNoisy, GateSynthEnvRLlibHaar
 from relaqs.api.callbacks import GateSynthesisCallbacks
 from relaqs.plot_data import plot_data
 import numpy as np
@@ -96,31 +93,43 @@ def get_best_episode_information(filename):
     best_episodes = data[data["Episode Id"] == episode]
     return best_episodes
 
-def env_creator(config):
+def noisy_env_creator(config):
     return GateSynthEnvRLlibHaarNoisy(config)
 
-def run(gate, n_training_iterations=1, noise_file=""):
+def noiseless_env_creator(config):
+    return GateSynthEnvRLlibHaar(config)
+
+def run(gate, environment, n_training_iterations=1, noise_file="",):
     """Args
        gate (Gate type):
+       environmment(gym.env)
        n_training_iterations (int)
        noise_file (str):
     Returns
       alg (rllib.algorithms.algorithm)
 
     """
-    # ray.init()
-    register_env("my_env", env_creator)
-    env_config = GateSynthEnvRLlibHaarNoisy.get_default_env_config()
-    env_config["U_target"] = gate.get_matrix()
-
+    env_config = None
+    if isinstance(environment, GateSynthEnvRLlibHaarNoisy):
+        register_env("my_env", noisy_env_creator)
+        env_config = environment.get_default_env_config()
+        env_config["U_target"] = gate.get_matrix()
     # ---------------------> Get quantum noise data <-------------------------
-    t1_list, t2_list, detuning_list = sample_noise_parameters(noise_file)
+        t1_list, t2_list, detuning_list = sample_noise_parameters(noise_file)
 
-    env_config["relaxation_rates_list"] = [np.reciprocal(t1_list).tolist(), np.reciprocal(t2_list).tolist()] # using real T1 data
-    env_config["delta"] = detuning_list
-    env_config["relaxation_ops"] = [sigmam(),sigmaz()]
-    env_config["observation_space_size"] = 2*16 + 1 + 2 + 1 # 2*16 = (complex number)*(density matrix elements = 4)^2, + 1 for fidelity + 2 for relaxation rate + 1 for detuning
-    env_config["verbose"] = True
+        env_config["relaxation_rates_list"] = [np.reciprocal(t1_list).tolist(), np.reciprocal(t2_list).tolist()] # using real T1 data
+        env_config["delta"] = detuning_list
+        env_config["relaxation_ops"] = [sigmam(),sigmaz()]
+        env_config["observation_space_size"] = 2*16 + 1 + 2 + 1 # 2*16 = (complex number)*(density matrix elements = 4)^2, + 1 for fidelity + 2 for relaxation rate + 1 for detuning
+    elif isinstance(environment, GateSynthEnvRLlibHaar):
+        register_env("my_env", noiseless_env_creator)
+        env_config =  environment.get_default_env_config()
+        env_config["U_target"] = gate.get_matrix()
+        env_config["observation_space_size"] = 2*16 + 1  # 2*16 = (complex number)*(density matrix elements = 4)^2, + 1 for fidelity 
+        env_config["verbose"] = True
+    else:
+        RuntimeError("This environment is not supported yet for this run method")
+
 
     # ---------------------> Configure algorithm and Environment <-------------------------
     alg_config = DDPGConfig()
@@ -128,16 +137,15 @@ def run(gate, n_training_iterations=1, noise_file=""):
     alg_config.environment("my_env", env_config=env_config)
     alg_config.rollouts(batch_mode="complete_episodes")
     alg_config.callbacks(GateSynthesisCallbacks)
-    alg_config.train_batch_size = GateSynthEnvRLlibHaarNoisy.get_default_env_config()["steps_per_Haar"]
+    alg_config.train_batch_size = environment.get_default_env_config()["steps_per_Haar"]
 
-    ### working 1-3 sets
     alg_config.actor_lr = 4e-5
     alg_config.critic_lr = 5e-4
 
     alg_config.actor_hidden_activation = "relu"
     alg_config.critic_hidden_activation = "relu"
     alg_config.num_steps_sampled_before_learning_starts = 1000
-    alg_config.actor_hiddens = [30,30,30]
+    alg_config.actor_hiddens = [30,30,30, 30]
     alg_config.exploration_config["scale_timesteps"] = 10000
 
     alg = alg_config.build()
@@ -145,10 +153,94 @@ def run(gate, n_training_iterations=1, noise_file=""):
     for _ in range(n_training_iterations):
         result = alg.train()
         list_of_results.append(result['hist_stats'])
+    return alg, list_of_results
 
-    # ray.shutdown()
+def run_noisless_one_qubit_experiment(gate,n_training_iterations=1):
+    """Args
+       gate (Gate type):
+       environmment(gym.env)
+       n_training_iterations (int)
+       noise_file (str):
+    Returns
+      alg (rllib.algorithms.algorithm)
 
-    return alg
+    """
+    register_env("my_env", noiseless_env_creator)
+    env_config =  GateSynthEnvRLlibHaar.get_default_env_config()
+    env_config["U_target"] = gate.get_matrix()
+    # env_config["observation_space_size"] = 2*16 + 1  # 2*16 = (complex number)*(density matrix elements = 4)^2, + 1 for fidelity 
+    env_config["verbose"] = True
+
+ # ---------------------> Configure algorithm and Environment <-------------------------
+    alg_config = DDPGConfig()
+    alg_config.framework("torch")
+    alg_config.environment("my_env", env_config=env_config)
+    alg_config.rollouts(batch_mode="complete_episodes")
+    alg_config.callbacks(GateSynthesisCallbacks)
+    alg_config.train_batch_size = GateSynthEnvRLlibHaar.get_default_env_config()["steps_per_Haar"]
+
+    alg_config.actor_lr = 4e-5
+    alg_config.critic_lr = 5e-4
+
+    alg_config.actor_hidden_activation = "relu"
+    alg_config.critic_hidden_activation = "relu"
+    alg_config.num_steps_sampled_before_learning_starts = 1000
+    alg_config.actor_hiddens = [30,30,30, 30]
+    alg_config.exploration_config["scale_timesteps"] = 10000
+
+    alg = alg_config.build()
+    list_of_results = []
+    for _ in range(n_training_iterations):
+        result = alg.train()
+        list_of_results.append(result['hist_stats'])
+    return alg, list_of_results
+
+
+def run_noisy_one_qubit_experiment(gate, n_training_iterations=1, noise_file="      "):
+    """Args
+       gate (Gate type):
+       environmment(gym.env)
+       n_training_iterations (int)
+       noise_file (str):
+    Returns
+      alg (rllib.algorithms.algorithm)
+
+    """
+    register_env("my_env", noisy_env_creator)
+    env_config = GateSynthEnvRLlibHaarNoisy.get_default_env_config()
+    env_config["U_target"] = gate.get_matrix()
+    # ---------------------> Get quantum noise data <-------------------------
+    t1_list, t2_list, detuning_list = sample_noise_parameters(noise_file)
+
+    env_config["relaxation_rates_list"] = [np.reciprocal(t1_list).tolist(), np.reciprocal(t2_list).tolist()] # using real T1 data
+    env_config["delta"] = detuning_list
+    env_config["relaxation_ops"] = [sigmam(),sigmaz()]
+    env_config["observation_space_size"] = 2*16 + 1 + 2 + 1 # 2*16 = (complex number)*(density matrix elements = 4)^2, + 1 for fidelity + 2 for relaxation rate + 1 for detuning
+
+   # ---------------------> Configure algorithm and Environment <-------------------------
+    alg_config = DDPGConfig()
+    alg_config.framework("torch")
+    alg_config.environment("my_env", env_config=env_config)
+    alg_config.rollouts(batch_mode="complete_episodes")
+    alg_config.callbacks(GateSynthesisCallbacks)
+    alg_config.train_batch_size = GateSynthEnvRLlibHaarNoisy.get_default_env_config()["steps_per_Haar"]
+
+    alg_config.actor_lr = 4e-5
+    alg_config.critic_lr = 5e-4
+
+    alg_config.actor_hidden_activation = "relu"
+    alg_config.critic_hidden_activation = "relu"
+    alg_config.num_steps_sampled_before_learning_starts = 1000
+    alg_config.actor_hiddens = [30,30,30, 30]
+    alg_config.exploration_config["scale_timesteps"] = 10000
+
+    alg = alg_config.build()
+    list_of_results = []
+    for _ in range(n_training_iterations):
+        result = alg.train()
+        list_of_results.append(result['hist_stats'])
+    return alg, list_of_results
+
 
 def return_env_from_alg(alg):
     env = alg.workers.local_worker().env
