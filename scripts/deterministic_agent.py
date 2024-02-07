@@ -1,21 +1,23 @@
 from relaqs.save_results import SaveResults
 import numpy as np
 from relaqs.api.utils import (run,
+    run_noisy_one_qubit_experiment,
     sample_noise_parameters,
     get_best_episode_information,
     return_env_from_alg
 )
 from relaqs.api.gates import H
+from relaqs.plot_data import plot_results, plot_data
 
 
-n_training_iterations = 1
+n_training_iterations = 300
 figure_title ="Inferencing on multiple noisy environments with different detuning noise"
 noise_file = "april/ibmq_belem_month_is_4.json"
 noise_file_2 = "april/ibmq_quito_month_is_4.json"
 path_to_detuning = "qubit_detuning_data.json"
 
 # --------------------------> Training of model <-----------------------------------------------------
-alg = run(H(), 
+alg, list_of_results = run_noisy_one_qubit_experiment(H(), 
     n_training_iterations, 
     noise_file=noise_file
     )
@@ -28,9 +30,11 @@ detuning_list = np.random.normal(1e8, 1e4, 9).tolist()
 env.relaxation_rates_list = [np.reciprocal(t1_list).tolist(), np.reciprocal(t2_list).tolist()]
 env.delta = detuning_list 
 
-sr = SaveResults(env, alg)
+sr = SaveResults(env, alg, results=list_of_results)
 save_dir = sr.save_results()
 print("Results saved to:", save_dir)
+plot_data(save_dir, episode_length=alg._episode_history[0].episode_length, figure_title=figure_title)
+plot_results(save_dir, figure_title=figure_title)
 
 # best_episode_information = get_best_episode_information(save_dir + "env_data.csv")
 best_episode_information = get_best_episode_information(save_dir + "env_data.pkl")

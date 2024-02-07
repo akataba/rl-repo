@@ -36,7 +36,7 @@ def noiseless_gate_environment(noiseless_config):
 
 @pytest.fixture()
 def gate_to_train():
-    return H()
+    return X()
 
 def test_compute_fidelity_one_qubit_noisy(noisy_config):
     one_qubit_config = noisy_config
@@ -98,7 +98,7 @@ def test_unitarity(noiseless_gate_environment):
 
 def test_noisy_training(gate_to_train):
 
-    n_training_iterations = 1
+    n_training_iterations = 250
     noise_file = "april/ibmq_belem_month_is_4.json"
 
     alg,_ = run_noisy_one_qubit_experiment(gate_to_train, 
@@ -112,10 +112,10 @@ def test_noisy_training(gate_to_train):
     last_100_rows = df.tail(100)
     fidelities = last_100_rows.iloc[:,0]
     average_fidelity = sum(fidelities)/len(fidelities)
-    assert average_fidelity > 0.1
+    assert average_fidelity > 0.85
 
 def test_noiseless_training(gate_to_train):
-    n_train_iterations= 1
+    n_train_iterations= 250
     alg, _ = run_noisless_one_qubit_experiment(gate_to_train,
             n_training_iterations=n_train_iterations
             )
@@ -126,7 +126,7 @@ def test_noiseless_training(gate_to_train):
     last_100_rows = df.tail(100)
     fidelities = last_100_rows.iloc[:,0]
     average_fidelity = sum(fidelities)/len(fidelities)
-    assert average_fidelity > 0.1
+    assert average_fidelity > 0.850
 
 def test_loading_of_unitary(gate_to_train):
     data_path = RESULTS_DIR + '2023-11-08_11-09-45/env_data.csv' 
