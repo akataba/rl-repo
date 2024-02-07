@@ -63,8 +63,9 @@ class GateSynthEnvRLlibHaar(gym.Env):
         return np.append([self.compute_fidelity()], self.unitary_to_observation(self.U))
     
     def compute_fidelity(self):
-        return float(np.abs(np.trace(self.U_target.conjugate().transpose() @ self.U))) / (self.U.shape[0])
-
+        U_target_dagger = self.U_target.conjugate().transpose()
+        return float(np.abs(np.trace(U_target_dagger @ self.U))) / (self.U.shape[0])
+        
     def hamiltonian(self, delta, alpha, gamma_magnitude, gamma_phase):
         return (delta + alpha) * Z + gamma_magnitude * (np.cos(gamma_phase) * X + np.sin(gamma_phase) * Y)
 
@@ -109,7 +110,7 @@ class GateSynthEnvRLlibHaar(gym.Env):
         for jj in range(0, num_time_bins):
             Ut = la.expm(-1j * self.final_time / num_time_bins * self.H_tot[jj])
             self.U = Ut @ self.U
-
+        
         self.U_array.append(self.U)
 
         # Get reward (fidelity)
