@@ -2,11 +2,9 @@
 import random
 import numpy as np
 import scipy.linalg as la
+from qutip import Qobj
 from qutip.superoperator import liouvillian, spre, spost
-from qutip import Qobj, tensor
-from qutip.operators import *
-from qutip import cnot, cphase
-
+from qutip.operators import sigmam
 from relaqs.environments.single_qubit_env import GateSynthEnvRLlibHaar
 
 class GateSynthEnvRLlibHaarNoisy(GateSynthEnvRLlibHaar):
