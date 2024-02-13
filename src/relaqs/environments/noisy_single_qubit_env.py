@@ -26,7 +26,6 @@ class NoisySingleQubitEnv(SingleQubitEnv):
         self.relaxation_rates_list = env_config["relaxation_rates_list"]
         self.relaxation_ops = env_config["relaxation_ops"]
         self.relaxation_rate = self.get_relaxation_rate()
-        self.L_array = []  # Liouvillian for each time bin
         self.U = self.U_initial.copy()  # multiplied propagtion operators
         self.state = self.unitary_to_observation(self.U_initial)  # starting observation space
 
@@ -57,13 +56,12 @@ class NoisySingleQubitEnv(SingleQubitEnv):
     def reset(self, *, seed=None, options=None):
         super().reset()
         self.state = self.get_observation()
-        self.L_array = []
         self.relaxation_rate = self.get_relaxation_rate()
         self.detuning_update()
         starting_observeration = self.get_observation()
         info = {}
         return starting_observeration, info
-    
+
     def step(self, action):
         num_time_bins = 2 ** (self.current_Haar_num - 1) # Haar number decides the number of time bins
 
@@ -77,11 +75,9 @@ class NoisySingleQubitEnv(SingleQubitEnv):
         for ii in range(len(self.relaxation_ops)):
             jump_ops.append(np.sqrt(self.relaxation_rate[ii]) * self.relaxation_ops[ii])
 
-        self.L = ([])  # at every step we calculate L again because minimal time bin changes
         self.U = self.U_initial.copy()
         for jj in range(0, num_time_bins):
             L = (liouvillian(Qobj(self.H_tot[jj]), jump_ops, data_only=False, chi=None)).data.toarray()  # Liouvillian calc
-            self.L_array.append(L)
             Ut = la.expm(self.final_time / num_time_bins * L)  # time evolution (propagation operator)
             self.U = Ut @ self.U  # calculate total propagation until the time we are at
 
