@@ -63,7 +63,7 @@ class NoisySingleQubitEnv(SingleQubitEnv):
         starting_observeration = self.get_observation()
         info = {}
         return starting_observeration, info
-
+    
     def step(self, action):
         num_time_bins = 2 ** (self.current_Haar_num - 1) # Haar number decides the number of time bins
 
@@ -78,6 +78,7 @@ class NoisySingleQubitEnv(SingleQubitEnv):
             jump_ops.append(np.sqrt(self.relaxation_rate[ii]) * self.relaxation_ops[ii])
 
         self.L = ([])  # at every step we calculate L again because minimal time bin changes
+        self.U = self.U_initial.copy()
         for jj in range(0, num_time_bins):
             L = (liouvillian(Qobj(self.H_tot[jj]), jump_ops, data_only=False, chi=None)).data.toarray()  # Liouvillian calc
             self.L_array.append(L)

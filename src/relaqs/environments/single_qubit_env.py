@@ -101,8 +101,6 @@ class SingleQubitEnv(gym.Env):
                 else:
                     self.H_tot.append(factor * H_elem)
 
-        self.U = self.U_initial.copy()
-
     def is_episode_over(self, fidelity):
         truncated = False
         terminated = False
@@ -139,6 +137,7 @@ class SingleQubitEnv(gym.Env):
         self.hamiltonian_update(alpha, gamma_magnitude, gamma_phase, num_time_bins)
 
         # U update
+        self.U = self.U_initial.copy()
         for jj in range(0, num_time_bins):
             Ut = la.expm(-1j * self.final_time / num_time_bins * self.H_tot[jj])
             self.U = Ut @ self.U
