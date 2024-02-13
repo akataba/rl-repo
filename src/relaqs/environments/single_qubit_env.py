@@ -11,7 +11,7 @@ X = gates.X().get_matrix()
 Y = gates.Y().get_matrix()
 Z = gates.Z().get_matrix()
 
-class GateSynthEnvRLlibHaar(gym.Env):
+class SingleQubitEnv(gym.Env):
     @classmethod
     def get_default_env_config(cls):
         return {

@@ -7,6 +7,7 @@ from qutip.superoperator import liouvillian, spre, spost
 from qutip import Qobj, tensor
 from qutip.operators import *
 from qutip import cnot, cphase
+from relaqs.environments.noisy_single_qubit_env import NoisySingleQubitEnv
 #from relaqs.api.reward_functions import negative_matrix_difference_norm
 
 sig_p = np.array([[0, 1], [0, 0]])
@@ -44,7 +45,7 @@ exchangeOperator = tensor(Qobj(sig_p),Qobj(sig_m)).data.toarray() + tensor(Qobj(
 CNOT = cnot().data.toarray()
 CZ = cphase(np.pi).data.toarray()
 
-class TwoQubitGateSynth(gym.Env):
+class NoisyTwoQubitEnv(NoisySingleQubitEnv):
     @classmethod
     def get_default_env_config(cls):
         return {

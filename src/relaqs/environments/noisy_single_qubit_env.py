@@ -5,9 +5,9 @@ import scipy.linalg as la
 from qutip import Qobj
 from qutip.superoperator import liouvillian, spre, spost
 from qutip.operators import sigmam
-from relaqs.environments.single_qubit_env import GateSynthEnvRLlibHaar
+from relaqs.environments.single_qubit_env import SingleQubitEnv
 
-class GateSynthEnvRLlibHaarNoisy(GateSynthEnvRLlibHaar):
+class NoisySingleQubitEnv(SingleQubitEnv):
     @classmethod
     def get_default_env_config(cls):
         env_config = super().get_default_env_config()
