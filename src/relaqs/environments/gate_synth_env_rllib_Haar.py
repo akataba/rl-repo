@@ -566,6 +566,7 @@ class TwoQubitGateSynth(gym.Env):
 
     def reset(self, *, seed=None, options=None):
         self.U = self.U_initial.copy()
+        self.initialActions = self.KakActionCalculation()        
         self.state = self.get_observation()
         self.current_Haar_num = 1
         self.current_step_per_Haar = 1
