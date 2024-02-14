@@ -445,7 +445,7 @@ class TwoQubitGateSynth(gym.Env):
             "U_initial": II,  # staring with I
             "U_target": CZ,  # target for CZ
             "final_time": 30E-9, # in seconds, total time is final_time * 5 because of single qubit + two_qubit + single_qubit + two_qubit + single_qubit
-            "num_Haar_basis": 1,  # number of Haar basis (need to update for odd combinations)
+            "num_Haar_basis": 2,  # number of Haar basis (need to update for odd combinations)
             "steps_per_Haar": 1,  # steps per Haar basis per episode
             "delta": [[0],[0]],  # qubit detuning
             "save_data_every_step": 1,
@@ -485,11 +485,12 @@ class TwoQubitGateSynth(gym.Env):
         self.final_time = env_config["final_time"]  # Final time for the gates
         self.PiFreq = np.pi / self.final_time
         self.observation_space = gym.spaces.Box(low=0, high=1, shape=(env_config["observation_space_size"],))  # propagation operator elements + fidelity + relaxation + detuning
-        self.action_space = gym.spaces.Box(low=-1*np.ones(3), high=np.ones(3)) #alpha1, alpha2, alphaC, gamma_magnitude1, gamma_phase1, gamma_magnitude2, gamma_phase2
+        self.action_space = gym.spaces.Box(low=0*np.ones(27), high=0*np.ones(27)) #alpha1, alpha2, alphaC, gamma_magnitude1, gamma_phase1, gamma_magnitude2, gamma_phase2
         self.delta = env_config["delta"]  # detuning
         self.detuning = [0, 0]
         self.detuning_update()
         self._U_target = self.unitary_to_superoperator(env_config["U_target"])
+        self.unitary_U_target = env_config["U_target"]
         self.U_initial = self.unitary_to_superoperator(env_config["U_initial"])
         self.num_Haar_basis = env_config["num_Haar_basis"]
         self.steps_per_Haar = env_config["steps_per_Haar"]
@@ -530,7 +531,8 @@ class TwoQubitGateSynth(gym.Env):
         self.detuning = [detuning1, detuning2]
         
     def update_target_unitary(self, U):
-        self._U_target = U
+        self._U_target = self.unitary_to_superoperator(U)
+        self.unitary_U_target = U
         self.initialActions = self.KakActionCalculation()    
 
     def unitary_to_superoperator(self, U):
@@ -550,7 +552,7 @@ class TwoQubitGateSynth(gym.Env):
         return np.append([self.compute_fidelity()]+[x//6283185 for x in self.relaxation_rate]+normalizedDetuning, self.unitary_to_observation(self.U)) #6283185 assuming 500 nanosecond relaxation is max
     
     def compute_fidelity(self):
-        U_target_dagger = self.unitary_to_superoperator(self._U_target.conjugate().transpose())
+        U_target_dagger = self.unitary_to_superoperator(self.unitary_U_target.conjugate().transpose())
         F = float(np.abs(np.trace(U_target_dagger @ self.U))) / (self.U.shape[0])
         return F
 
@@ -597,14 +599,14 @@ class TwoQubitGateSynth(gym.Env):
         return starting_observeration, info
 
     def step(self, action):
-        num_time_bins = 2 ** (self.current_Haar_num - 1) # Haar number decides the number of time bins
+        num_time_bins = self.current_Haar_num
 
         ### First single qubit gate
         alpha1_1 = self.alpha_max * (action[0] + self.initialActions[0])
         alpha2_1 = self.alpha_max * (action[1] + self.initialActions[1])
 
-        gamma_magnitude1_1 = self.gamma_magnitude_max / 2 * (action[2] + self.initialActions[2] + 1)
-        gamma_magnitude2_1 = self.gamma_magnitude_max / 2 * (action[3] + self.initialActions[3] + 1)
+        gamma_magnitude1_1 = self.gamma_magnitude_max * (action[2] + self.initialActions[2])
+        gamma_magnitude2_1 = self.gamma_magnitude_max * (action[3] + self.initialActions[3])
 
         gamma_phase1_1 = self.gamma_phase_max * (action[4] + self.initialActions[4])
         gamma_phase2_1 = self.gamma_phase_max * (action[5] + self.initialActions[5])
@@ -617,8 +619,8 @@ class TwoQubitGateSynth(gym.Env):
         alpha1_2 = self.alpha_max * (action[7] + self.initialActions[7])
         alpha2_2 = self.alpha_max * (action[8] + self.initialActions[8])
 
-        gamma_magnitude1_2 = self.gamma_magnitude_max / 2 * (action[9] + self.initialActions[9] + 1)
-        gamma_magnitude2_2 = self.gamma_magnitude_max / 2 * (action[10] + self.initialActions[10] + 1)
+        gamma_magnitude1_2 = self.gamma_magnitude_max * (action[9] + self.initialActions[9])
+        gamma_magnitude2_2 = self.gamma_magnitude_max * (action[10] + self.initialActions[10])
 
         gamma_phase1_2 = self.gamma_phase_max * (action[11] + self.initialActions[11])
         gamma_phase2_2 = self.gamma_phase_max * (action[12] + self.initialActions[12])
@@ -631,8 +633,8 @@ class TwoQubitGateSynth(gym.Env):
         alpha1_3 = self.alpha_max * (action[14] + self.initialActions[14])
         alpha2_3 = self.alpha_max * (action[15] + self.initialActions[15])
 
-        gamma_magnitude1_3 = self.gamma_magnitude_max / 2 * (action[16] + self.initialActions[16] + 1)
-        gamma_magnitude2_3 = self.gamma_magnitude_max / 2 * (action[17] + self.initialActions[17] + 1)
+        gamma_magnitude1_3 = self.gamma_magnitude_max * (action[16] + self.initialActions[16])
+        gamma_magnitude2_3 = self.gamma_magnitude_max * (action[17] + self.initialActions[17])
 
         gamma_phase1_3 = self.gamma_phase_max * (action[18] + self.initialActions[18]) 
         gamma_phase2_3 = self.gamma_phase_max * (action[19] + self.initialActions[19])
@@ -645,8 +647,8 @@ class TwoQubitGateSynth(gym.Env):
         alpha1_4 = self.alpha_max * (action[21] + self.initialActions[21])
         alpha2_4 = self.alpha_max * (action[22] + self.initialActions[22])
 
-        gamma_magnitude1_4 = self.gamma_magnitude_max / 2 * (action[23] + self.initialActions[23] + 1)
-        gamma_magnitude2_4 = self.gamma_magnitude_max / 2 * (action[24] + self.initialActions[24] + 1)
+        gamma_magnitude1_4 = self.gamma_magnitude_max * (action[23] + self.initialActions[23])
+        gamma_magnitude2_4 = self.gamma_magnitude_max * (action[24] + self.initialActions[24])
 
         gamma_phase1_4 = self.gamma_phase_max * (action[25] + self.initialActions[25])
         gamma_phase2_4 = self.gamma_phase_max * (action[26] + self.initialActions[26])
@@ -987,25 +989,25 @@ class TwoQubitGateSynth(gym.Env):
             
             return phase1, L1, L2, phase2, R1, R2, c0, c1, c2
                         
-        return KAK_2q(self._U_target)
+        return KAK_2q(self.unitary_U_target)
 
     def KakActionCalculation(self):
         
         phase1, L1, L2, phase2, R1, R2, c0, c1, c2 = self.canonicalDecomposition()
         
-        initialActions = np.zeros(15)
+        initialActions = np.zeros(27)
         
-        initialActions[0:2] = self.singleQubitActionCalculation(R1)
-        initialActions[3:5] = self.singleQubitActionCalculation(R2)
+        initialActions[0:3] = self.singleQubitActionCalculation(R1)
+        initialActions[3:6] = self.singleQubitActionCalculation(R2)
         initialActions[6] = self.canonicalActionCalculation(c0,c1,c2,1)
-        initialActions[7:9]  = self.singleQubitActionCalculation(H)
-        initialActions[10:12] = self.singleQubitActionCalculation(H)
+        initialActions[7:10]  = self.singleQubitActionCalculation(H)
+        initialActions[10:13] = self.singleQubitActionCalculation(H)
         initialActions[13] = self.canonicalActionCalculation(c0,c1,c2,2)
-        initialActions[14:16]  = self.singleQubitActionCalculation(S)
-        initialActions[17:19] = self.singleQubitActionCalculation(S)
+        initialActions[14:17]  = self.singleQubitActionCalculation(S)
+        initialActions[17:20] = self.singleQubitActionCalculation(S)
         initialActions[20] = self.canonicalActionCalculation(c0,c1,c2,3)
-        initialActions[21:23] = self.singleQubitActionCalculation(L1)
-        initialActions[24:26] = self.singleQubitActionCalculation(L2)
+        initialActions[21:24] = self.singleQubitActionCalculation(L1)
+        initialActions[24:27] = self.singleQubitActionCalculation(L2)
         
         return initialActions
     
@@ -1016,8 +1018,8 @@ class TwoQubitGateSynth(gym.Env):
         x_angle , z_angle_after, z_angle_before, globalPhase = OneQubitEulerDecomposer(basis='ZXZ').angles_and_phase(U)
         
         singleQubitActions[0] = z_angle_after / np.pi ## alpha
-        singleQubitActions[1] = z_angle_before / self.final_time ## gamma_phase
-        singleQubitActions[2] = x_angle / self.final_time ## gamma_magnitude
+        singleQubitActions[1] = z_angle_before / np.pi ## gamma_phase
+        singleQubitActions[2] = x_angle / np.pi ## gamma_magnitude
         
         return singleQubitActions
     
@@ -1034,6 +1036,6 @@ class TwoQubitGateSynth(gym.Env):
         else:
             print("wrong input index")
             
-        twoQubitAction = b / self.final_time 
+        twoQubitAction = b / np.pi 
 
         return twoQubitAction
