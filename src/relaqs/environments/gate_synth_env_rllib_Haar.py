@@ -483,7 +483,7 @@ class TwoQubitGateSynth(gym.Env):
 
     def __init__(self, env_config):
         self.final_time = env_config["final_time"]  # Final time for the gates
-        self.PiFreq = np.pi / self.final_time
+        self.PiFreq = np.pi / self.final_time / 2
         self.observation_space = gym.spaces.Box(low=0, high=1, shape=(env_config["observation_space_size"],))  # propagation operator elements + fidelity + relaxation + detuning
         self.action_space = gym.spaces.Box(low=0*np.ones(27), high=0*np.ones(27)) #alpha1, alpha2, alphaC, gamma_magnitude1, gamma_phase1, gamma_magnitude2, gamma_phase2
         self.delta = env_config["delta"]  # detuning
@@ -599,59 +599,145 @@ class TwoQubitGateSynth(gym.Env):
         return starting_observeration, info
 
     def step(self, action):
-        num_time_bins = self.current_Haar_num
-
+        num_time_bins = 2 ** (self.current_Haar_num - 1)
+        self.initialActions = self.KakActionCalculation()
+        # print(self.initialActions)
+        
         ### First single qubit gate
-        alpha1_1 = self.alpha_max * (action[0] + self.initialActions[0])
-        alpha2_1 = self.alpha_max * (action[1] + self.initialActions[1])
+        
+        if self.current_Haar_num==1:
+            alpha1_1 = self.alpha_max * (action[0] + self.initialActions[0])
+            alpha2_1 = self.alpha_max * (action[1] + self.initialActions[1])
 
-        gamma_magnitude1_1 = self.gamma_magnitude_max * (action[2] + self.initialActions[2])
-        gamma_magnitude2_1 = self.gamma_magnitude_max * (action[3] + self.initialActions[3])
+            gamma_magnitude1_1 = self.gamma_magnitude_max * (action[2] + self.initialActions[2])
+            gamma_magnitude2_1 = self.gamma_magnitude_max * (action[3] + self.initialActions[3])
 
-        gamma_phase1_1 = self.gamma_phase_max * (action[4] + self.initialActions[4])
-        gamma_phase2_1 = self.gamma_phase_max * (action[5] + self.initialActions[5])
+            gamma_phase1_1 = self.gamma_phase_max * (action[4] + self.initialActions[4])
+            gamma_phase2_1 = self.gamma_phase_max * (action[5] + self.initialActions[5])
+        elif self.current_Haar_num==2:
+            alpha1_1 = - self.alpha_max * (action[0] + self.initialActions[0])
+            alpha2_1 = - self.alpha_max * (action[1] + self.initialActions[1])
+
+            gamma_magnitude1_1 = self.gamma_magnitude_max * (action[2] + self.initialActions[2])
+            gamma_magnitude2_1 = self.gamma_magnitude_max * (action[3] + self.initialActions[3])
+
+            gamma_phase1_1 = self.gamma_phase_max * (action[4] + self.initialActions[4])
+            gamma_phase2_1 = self.gamma_phase_max * (action[5] + self.initialActions[5])
+        else:
+            alpha1_1 = self.alpha_max * (action[0])
+            alpha2_1 = self.alpha_max * (action[1])
+
+            gamma_magnitude1_1 = self.gamma_magnitude_max * (action[2])
+            gamma_magnitude2_1 = self.gamma_magnitude_max * (action[3])
+
+            gamma_phase1_1 = self.gamma_phase_max * (action[4])
+            gamma_phase2_1 = self.gamma_phase_max * (action[5])            
 
         ### First two qubit gate
-
-        g_eff1 = self.g_eff_max * (action[6]+self.initialActions[6])
+        
+        if self.current_Haar_num==1:
+            g_eff1 = self.g_eff_max * (action[6]+self.initialActions[6])
+        else:
+            g_eff1 = self.g_eff_max * (action[6])
 
         ### Second Single qubit gate
-        alpha1_2 = self.alpha_max * (action[7] + self.initialActions[7])
-        alpha2_2 = self.alpha_max * (action[8] + self.initialActions[8])
+        if self.current_Haar_num==1:
+            alpha1_2 = self.alpha_max * (action[7] + self.initialActions[7])
+            alpha2_2 = self.alpha_max * (action[8] + self.initialActions[8])
 
-        gamma_magnitude1_2 = self.gamma_magnitude_max * (action[9] + self.initialActions[9])
-        gamma_magnitude2_2 = self.gamma_magnitude_max * (action[10] + self.initialActions[10])
+            gamma_magnitude1_2 = self.gamma_magnitude_max * (action[9] + self.initialActions[9])
+            gamma_magnitude2_2 = self.gamma_magnitude_max * (action[10] + self.initialActions[10])
 
-        gamma_phase1_2 = self.gamma_phase_max * (action[11] + self.initialActions[11])
-        gamma_phase2_2 = self.gamma_phase_max * (action[12] + self.initialActions[12])
+            gamma_phase1_2 = self.gamma_phase_max * (action[11] + self.initialActions[11])
+            gamma_phase2_2 = self.gamma_phase_max * (action[12] + self.initialActions[12])
+        elif self.current_Haar_num==2:
+            alpha1_2 = - self.alpha_max * (action[7] + self.initialActions[7])
+            alpha2_2 = - self.alpha_max * (action[8] + self.initialActions[8])
 
+            gamma_magnitude1_2 = self.gamma_magnitude_max * (action[9] + self.initialActions[9])
+            gamma_magnitude2_2 = self.gamma_magnitude_max * (action[10] + self.initialActions[10])
+
+            gamma_phase1_2 = self.gamma_phase_max * (action[11] + self.initialActions[11])
+            gamma_phase2_2 = self.gamma_phase_max * (action[12] + self.initialActions[12])
+        else:
+            alpha1_2 = self.alpha_max * (action[7])
+            alpha2_2 = self.alpha_max * (action[8])
+
+            gamma_magnitude1_2 = self.gamma_magnitude_max * (action[9])
+            gamma_magnitude2_2 = self.gamma_magnitude_max * (action[10])
+
+            gamma_phase1_2 = self.gamma_phase_max * (action[11])
+            gamma_phase2_2 = self.gamma_phase_max * (action[12])
+            
         ### second two qubit gate
-
-        g_eff2 = self.g_eff_max * (action[13]+self.initialActions[13])
+        if self.current_Haar_num==1:
+            g_eff2 = self.g_eff_max * (action[13]+self.initialActions[13])
+        else:
+            g_eff2 = self.g_eff_max * (action[13])
 
         ### Third Single qubit gate
-        alpha1_3 = self.alpha_max * (action[14] + self.initialActions[14])
-        alpha2_3 = self.alpha_max * (action[15] + self.initialActions[15])
+        if self.current_Haar_num==1:        
+            alpha1_3 = self.alpha_max * (action[14] + self.initialActions[14])
+            alpha2_3 = self.alpha_max * (action[15] + self.initialActions[15])
 
-        gamma_magnitude1_3 = self.gamma_magnitude_max * (action[16] + self.initialActions[16])
-        gamma_magnitude2_3 = self.gamma_magnitude_max * (action[17] + self.initialActions[17])
+            gamma_magnitude1_3 = self.gamma_magnitude_max * (action[16] + self.initialActions[16])
+            gamma_magnitude2_3 = self.gamma_magnitude_max * (action[17] + self.initialActions[17])
 
-        gamma_phase1_3 = self.gamma_phase_max * (action[18] + self.initialActions[18]) 
-        gamma_phase2_3 = self.gamma_phase_max * (action[19] + self.initialActions[19])
+            gamma_phase1_3 = self.gamma_phase_max * (action[18] + self.initialActions[18]) 
+            gamma_phase2_3 = self.gamma_phase_max * (action[19] + self.initialActions[19])
+        elif self.current_Haar_num==2:
+            alpha1_3 = - self.alpha_max * (action[14] + self.initialActions[14])
+            alpha2_3 = - self.alpha_max * (action[15] + self.initialActions[15])
+
+            gamma_magnitude1_3 = self.gamma_magnitude_max * (action[16] + self.initialActions[16])
+            gamma_magnitude2_3 = self.gamma_magnitude_max * (action[17] + self.initialActions[17])
+
+            gamma_phase1_3 = self.gamma_phase_max * (action[18] + self.initialActions[18]) 
+            gamma_phase2_3 = self.gamma_phase_max * (action[19] + self.initialActions[19])
+        else:
+            alpha1_3 = self.alpha_max * (action[14])
+            alpha2_3 = self.alpha_max * (action[15])
+
+            gamma_magnitude1_3 = self.gamma_magnitude_max * (action[16])
+            gamma_magnitude2_3 = self.gamma_magnitude_max * (action[17])
+
+            gamma_phase1_3 = self.gamma_phase_max * (action[18])
+            gamma_phase2_3 = self.gamma_phase_max * (action[19])
 
         ### third two qubit gate
-
-        g_eff3 = self.g_eff_max * (action[20]+self.initialActions[20])
-
+        if self.current_Haar_num==1:
+            g_eff3 = self.g_eff_max * (action[20]+self.initialActions[20])
+        else:
+            g_eff3 = self.g_eff_max * (action[20])
+        
         ### Fourth Single qubit gate
-        alpha1_4 = self.alpha_max * (action[21] + self.initialActions[21])
-        alpha2_4 = self.alpha_max * (action[22] + self.initialActions[22])
+        if self.current_Haar_num==1:        
+            alpha1_4 = self.alpha_max * (action[21] + self.initialActions[21])
+            alpha2_4 = self.alpha_max * (action[22] + self.initialActions[22])
 
-        gamma_magnitude1_4 = self.gamma_magnitude_max * (action[23] + self.initialActions[23])
-        gamma_magnitude2_4 = self.gamma_magnitude_max * (action[24] + self.initialActions[24])
+            gamma_magnitude1_4 = self.gamma_magnitude_max * (action[23] + self.initialActions[23])
+            gamma_magnitude2_4 = self.gamma_magnitude_max * (action[24] + self.initialActions[24])
 
-        gamma_phase1_4 = self.gamma_phase_max * (action[25] + self.initialActions[25])
-        gamma_phase2_4 = self.gamma_phase_max * (action[26] + self.initialActions[26])
+            gamma_phase1_4 = self.gamma_phase_max * (action[25] + self.initialActions[25])
+            gamma_phase2_4 = self.gamma_phase_max * (action[26] + self.initialActions[26])
+        elif self.current_Haar_num==2:
+            alpha1_4 = - self.alpha_max * (action[21] + self.initialActions[21])
+            alpha2_4 = - self.alpha_max * (action[22] + self.initialActions[22])
+
+            gamma_magnitude1_4 = self.gamma_magnitude_max * (action[23] + self.initialActions[23])
+            gamma_magnitude2_4 = self.gamma_magnitude_max * (action[24] + self.initialActions[24])
+
+            gamma_phase1_4 = self.gamma_phase_max * (action[25] + self.initialActions[25])
+            gamma_phase2_4 = self.gamma_phase_max * (action[26] + self.initialActions[26])
+        else:            
+            alpha1_4 = self.alpha_max * (action[21])
+            alpha2_4 = self.alpha_max * (action[22])
+
+            gamma_magnitude1_4 = self.gamma_magnitude_max * (action[23])
+            gamma_magnitude2_4 = self.gamma_magnitude_max * (action[24])
+
+            gamma_phase1_4 = self.gamma_phase_max * (action[25])
+            gamma_phase2_4 = self.gamma_phase_max * (action[26])
 
 
         # Set noise opertors
@@ -678,7 +764,7 @@ class TwoQubitGateSynth(gym.Env):
         self.H1_2_array.append(H1_2)  # Array of Hs at each Haar wavelet
         self.H1_3_array.append(H1_3)  # Array of Hs at each Haar wavelet
         self.H1_4_array.append(H1_4)  # Array of Hs at each Haar wavelet
-
+        
 
         # H_tot for adding Hs at each time bins
         self.H_tot2_1 = []
@@ -689,7 +775,7 @@ class TwoQubitGateSynth(gym.Env):
         self.H_tot1_2 = []
         self.H_tot1_3 = []
         self.H_tot1_4 = []
-
+        
         for ii, H_elem in enumerate(self.H1_1_array):
             for jj in range(0, num_time_bins):
                 Haar_num = self.current_Haar_num - np.floor(ii / self.steps_per_Haar) # Haar_num: label which Haar wavelet, current_Haar_num: order in the array
@@ -697,7 +783,7 @@ class TwoQubitGateSynth(gym.Env):
                 if ii > 0:
                     self.H_tot1_1[jj] += factor * H_elem
                 else:  # Because H_tot[jj] does not exist
-                    self.H_tot1_1.append(factor * H_elem)
+                    self.H_tot1_1.append(factor * H_elem)               
 
         for ii, H_elem in enumerate(self.H2_1_array):
             for jj in range(0, num_time_bins):
@@ -753,53 +839,80 @@ class TwoQubitGateSynth(gym.Env):
                 else:  # Because H_tot[jj] does not exist
                     self.H_tot1_4.append(factor * H_elem)
 
+        # print("Haar :", self.current_Haar_num)
+        # print(np.array(self.H_tot1_4)/self.PiFreq)
 
+        # if self.current_Haar_num == 2:
+        #     np.set_printoptions(suppress=True)
+        #     print(self.H_tot1_4)
 
         self.L = ([])  # at every step we calculate L again because minimal time bin changes
         self.U = np.eye(16)  # identity
+        self.unitary_U = np.eye(4)
 
         for jj in range(0, num_time_bins):
             L = (liouvillian(Qobj(self.H_tot1_1[jj]), jump_ops, data_only=False, chi=None)).data.toarray()  # Liouvillian calc
             self.L_array.append(L)
             Ut = la.expm(self.final_time / num_time_bins * L)  # time evolution (propagation operator)
+            unitary_Ut = la.expm(-1j * self.H_tot1_1[jj] * self.final_time / num_time_bins)
             self.U = Ut @ self.U  # calculate total propagation until the time we are at
+            self.unitary_U = self.unitary_U @ unitary_Ut
 
         for jj in range(0, num_time_bins):
             L = (liouvillian(Qobj(self.H_tot2_1[jj]), jump_ops, data_only=False, chi=None)).data.toarray()  # Liouvillian calc
             self.L_array.append(L)
             Ut = la.expm(self.final_time / num_time_bins * L)  # time evolution (propagation operator)
+            unitary_Ut = la.expm(-1j * self.H_tot2_1[jj] * self.final_time / num_time_bins)
             self.U = Ut @ self.U  # calculate total propagation until the time we are at
+            self.unitary_U = self.unitary_U @ unitary_Ut
 
         for jj in range(0, num_time_bins):
             L = (liouvillian(Qobj(self.H_tot1_2[jj]), jump_ops, data_only=False, chi=None)).data.toarray()  # Liouvillian calc
             self.L_array.append(L)
             Ut = la.expm(self.final_time / num_time_bins * L)  # time evolution (propagation operator)
+            unitary_Ut = la.expm(-1j * self.H_tot1_2[jj] * self.final_time / num_time_bins)
             self.U = Ut @ self.U  # calculate total propagation until the time we are at
+            self.unitary_U = self.unitary_U @ unitary_Ut
 
         for jj in range(0, num_time_bins):
             L = (liouvillian(Qobj(self.H_tot2_2[jj]), jump_ops, data_only=False, chi=None)).data.toarray()  # Liouvillian calc
             self.L_array.append(L)
             Ut = la.expm(self.final_time / num_time_bins * L)  # time evolution (propagation operator)
+            unitary_Ut = la.expm(-1j * self.H_tot2_2[jj] * self.final_time / num_time_bins)
             self.U = Ut @ self.U  # calculate total propagation until the time we are at
+            self.unitary_U = self.unitary_U @ unitary_Ut
 
         for jj in range(0, num_time_bins):
             L = (liouvillian(Qobj(self.H_tot1_3[jj]), jump_ops, data_only=False, chi=None)).data.toarray()  # Liouvillian calc
             self.L_array.append(L)
             Ut = la.expm(self.final_time / num_time_bins * L)  # time evolution (propagation operator)
+            unitary_Ut = la.expm(-1j * self.H_tot1_3[jj] * self.final_time / num_time_bins)
             self.U = Ut @ self.U  # calculate total propagation until the time we are at
+            self.unitary_U = self.unitary_U @ unitary_Ut
+
 
         for jj in range(0, num_time_bins):
             L = (liouvillian(Qobj(self.H_tot2_3[jj]), jump_ops, data_only=False, chi=None)).data.toarray()  # Liouvillian calc
             self.L_array.append(L)
             Ut = la.expm(self.final_time / num_time_bins * L)  # time evolution (propagation operator)
+            unitary_Ut = la.expm(-1j * self.H_tot2_3[jj] * self.final_time / num_time_bins)
             self.U = Ut @ self.U  # calculate total propagation until the time we are at
+            self.unitary_U = self.unitary_U @ unitary_Ut
+
 
         for jj in range(0, num_time_bins):
             L = (liouvillian(Qobj(self.H_tot1_4[jj]), jump_ops, data_only=False, chi=None)).data.toarray()  # Liouvillian calc
             self.L_array.append(L)
             Ut = la.expm(self.final_time / num_time_bins * L)  # time evolution (propagation operator)
+            unitary_Ut = la.expm(-1j * self.H_tot1_4[jj] * self.final_time / num_time_bins)
             self.U = Ut @ self.U  # calculate total propagation until the time we are at
+            self.unitary_U = self.unitary_U @ unitary_Ut
 
+
+        # np.set_printoptions(suppress=True)
+        # if self.current_Haar_num==2:
+        #     print(self.unitary_U)
+        #     print(self.unitary_U_target)
 
         # Reward and fidelity calculation
         fidelity = self.compute_fidelity()
@@ -997,17 +1110,46 @@ class TwoQubitGateSynth(gym.Env):
         
         initialActions = np.zeros(27)
         
-        initialActions[0:3] = self.singleQubitActionCalculation(R1)
-        initialActions[3:6] = self.singleQubitActionCalculation(R2)
+        initialActions[0] = self.singleQubitActionCalculation(R1)[0]
+        initialActions[1] = self.singleQubitActionCalculation(R2)[0]
+        initialActions[2] = self.singleQubitActionCalculation(R1)[1]
+        initialActions[3] = self.singleQubitActionCalculation(R2)[1]
+        initialActions[4] = self.singleQubitActionCalculation(R1)[2]
+        initialActions[5] = self.singleQubitActionCalculation(R2)[2]
+        
         initialActions[6] = self.canonicalActionCalculation(c0,c1,c2,1)
-        initialActions[7:10]  = self.singleQubitActionCalculation(H)
-        initialActions[10:13] = self.singleQubitActionCalculation(H)
+        
+        initialActions[7]  = self.singleQubitActionCalculation(H)[0]
+        initialActions[8]  = self.singleQubitActionCalculation(H)[0]
+        initialActions[9]  = self.singleQubitActionCalculation(H)[1]
+        initialActions[10]  = self.singleQubitActionCalculation(H)[1]
+        initialActions[11]  = self.singleQubitActionCalculation(H)[2]
+        initialActions[12]  = self.singleQubitActionCalculation(H)[2]
+        
         initialActions[13] = self.canonicalActionCalculation(c0,c1,c2,2)
-        initialActions[14:17]  = self.singleQubitActionCalculation(S)
-        initialActions[17:20] = self.singleQubitActionCalculation(S)
+        
+        initialActions[14]  = self.singleQubitActionCalculation(S)[0]
+        initialActions[15]  = self.singleQubitActionCalculation(S)[0]
+        initialActions[16]  = self.singleQubitActionCalculation(S)[1]
+        initialActions[17]  = self.singleQubitActionCalculation(S)[1]
+        initialActions[18]  = self.singleQubitActionCalculation(S)[2]
+        initialActions[19]  = self.singleQubitActionCalculation(S)[2]
+        
         initialActions[20] = self.canonicalActionCalculation(c0,c1,c2,3)
-        initialActions[21:24] = self.singleQubitActionCalculation(L1)
-        initialActions[24:27] = self.singleQubitActionCalculation(L2)
+        
+        initialActions[21] = self.singleQubitActionCalculation(L1@H@S@S@S)[0]
+        initialActions[22] = self.singleQubitActionCalculation(L2@H@S@S@S)[0]
+        initialActions[23] = self.singleQubitActionCalculation(L1@H@S@S@S)[1]
+        initialActions[24] = self.singleQubitActionCalculation(L2@H@S@S@S)[1]
+        initialActions[25] = self.singleQubitActionCalculation(L1@H@S@S@S)[2]
+        initialActions[26] = self.singleQubitActionCalculation(L2@H@S@S@S)[2]
+
+        # initialActions[21] = self.singleQubitActionCalculation(L1)[0]
+        # initialActions[22] = self.singleQubitActionCalculation(L2)[0]
+        # initialActions[23] = self.singleQubitActionCalculation(L1)[1]
+        # initialActions[24] = self.singleQubitActionCalculation(L2)[1]
+        # initialActions[25] = self.singleQubitActionCalculation(L1)[2]
+        # initialActions[26] = self.singleQubitActionCalculation(L2)[2]
         
         return initialActions
     
@@ -1017,9 +1159,9 @@ class TwoQubitGateSynth(gym.Env):
         
         x_angle , z_angle_after, z_angle_before, globalPhase = OneQubitEulerDecomposer(basis='ZXZ').angles_and_phase(U)
         
-        singleQubitActions[0] = z_angle_after / np.pi ## alpha
-        singleQubitActions[1] = z_angle_before / np.pi ## gamma_phase
-        singleQubitActions[2] = x_angle / np.pi ## gamma_magnitude
+        singleQubitActions[0] = (z_angle_after + z_angle_before) / np.pi  ## alpha
+        singleQubitActions[1] = x_angle / np.pi ## gamma_magnitude
+        singleQubitActions[2] = - z_angle_before / np.pi ## gamma_phase
         
         return singleQubitActions
     
@@ -1036,6 +1178,6 @@ class TwoQubitGateSynth(gym.Env):
         else:
             print("wrong input index")
             
-        twoQubitAction = b / np.pi 
+        twoQubitAction = b / np.pi
 
         return twoQubitAction
