@@ -61,15 +61,8 @@ class NoisySingleQubitEnv(SingleQubitEnv):
         starting_observeration = self.get_observation()
         info = {}
         return starting_observeration, info
-
-    def step(self, action):
-        num_time_bins = 2 ** (self.current_Haar_num - 1) # Haar number decides the number of time bins
-
-        # gamma is the complex amplitude of the control field
-        gamma_magnitude, gamma_phase, alpha = self.parse_actions(action)
-
-        self.hamiltonian_update(alpha, gamma_magnitude, gamma_phase, num_time_bins)
-
+    
+    def operator_update(self, num_time_bins):
         # Set noise opertors
         jump_ops = []
         for ii in range(len(self.relaxation_ops)):
@@ -80,6 +73,18 @@ class NoisySingleQubitEnv(SingleQubitEnv):
             L = (liouvillian(Qobj(self.H_tot[jj]), jump_ops, data_only=False, chi=None)).data.toarray()  # Liouvillian calc
             Ut = la.expm(self.final_time / num_time_bins * L)  # time evolution (propagation operator)
             self.U = Ut @ self.U  # calculate total propagation until the time we are at
+
+
+    def step(self, action):
+        num_time_bins = 2 ** (self.current_Haar_num - 1) # Haar number decides the number of time bins
+
+        # gamma is the complex amplitude of the control field
+        gamma_magnitude, gamma_phase, alpha = self.parse_actions(action)
+
+        self.hamiltonian_update(alpha, gamma_magnitude, gamma_phase)
+        self.H_tot_upate(num_time_bins)
+
+        self.operator_update(num_time_bins)
 
         # Reward and fidelity calculation
         fidelity = self.compute_fidelity()

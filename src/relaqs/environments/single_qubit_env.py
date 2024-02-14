@@ -86,12 +86,12 @@ class SingleQubitEnv(gym.Env):
         self.episode_id += 1
         return starting_observeration, info
     
-    def hamiltonian_update(self, alpha, gamma_magnitude, gamma_phase, num_time_bins):
+    def hamiltonian_update(self, alpha, gamma_magnitude, gamma_phase):
         H = self.hamiltonian(self.delta, alpha, gamma_magnitude, gamma_phase)
         self.H_array.append(H)
 
+    def H_tot_upate(self, num_time_bins):
         self.H_tot = []
-
         for ii, H_elem in enumerate(self.H_array):
             for jj in range(0, num_time_bins):
                 Haar_num = self.current_Haar_num - np.floor(ii / self.steps_per_Haar) # Haar_num: label which Haar wavelet, current_Haar_num: order in the array
@@ -134,7 +134,8 @@ class SingleQubitEnv(gym.Env):
         # Get actions
         gamma_magnitude, gamma_phase, alpha = self.parse_actions(action)
 
-        self.hamiltonian_update(alpha, gamma_magnitude, gamma_phase, num_time_bins)
+        self.hamiltonian_update(alpha, gamma_magnitude, gamma_phase)
+        self.H_tot_upate(num_time_bins)
 
         # U update
         self.U = self.U_initial.copy()
