@@ -483,7 +483,7 @@ class TwoQubitGateSynth(gym.Env):
 
     def __init__(self, env_config):
         self.final_time = env_config["final_time"]  # Final time for the gates
-        self.PiFreq = np.pi / self.final_time / 2
+        self.PiFreq = np.pi / self.final_time
         self.observation_space = gym.spaces.Box(low=0, high=1, shape=(env_config["observation_space_size"],))  # propagation operator elements + fidelity + relaxation + detuning
         self.action_space = gym.spaces.Box(low=0*np.ones(27), high=0*np.ones(27)) #alpha1, alpha2, alphaC, gamma_magnitude1, gamma_phase1, gamma_magnitude2, gamma_phase2
         self.delta = env_config["delta"]  # detuning
@@ -507,10 +507,10 @@ class TwoQubitGateSynth(gym.Env):
         self.U = self.U_initial.copy()  # multiplied propagtion operators
         self.state = self.unitary_to_observation(self.U_initial)  # starting observation space
         self.prev_fidelity = 0  # previous step' fidelity for rewarding
-        self.alpha_max = self.PiFreq
+        self.alpha_max = self.PiFreq / 2
         self.g_eff_max = self.PiFreq
         self.gamma_phase_max = np.pi
-        self.gamma_magnitude_max = self.PiFreq
+        self.gamma_magnitude_max = self.PiFreq / 2
         self.transition_history = []
         self.env_config = env_config
         self.initialActions = self.KakActionCalculation()
@@ -601,6 +601,8 @@ class TwoQubitGateSynth(gym.Env):
     def step(self, action):
         num_time_bins = 2 ** (self.current_Haar_num - 1)
         self.initialActions = self.KakActionCalculation()
+        
+        # np.set_printoptions(suppress=True)
         # print(self.initialActions)
         
         ### First single qubit gate
@@ -747,8 +749,8 @@ class TwoQubitGateSynth(gym.Env):
 
         # Hamiltonian with controls
         H2_1 = self.hamiltonian(self.delta[0][0], self.delta[1][0], 0, 0, g_eff1, 0, 0, 0, 0, index = 1)
-        H2_2 = self.hamiltonian(self.delta[0][0], self.delta[1][0], 0, 0, g_eff2, 0, 0, 0, 0, index = 2)
-        H2_3 = self.hamiltonian(self.delta[0][0], self.delta[1][0], 0, 0, g_eff3, 0, 0, 0, 0, index = 3)
+        H2_2 = self.hamiltonian(self.delta[0][0], self.delta[1][0], 0, 0, g_eff2, 0, 0, 0, 0, index = 1)
+        H2_3 = self.hamiltonian(self.delta[0][0], self.delta[1][0], 0, 0, g_eff3, 0, 0, 0, 0, index = 1)
         
         H1_1 = self.hamiltonian(self.delta[0][0], self.delta[1][0], alpha1_1, alpha2_1, 0, gamma_magnitude1_1, gamma_phase1_1, gamma_magnitude2_1, gamma_phase2_1)
         H1_2 = self.hamiltonian(self.delta[0][0], self.delta[1][0], alpha1_2, alpha2_2, 0, gamma_magnitude1_2, gamma_phase1_2, gamma_magnitude2_2, gamma_phase2_2)
@@ -856,7 +858,7 @@ class TwoQubitGateSynth(gym.Env):
             Ut = la.expm(self.final_time / num_time_bins * L)  # time evolution (propagation operator)
             unitary_Ut = la.expm(-1j * self.H_tot1_1[jj] * self.final_time / num_time_bins)
             self.U = Ut @ self.U  # calculate total propagation until the time we are at
-            self.unitary_U = self.unitary_U @ unitary_Ut
+            self.unitary_U = unitary_Ut @ self.unitary_U
 
         for jj in range(0, num_time_bins):
             L = (liouvillian(Qobj(self.H_tot2_1[jj]), jump_ops, data_only=False, chi=None)).data.toarray()  # Liouvillian calc
@@ -864,7 +866,7 @@ class TwoQubitGateSynth(gym.Env):
             Ut = la.expm(self.final_time / num_time_bins * L)  # time evolution (propagation operator)
             unitary_Ut = la.expm(-1j * self.H_tot2_1[jj] * self.final_time / num_time_bins)
             self.U = Ut @ self.U  # calculate total propagation until the time we are at
-            self.unitary_U = self.unitary_U @ unitary_Ut
+            self.unitary_U = unitary_Ut @ self.unitary_U
 
         for jj in range(0, num_time_bins):
             L = (liouvillian(Qobj(self.H_tot1_2[jj]), jump_ops, data_only=False, chi=None)).data.toarray()  # Liouvillian calc
@@ -872,7 +874,7 @@ class TwoQubitGateSynth(gym.Env):
             Ut = la.expm(self.final_time / num_time_bins * L)  # time evolution (propagation operator)
             unitary_Ut = la.expm(-1j * self.H_tot1_2[jj] * self.final_time / num_time_bins)
             self.U = Ut @ self.U  # calculate total propagation until the time we are at
-            self.unitary_U = self.unitary_U @ unitary_Ut
+            self.unitary_U = unitary_Ut @ self.unitary_U
 
         for jj in range(0, num_time_bins):
             L = (liouvillian(Qobj(self.H_tot2_2[jj]), jump_ops, data_only=False, chi=None)).data.toarray()  # Liouvillian calc
@@ -880,7 +882,7 @@ class TwoQubitGateSynth(gym.Env):
             Ut = la.expm(self.final_time / num_time_bins * L)  # time evolution (propagation operator)
             unitary_Ut = la.expm(-1j * self.H_tot2_2[jj] * self.final_time / num_time_bins)
             self.U = Ut @ self.U  # calculate total propagation until the time we are at
-            self.unitary_U = self.unitary_U @ unitary_Ut
+            self.unitary_U = unitary_Ut @ self.unitary_U
 
         for jj in range(0, num_time_bins):
             L = (liouvillian(Qobj(self.H_tot1_3[jj]), jump_ops, data_only=False, chi=None)).data.toarray()  # Liouvillian calc
@@ -888,7 +890,7 @@ class TwoQubitGateSynth(gym.Env):
             Ut = la.expm(self.final_time / num_time_bins * L)  # time evolution (propagation operator)
             unitary_Ut = la.expm(-1j * self.H_tot1_3[jj] * self.final_time / num_time_bins)
             self.U = Ut @ self.U  # calculate total propagation until the time we are at
-            self.unitary_U = self.unitary_U @ unitary_Ut
+            self.unitary_U = unitary_Ut @ self.unitary_U
 
 
         for jj in range(0, num_time_bins):
@@ -897,7 +899,7 @@ class TwoQubitGateSynth(gym.Env):
             Ut = la.expm(self.final_time / num_time_bins * L)  # time evolution (propagation operator)
             unitary_Ut = la.expm(-1j * self.H_tot2_3[jj] * self.final_time / num_time_bins)
             self.U = Ut @ self.U  # calculate total propagation until the time we are at
-            self.unitary_U = self.unitary_U @ unitary_Ut
+            self.unitary_U = unitary_Ut @ self.unitary_U
 
 
         for jj in range(0, num_time_bins):
@@ -906,13 +908,20 @@ class TwoQubitGateSynth(gym.Env):
             Ut = la.expm(self.final_time / num_time_bins * L)  # time evolution (propagation operator)
             unitary_Ut = la.expm(-1j * self.H_tot1_4[jj] * self.final_time / num_time_bins)
             self.U = Ut @ self.U  # calculate total propagation until the time we are at
-            self.unitary_U = self.unitary_U @ unitary_Ut
+            self.unitary_U = unitary_Ut @ self.unitary_U
 
 
-        # np.set_printoptions(suppress=True)
-        # if self.current_Haar_num==2:
-        #     print(self.unitary_U)
-        #     print(self.unitary_U_target)
+        np.set_printoptions(suppress=True)
+        if self.current_Haar_num==2:
+            print(self.unitary_U)
+            print(self.unitary_U_target)
+            # print(self.U)
+            # print(self.unitary_to_superoperator(self.unitary_U))
+            # print(self._U_target)
+            # print(np.allclose(self.unitary_U,self.unitary_U_target,atol=1e-03))
+            # print(np.allclose(self.U, self.unitary_to_superoperator(self.unitary_U),atol=1e-01))
+            # print(np.allclose(,atol=1e-03))
+            # print(np.allclose(,atol=1e-03))
 
         # Reward and fidelity calculation
         fidelity = self.compute_fidelity()
@@ -1107,6 +1116,7 @@ class TwoQubitGateSynth(gym.Env):
     def KakActionCalculation(self):
         
         phase1, L1, L2, phase2, R1, R2, c0, c1, c2 = self.canonicalDecomposition()
+        # print(c0, c1, c2)
         
         initialActions = np.zeros(27)
         
@@ -1158,7 +1168,7 @@ class TwoQubitGateSynth(gym.Env):
         singleQubitActions = np.zeros(3)
         
         x_angle , z_angle_after, z_angle_before, globalPhase = OneQubitEulerDecomposer(basis='ZXZ').angles_and_phase(U)
-        
+
         singleQubitActions[0] = (z_angle_after + z_angle_before) / np.pi  ## alpha
         singleQubitActions[1] = x_angle / np.pi ## gamma_magnitude
         singleQubitActions[2] = - z_angle_before / np.pi ## gamma_phase
@@ -1178,6 +1188,6 @@ class TwoQubitGateSynth(gym.Env):
         else:
             print("wrong input index")
             
-        twoQubitAction = b / np.pi
+        twoQubitAction = - b / np.pi
 
         return twoQubitAction
