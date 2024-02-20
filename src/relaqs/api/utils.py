@@ -1,20 +1,15 @@
 import ray
 import numpy as np
 from numpy.linalg import eigvalsh
-from ray.rllib.algorithms.algorithm import Algorithm
-from ray.rllib.algorithms.ddpg import DDPGConfig
-from relaqs.quantum_noise_data.get_data import (get_month_of_all_qubit_data, get_single_qubit_detuning)
-from relaqs import RESULTS_DIR
 import pandas as pd
 from scipy.linalg import sqrtm
+from ray.rllib.algorithms.algorithm import Algorithm
+from ray.rllib.algorithms.ddpg import DDPGConfig
 from relaqs import RESULTS_DIR
-from ray.tune.registry import register_env
-from relaqs.environments.gate_synth_env_rllib_Haar import GateSynthEnvRLlibHaarNoisy
+from relaqs.quantum_noise_data.get_data import (get_month_of_all_qubit_data, get_single_qubit_detuning)
 from relaqs.api.callbacks import GateSynthesisCallbacks
-import numpy as np
 from relaqs import QUANTUM_NOISE_DATA_DIR
 from qutip.operators import *
-import relaqs.api.gates as gates
 
 def load_pickled_env_data(data_path):
     df = pd.read_pickle(data_path)
@@ -89,10 +84,7 @@ def get_best_episode_information(filename):
     best_episodes = df[df["Episode Id"] == episode]
     return best_episodes
 
-def env_creator(config):
-    return GateSynthEnvRLlibHaarNoisy(config)
-
-def run(gate, n_training_iterations=1, noise_file=""):
+def run(env_class, gate, n_training_iterations=1, noise_file=""):
     """Args
        gate (Gate type):
        n_training_iterations (int)
@@ -102,8 +94,7 @@ def run(gate, n_training_iterations=1, noise_file=""):
 
     """
     ray.init()
-    register_env("my_env", env_creator)
-    env_config = GateSynthEnvRLlibHaarNoisy.get_default_env_config()
+    env_config = env_class.get_default_env_config()
     env_config["U_target"] = gate.get_matrix()
 
     # ---------------------> Get quantum noise data <-------------------------
@@ -118,10 +109,10 @@ def run(gate, n_training_iterations=1, noise_file=""):
     # ---------------------> Configure algorithm and Environment <-------------------------
     alg_config = DDPGConfig()
     alg_config.framework("torch")
-    alg_config.environment("my_env", env_config=env_config)
+    alg_config.environment(env_class, env_config=env_config)
     alg_config.rollouts(batch_mode="complete_episodes")
     alg_config.callbacks(GateSynthesisCallbacks)
-    alg_config.train_batch_size = GateSynthEnvRLlibHaarNoisy.get_default_env_config()["steps_per_Haar"]
+    alg_config.train_batch_size = env_class.get_default_env_config()["steps_per_Haar"]
 
     ### working 1-3 sets
     alg_config.actor_lr = 4e-5
