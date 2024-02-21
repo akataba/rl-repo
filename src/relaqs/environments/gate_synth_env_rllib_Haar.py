@@ -936,27 +936,6 @@ class TwoQubitGateSynth(gym.Env):
         def decompose_one_qubit_product(
             U: np.ndarray, validate_input: bool = True, atol: float = 1e-8, rtol: float = 1e-5
         ):
-            """
-            Decompose a 4x4 unitary matrix to two 2x2 unitary matrices.
-            Args:
-                U (np.ndarray): input 4x4 unitary matrix to decompose.
-                validate_input (bool): if check input.
-            Returns:
-                phase (float): global phase.
-                U1 (np.ndarray): decomposed unitary matrix U1.
-                U2 (np.ndarray): decomposed unitary matrix U2.
-                atol (float): absolute tolerance of loss.
-                rtol (float): relative tolerance of loss.
-            Raises:
-                AssertionError: if the input is not a 4x4 unitary or
-                cannot be decomposed.
-            """
-
-            """if validate_input:
-                assert np.allclose(
-                    makhlin_invariants(U, atol=atol, rtol=rtol), (1, 0, 3), atol=atol, rtol=rtol
-                )"""
-
             i, j = np.unravel_index(np.argmax(U, axis=None), U.shape)
 
             def u1_set(i):
@@ -976,14 +955,6 @@ class TwoQubitGateSynth(gym.Env):
             return phase, u1, u2
         
         def to_su(u: np.ndarray) -> np.ndarray:
-            """
-            Given a unitary in U(N), return the
-            unitary in SU(N).
-            Args:
-                u (np.ndarray): The unitary in U(N).
-            Returns:
-                np.ndarray: The unitary in SU(N)
-            """
 
             return u * complex(np.linalg.det(u)) ** (-1 / np.shape(u)[0])
         
@@ -992,28 +963,6 @@ class TwoQubitGateSynth(gym.Env):
             rounding: int = 19
         ) -> Tuple[float, np.ndarray, np.ndarray, float, np.ndarray, np.ndarray, float,
                 float, float]:
-            """
-            Decomposes a 2-qubit unitary matrix into the product of three matrices:
-            KAK = L @ CAN(theta_vec) @ R where L and R are two-qubit local unitaries, 
-            CAN is a 3-parameter canonical matrix, and theta_vec is a vector of 3 angles.
-
-            Args:
-                U (np.ndarray): 2-qubit unitary matrix
-                rounding (int): Number of decimal places to round intermediate 
-                matrices to (default 14)
-
-            Returns:
-                Tuple of 9 values:
-                    - phase1 (float): Global phase factor for left local unitary L
-                    - L1 (np.ndarray): Top 2x2 matrix of left local unitary L
-                    - L2 (np.ndarray): Bottom 2x2 matrix of left local unitary L
-                    - phase2 (float): Global phase factor for right local unitary R
-                    - R1 (np.ndarray): Top 2x2 matrix of right local unitary R
-                    - R2 (np.ndarray): Bottom 2x2 matrix of right local unitary R
-                    - c0 (float): XX canonical parameter in the Weyl chamber
-                    - c1 (float): YY canonical parameter in the Weyl chamber
-                    - c2 (float): ZZ canonical parameter in the Weyl chamber
-            """
 
             # 0. Map U(4) to SU(4) (and phase)
             U = U / np.linalg.det(U)**0.25 
@@ -1091,7 +1040,6 @@ class TwoQubitGateSynth(gym.Env):
     def KakActionCalculation(self):
         
         phase1, L1, L2, phase2, R1, R2, c0, c1, c2 = self.canonicalDecomposition()
-        # print(c0, c1, c2)
         
         initialActions = np.zeros(27)
         
@@ -1129,14 +1077,6 @@ class TwoQubitGateSynth(gym.Env):
         initialActions[25] = self.singleQubitActionCalculation(L1@Sdagger@H)[2]
         initialActions[26] = self.singleQubitActionCalculation(L2@Sdagger@H)[2]
         
-        # initialActions[21] = self.singleQubitActionCalculation(L1)[0]
-        # initialActions[22] = self.singleQubitActionCalculation(L2)[0]
-        # initialActions[23] = self.singleQubitActionCalculation(L1)[1]
-        # initialActions[24] = self.singleQubitActionCalculation(L2)[1]
-        # initialActions[25] = self.singleQubitActionCalculation(L1)[2]
-        # initialActions[26] = self.singleQubitActionCalculation(L2)[2]
-                
-                
         return initialActions
     
     def singleQubitActionCalculation(self, U):
