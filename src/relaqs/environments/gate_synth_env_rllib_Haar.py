@@ -26,10 +26,11 @@ sig_m = np.array([[0, 0], [1., 0]])
 X = np.array([[0, 1.], [1., 0]])
 Z = np.array([[1., 0], [0, -1.]])
 I = np.array([[1., 0], [0, 1.]])
-Y = np.array([[0, 1.j], [-1.j, 0]])
+Y = np.array([[0, -1.j], [1.j, 0]])
 
 H = np.array([[1/np.sqrt(2),1/np.sqrt(2)],[1/np.sqrt(2),-1/np.sqrt(2)]])
 S = np.array([[1.,0],[0,1.j]])
+Sdagger = np.array([[1.,0],[0,-1.j]])
 
 #two-qubit single qubit gates
 II = tensor(Qobj(I),Qobj(I)).data.toarray()
@@ -485,7 +486,7 @@ class TwoQubitGateSynth(gym.Env):
         self.final_time = env_config["final_time"]  # Final time for the gates
         self.PiFreq = np.pi / self.final_time
         self.observation_space = gym.spaces.Box(low=0, high=1, shape=(env_config["observation_space_size"],))  # propagation operator elements + fidelity + relaxation + detuning
-        self.action_space = gym.spaces.Box(low=0*np.ones(27), high=0*np.ones(27)) #alpha1, alpha2, alphaC, gamma_magnitude1, gamma_phase1, gamma_magnitude2, gamma_phase2
+        self.action_space = gym.spaces.Box(low=-0.1*np.ones(27), high=0.1*np.ones(27)) #alpha1, alpha2, alphaC, gamma_magnitude1, gamma_phase1, gamma_magnitude2, gamma_phase2
         self.delta = env_config["delta"]  # detuning
         self.detuning = [0, 0]
         self.detuning_update()
@@ -508,7 +509,7 @@ class TwoQubitGateSynth(gym.Env):
         self.state = self.unitary_to_observation(self.U_initial)  # starting observation space
         self.prev_fidelity = 0  # previous step' fidelity for rewarding
         self.alpha_max = self.PiFreq / 2
-        self.g_eff_max = self.PiFreq
+        self.g_eff_max = self.PiFreq / 2
         self.gamma_phase_max = np.pi
         self.gamma_magnitude_max = self.PiFreq / 2
         self.transition_history = []
@@ -601,9 +602,6 @@ class TwoQubitGateSynth(gym.Env):
     def step(self, action):
         num_time_bins = 2 ** (self.current_Haar_num - 1)
         self.initialActions = self.KakActionCalculation()
-        
-        # np.set_printoptions(suppress=True)
-        # print(self.initialActions)
         
         ### First single qubit gate
         
@@ -741,7 +739,6 @@ class TwoQubitGateSynth(gym.Env):
             gamma_phase1_4 = self.gamma_phase_max * (action[25])
             gamma_phase2_4 = self.gamma_phase_max * (action[26])
 
-
         # Set noise opertors
         jump_ops = []
         for ii in range(len(self.relaxation_ops)):
@@ -767,7 +764,6 @@ class TwoQubitGateSynth(gym.Env):
         self.H1_3_array.append(H1_3)  # Array of Hs at each Haar wavelet
         self.H1_4_array.append(H1_4)  # Array of Hs at each Haar wavelet
         
-
         # H_tot for adding Hs at each time bins
         self.H_tot2_1 = []
         self.H_tot2_2 = []
@@ -785,7 +781,7 @@ class TwoQubitGateSynth(gym.Env):
                 if ii > 0:
                     self.H_tot1_1[jj] += factor * H_elem
                 else:  # Because H_tot[jj] does not exist
-                    self.H_tot1_1.append(factor * H_elem)               
+                    self.H_tot1_1.append(factor * H_elem)          
 
         for ii, H_elem in enumerate(self.H2_1_array):
             for jj in range(0, num_time_bins):
@@ -841,13 +837,6 @@ class TwoQubitGateSynth(gym.Env):
                 else:  # Because H_tot[jj] does not exist
                     self.H_tot1_4.append(factor * H_elem)
 
-        # print("Haar :", self.current_Haar_num)
-        # print(np.array(self.H_tot1_4)/self.PiFreq)
-
-        # if self.current_Haar_num == 2:
-        #     np.set_printoptions(suppress=True)
-        #     print(self.H_tot1_4)
-
         self.L = ([])  # at every step we calculate L again because minimal time bin changes
         self.U = np.eye(16)  # identity
         self.unitary_U = np.eye(4)
@@ -892,7 +881,6 @@ class TwoQubitGateSynth(gym.Env):
             self.U = Ut @ self.U  # calculate total propagation until the time we are at
             self.unitary_U = unitary_Ut @ self.unitary_U
 
-
         for jj in range(0, num_time_bins):
             L = (liouvillian(Qobj(self.H_tot2_3[jj]), jump_ops, data_only=False, chi=None)).data.toarray()  # Liouvillian calc
             self.L_array.append(L)
@@ -901,7 +889,6 @@ class TwoQubitGateSynth(gym.Env):
             self.U = Ut @ self.U  # calculate total propagation until the time we are at
             self.unitary_U = unitary_Ut @ self.unitary_U
 
-
         for jj in range(0, num_time_bins):
             L = (liouvillian(Qobj(self.H_tot1_4[jj]), jump_ops, data_only=False, chi=None)).data.toarray()  # Liouvillian calc
             self.L_array.append(L)
@@ -909,19 +896,6 @@ class TwoQubitGateSynth(gym.Env):
             unitary_Ut = la.expm(-1j * self.H_tot1_4[jj] * self.final_time / num_time_bins)
             self.U = Ut @ self.U  # calculate total propagation until the time we are at
             self.unitary_U = unitary_Ut @ self.unitary_U
-
-
-        np.set_printoptions(suppress=True)
-        if self.current_Haar_num==2:
-            print(self.unitary_U)
-            print(self.unitary_U_target)
-            # print(self.U)
-            # print(self.unitary_to_superoperator(self.unitary_U))
-            # print(self._U_target)
-            # print(np.allclose(self.unitary_U,self.unitary_U_target,atol=1e-03))
-            # print(np.allclose(self.U, self.unitary_to_superoperator(self.unitary_U),atol=1e-01))
-            # print(np.allclose(,atol=1e-03))
-            # print(np.allclose(,atol=1e-03))
 
         # Reward and fidelity calculation
         fidelity = self.compute_fidelity()
@@ -933,8 +907,9 @@ class TwoQubitGateSynth(gym.Env):
 
         self.state = self.get_observation()
 
-        self.transition_history.append([fidelity, reward, *action, *self.U.flatten()])
-
+        if self.current_Haar_num == self.num_Haar_basis:
+            self.transition_history.append([fidelity, reward, *action, *self.U.flatten()])
+       
         # Determine if episode is over
         truncated = False
         terminated = False
@@ -1138,53 +1113,69 @@ class TwoQubitGateSynth(gym.Env):
         
         initialActions[13] = self.canonicalActionCalculation(c0,c1,c2,2)
         
-        initialActions[14]  = self.singleQubitActionCalculation(S)[0]
-        initialActions[15]  = self.singleQubitActionCalculation(S)[0]
-        initialActions[16]  = self.singleQubitActionCalculation(S)[1]
-        initialActions[17]  = self.singleQubitActionCalculation(S)[1]
-        initialActions[18]  = self.singleQubitActionCalculation(S)[2]
-        initialActions[19]  = self.singleQubitActionCalculation(S)[2]
+        initialActions[14]  = self.singleQubitActionCalculation(H@S@H)[0]
+        initialActions[15]  = self.singleQubitActionCalculation(H@S@H)[0]
+        initialActions[16]  = self.singleQubitActionCalculation(H@S@H)[1]
+        initialActions[17]  = self.singleQubitActionCalculation(H@S@H)[1]
+        initialActions[18]  = self.singleQubitActionCalculation(H@S@H)[2]
+        initialActions[19]  = self.singleQubitActionCalculation(H@S@H)[2]
         
         initialActions[20] = self.canonicalActionCalculation(c0,c1,c2,3)
         
-        initialActions[21] = self.singleQubitActionCalculation(L1@H@S@S@S)[0]
-        initialActions[22] = self.singleQubitActionCalculation(L2@H@S@S@S)[0]
-        initialActions[23] = self.singleQubitActionCalculation(L1@H@S@S@S)[1]
-        initialActions[24] = self.singleQubitActionCalculation(L2@H@S@S@S)[1]
-        initialActions[25] = self.singleQubitActionCalculation(L1@H@S@S@S)[2]
-        initialActions[26] = self.singleQubitActionCalculation(L2@H@S@S@S)[2]
-
+        initialActions[21] = self.singleQubitActionCalculation(L1@Sdagger@H)[0]
+        initialActions[22] = self.singleQubitActionCalculation(L2@Sdagger@H)[0]
+        initialActions[23] = self.singleQubitActionCalculation(L1@Sdagger@H)[1]
+        initialActions[24] = self.singleQubitActionCalculation(L2@Sdagger@H)[1]
+        initialActions[25] = self.singleQubitActionCalculation(L1@Sdagger@H)[2]
+        initialActions[26] = self.singleQubitActionCalculation(L2@Sdagger@H)[2]
+        
         # initialActions[21] = self.singleQubitActionCalculation(L1)[0]
         # initialActions[22] = self.singleQubitActionCalculation(L2)[0]
         # initialActions[23] = self.singleQubitActionCalculation(L1)[1]
         # initialActions[24] = self.singleQubitActionCalculation(L2)[1]
         # initialActions[25] = self.singleQubitActionCalculation(L1)[2]
         # initialActions[26] = self.singleQubitActionCalculation(L2)[2]
-        
+                
+                
         return initialActions
     
     def singleQubitActionCalculation(self, U):
         
         singleQubitActions = np.zeros(3)
         
-        x_angle , z_angle_after, z_angle_before, globalPhase = OneQubitEulerDecomposer(basis='ZXZ').angles_and_phase(U)
+        x_angle , z_angle_after, z_angle_before = OneQubitEulerDecomposer(basis='ZXZ').angles(U)
 
-        singleQubitActions[0] = (z_angle_after + z_angle_before) / np.pi  ## alpha
-        singleQubitActions[1] = x_angle / np.pi ## gamma_magnitude
-        singleQubitActions[2] = - z_angle_before / np.pi ## gamma_phase
+        singleQubitActions[0] = np.mod((z_angle_after + z_angle_before) / np.pi, 2)  ## alpha
+        singleQubitActions[1] = np.mod(x_angle / np.pi,2) ## gamma_magnitude
+        singleQubitActions[2] = np.mod(- z_angle_before / np.pi,2)  ## gamma_phase
         
         return singleQubitActions
+    
+    def Rn(self, theta, axisSelection):
+        return np.cos(theta/2)*I-1j*np.sin(theta/2)*axisSelection
+    
+    def ZXZ_Rotation_Generation(self, angles):
+        return self.unitary_normalization(self.Rn(angles[1],Z)@self.Rn(angles[0],X)@self.Rn(angles[2],Z))
+    
+    def unitary_normalization(self, unitary_in):
+        if unitary_in[0][0]==0:
+            unitary_in = unitary_in/unitary_in[0][1]
+        else:
+            unitary_in = unitary_in/unitary_in[0][0]
+            
+        return unitary_in
+    
     
     def canonicalActionCalculation(self, c0, c1, c2, index=1):
         
         twoQubitAction = 0
         
         if index == 1:
-            b = 1/4*(c0+c1-c2)
+            b = 1/2*(c0+c1-c2)
         elif index ==2:
-            b = 1/4*(-c0+c1+c2)
+            b = 1/2*(-c0+c1+c2)
         elif index ==3:
-            b = 1/4*(c0-c1+c2)
+            b = 1/2*(c0-c1+c2)
         else:
             print("wrong input index")
             
