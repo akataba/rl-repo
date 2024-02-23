@@ -73,7 +73,6 @@ class SingleQubitEnv(gym.Env):
         return (delta + alpha) * Z + gamma_magnitude * (np.cos(gamma_phase) * X + np.sin(gamma_phase) * Y)
 
     def reset(self, *, seed=None, options=None):
-        print("resetting")
         self.U = self.U_initial.copy()
         starting_observeration = self.get_observation()
         self.state = self.get_observation()
@@ -85,7 +84,9 @@ class SingleQubitEnv(gym.Env):
         self.prev_fidelity = 0
         info = {}
         self.episode_id += 1
-        print("episode id: ", self.episode_id)
+        if self.verbose is True:
+            print("resetting")
+            print("episode id: ", self.episode_id)
         return starting_observeration, info
     
     def hamiltonian_update(self, alpha, gamma_magnitude, gamma_phase):
