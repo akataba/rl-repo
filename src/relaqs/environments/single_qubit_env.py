@@ -152,8 +152,6 @@ class SingleQubitEnv(gym.Env):
 
         self.state = self.get_observation()
 
-
-
         self.update_transition_history(fidelity, reward, action)
         
         self.Haar_update()
