@@ -73,6 +73,7 @@ class SingleQubitEnv(gym.Env):
         return (delta + alpha) * Z + gamma_magnitude * (np.cos(gamma_phase) * X + np.sin(gamma_phase) * Y)
 
     def reset(self, *, seed=None, options=None):
+        print("resetting")
         self.U = self.U_initial.copy()
         starting_observeration = self.get_observation()
         self.state = self.get_observation()
@@ -84,6 +85,7 @@ class SingleQubitEnv(gym.Env):
         self.prev_fidelity = 0
         info = {}
         self.episode_id += 1
+        print("episode id: ", self.episode_id)
         return starting_observeration, info
     
     def hamiltonian_update(self, alpha, gamma_magnitude, gamma_phase):
@@ -108,8 +110,6 @@ class SingleQubitEnv(gym.Env):
             truncated = True  # truncated when target fidelity reached
         elif (self.current_Haar_num >= self.num_Haar_basis) and (self.current_step_per_Haar >= self.steps_per_Haar):  # terminate when all Haar is tested
             terminated = True
-        else:
-            terminated = False
         return truncated, terminated
 
     def Haar_update(self):
@@ -167,6 +167,7 @@ class SingleQubitEnv(gym.Env):
         self.Haar_update()
 
         truncated, terminated = self.is_episode_over(fidelity)
+        print("truncated: ", truncated, "terminated: ", terminated)
 
         info = {}
         return (self.state, reward, terminated, truncated, info)

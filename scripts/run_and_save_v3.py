@@ -2,7 +2,6 @@
 
 import ray
 from ray.rllib.algorithms.ddpg import DDPGConfig
-from ray.tune.registry import register_env
 from relaqs.environments.single_qubit_env import SingleQubitEnv
 from relaqs.environments.noisy_single_qubit_env import NoisySingleQubitEnv
 from relaqs.save_results import SaveResults
@@ -41,7 +40,6 @@ def run(env_class=SingleQubitEnv, n_training_iterations=1, save=True, plot=True)
 
     # ---------------------> Train Agent <-------------------------
     results = [alg.train() for _ in range(n_training_iterations)]
-    result = results[-1]
     # ---------------------> Save Results <-------------------------
     if save is True:
         env = alg.workers.local_worker().env
@@ -53,13 +51,14 @@ def run(env_class=SingleQubitEnv, n_training_iterations=1, save=True, plot=True)
     # ---------------------> Plot Data <-------------------------
     if plot is True:
         assert save is True, "If plot=True, then save must also be set to True"
+        print("epiosde length", alg._episode_history[0].episode_length)
         plot_data(save_dir, episode_length=alg._episode_history[0].episode_length)
         print("Plots Created")
     # --------------------------------------------------------------
 
 if __name__ == "__main__":
     env_class = NoisySingleQubitEnv
-    n_training_iterations = 50
+    n_training_iterations = 1
     save = True
     plot = True
     run(env_class, n_training_iterations, save, plot)
