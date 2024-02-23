@@ -152,6 +152,14 @@ class SingleQubitEnv(gym.Env):
 
         self.state = self.get_observation()
 
+
+
+        self.update_transition_history(fidelity, reward, action)
+        
+        self.Haar_update()
+
+        truncated, terminated = self.is_episode_over(fidelity)
+
         # printing on the command line for quick viewing
         if self.verbose is True:
             print(
@@ -161,14 +169,9 @@ class SingleQubitEnv(gym.Env):
                 "amp: " f"{action[0]:7.3f}",
                 "phase: " f"{action[1]:7.3f}",
                 "detuning: " f"{action[2]:7.3f}"
+                "termination: ", f"{truncated}",
+                "terminated", f"{terminated}"
             )
-
-        self.update_transition_history(fidelity, reward, action)
-        
-        self.Haar_update()
-
-        truncated, terminated = self.is_episode_over(fidelity)
-        print("truncated: ", truncated, "terminated: ", terminated)
 
         info = {}
         return (self.state, reward, terminated, truncated, info)
