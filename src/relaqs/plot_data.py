@@ -90,8 +90,8 @@ def plot_data(save_dir, episode_length, figure_title=''):
     avg_final_fidelity_per_episode = []
     avg_final_infelity_per_episode = []
     avg_sum_of_rewards_per_episode = []
-    for i in range (len(final_fidelity_per_episode)):
-        start = i - rolling_average_window if (i - rolling_average_window) >= 0 else 0
+    for i in range (1, len(final_fidelity_per_episode)):
+        start = i - rolling_average_window if (i - rolling_average_window) > 0 else 0
         avg_final_fidelity_per_episode.append(np.mean(final_fidelity_per_episode[start: i]))
         avg_final_infelity_per_episode.append(np.mean(final_infelity_per_episode[start: i]))
         avg_sum_of_rewards_per_episode.append(np.mean(sum_of_rewards_per_episode[start: i]))
@@ -112,7 +112,6 @@ def plot_data(save_dir, episode_length, figure_title=''):
     ax1.set_title("a)", loc='left', fontsize='medium')
     ax1.set_xlabel("Episodes")
 
-
     # ----> infidelity <----
     ax2.plot(final_infelity_per_episode, color="r")
     ax2.plot(avg_final_infelity_per_episode, color="k")
@@ -132,5 +131,5 @@ def plot_data(save_dir, episode_length, figure_title=''):
     plt.savefig(save_dir + "plot.png")
 
 if __name__ == "__main__":
-    save_dir = RESULTS_DIR + "2023-09-19_14-21-02/"
-    plot_data(save_dir, episode_length=2, figure_title="Random Target Gate")
+    save_dir = RESULTS_DIR + "2024-02-23_19-34-58_H/"
+    plot_data(save_dir, episode_length=2, figure_title="")
