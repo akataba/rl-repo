@@ -90,12 +90,17 @@ def plot_data(save_dir, episode_length, figure_title=''):
     avg_final_fidelity_per_episode = []
     avg_final_infelity_per_episode = []
     avg_sum_of_rewards_per_episode = []
-    for i in range (1, len(final_fidelity_per_episode)):
+    for i in range (len(final_fidelity_per_episode)):
         start = i - rolling_average_window if (i - rolling_average_window) > 0 else 0
-        avg_final_fidelity_per_episode.append(np.mean(final_fidelity_per_episode[start: i]))
-        avg_final_infelity_per_episode.append(np.mean(final_infelity_per_episode[start: i]))
-        avg_sum_of_rewards_per_episode.append(np.mean(sum_of_rewards_per_episode[start: i]))
-    
+        avg_final_fidelity_per_episode.append(np.mean(final_fidelity_per_episode[start: i + 1]))
+        avg_final_infelity_per_episode.append(np.mean(final_infelity_per_episode[start: i + 1]))
+        avg_sum_of_rewards_per_episode.append(np.mean(sum_of_rewards_per_episode[start: i + 1]))
+
+    # Round averages to prevent numerical error when plotting
+    rounding_precision = 6
+    avg_final_fidelity_per_episode = np.round(avg_final_fidelity_per_episode, rounding_precision)
+    avg_final_infelity_per_episode = np.round(avg_final_infelity_per_episode, rounding_precision)
+    avg_sum_of_rewards_per_episode = np.round(avg_sum_of_rewards_per_episode, rounding_precision)
 
     # -------------------------------> Plotting <-------------------------------------
     rcParams['font.family'] = 'serif'
@@ -131,5 +136,5 @@ def plot_data(save_dir, episode_length, figure_title=''):
     plt.savefig(save_dir + "plot.png")
 
 if __name__ == "__main__":
-    save_dir = RESULTS_DIR + "2024-02-23_19-34-58_H/"
+    save_dir = RESULTS_DIR + "2024-02-27_19-31-17_H/"
     plot_data(save_dir, episode_length=2, figure_title="")
