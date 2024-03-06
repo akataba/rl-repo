@@ -8,6 +8,7 @@ from relaqs.environments.gate_synth_env_rllib_Haar import (GateSynthEnvRLlibHaar
     TwoQubitGateSynth, 
     GateSynthEnvRLlibHaar
 )
+
 from relaqs.api.utils import (return_env_from_alg, 
     run_noisless_one_qubit_experiment,
     run_noisy_one_qubit_experiment,
@@ -32,7 +33,7 @@ def noisy_gate_environment(noisy_config):
 
 @pytest.fixture()
 def number_of_training_iterations():
-    return 1
+    return 250
 
 @pytest.fixture()
 def noiseless_gate_environment(noiseless_config):
@@ -103,6 +104,7 @@ def test_unitarity(noiseless_gate_environment):
         noiseless_gate_environment.step(action)
     assert np.allclose(noiseless_gate_environment.U @ noiseless_gate_environment.U.T.conjugate(), I().get_matrix())
 
+@pytest.mark.parametrize("gate_to_train", ['x'], indirect=True)
 def test_noisy_training(gate_to_train, number_of_training_iterations):
 
     n_training_iterations = number_of_training_iterations

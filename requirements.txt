@@ -1,0 +1,6 @@
+ray[rllib]
+ray[tune]
+matplotlib
+qutip
+torch
+tensorboard
