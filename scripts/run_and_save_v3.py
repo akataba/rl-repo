@@ -3,29 +3,25 @@
 import ray
 from ray.rllib.algorithms.ddpg import DDPGConfig
 from ray.tune.registry import register_env
-from relaqs.environments.gate_synth_env_rllib_Haar import GateSynthEnvRLlibHaarNoisy
+from relaqs.environments.single_qubit_env import SingleQubitEnv
+from relaqs.environments.noisy_single_qubit_env import NoisySingleQubitEnv
 from relaqs.save_results import SaveResults
 from relaqs.plot_data import plot_data
 from relaqs.api import gates
 
-def env_creator(config):
-    return GateSynthEnvRLlibHaarNoisy(config)
-
-def run(n_training_iterations=1, save=True, plot=True):
+def run(env_class=SingleQubitEnv, n_training_iterations=1, save=True, plot=True):
     ray.init()
-    register_env("my_env", env_creator)
 
     # ---------------------> Configure algorithm and Environment <-------------------------
     alg_config = DDPGConfig()
     alg_config.framework("torch")
-    env_config = GateSynthEnvRLlibHaarNoisy.get_default_env_config()
+    env_config = env_class.get_default_env_config()
 
     # Set target gate
-    target_gate = gates.X()
+    target_gate = gates.H()
     env_config["U_target"] = target_gate.get_matrix()
 
-    alg_config.environment("my_env", env_config=env_config)
-    #alg_config.environment(GateSynthEnvRLlibHaarNoisy, env_config=GateSynthEnvRLlibHaarNoisy.get_default_env_config())
+    alg_config.environment(env_class, env_config=env_config)
 
     alg_config.rollouts(batch_mode="complete_episodes")
     alg_config.train_batch_size = env_config["steps_per_Haar"] # TOOD use env_config
@@ -62,8 +58,9 @@ def run(n_training_iterations=1, save=True, plot=True):
     # --------------------------------------------------------------
 
 if __name__ == "__main__":
-    n_training_iterations = 1
+    env_class = NoisySingleQubitEnv
+    n_training_iterations = 50
     save = True
     plot = True
-    run(n_training_iterations, save, plot)
+    run(env_class, n_training_iterations, save, plot)
     

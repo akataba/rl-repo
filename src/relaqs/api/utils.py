@@ -1,23 +1,17 @@
 import numpy as np
 from numpy.linalg import eigvalsh
-from ray.rllib.algorithms.algorithm import Algorithm
-from ray.rllib.algorithms.ddpg import DDPGConfig
-from relaqs.quantum_noise_data.get_data import (get_month_of_all_qubit_data, 
-get_single_qubit_detuning 
-)
-from relaqs import RESULTS_DIR
 import pandas as pd
 from scipy.linalg import sqrtm
+from ray.rllib.algorithms.algorithm import Algorithm
+from ray.rllib.algorithms.ddpg import DDPGConfig
 from relaqs import RESULTS_DIR
 import ast
 from ray.tune.registry import register_env
 from relaqs.environments.gate_synth_env_rllib_Haar import GateSynthEnvRLlibHaarNoisy, GateSynthEnvRLlibHaar
+from relaqs.quantum_noise_data.get_data import (get_month_of_all_qubit_data, get_single_qubit_detuning)
 from relaqs.api.callbacks import GateSynthesisCallbacks
-from relaqs.plot_data import plot_data
-import numpy as np
 from relaqs import QUANTUM_NOISE_DATA_DIR
 from qutip.operators import *
-import relaqs.api.gates as gates
 
 
 def load_pickled_env_data(data_path):
@@ -99,7 +93,7 @@ def noisy_env_creator(config):
 def noiseless_env_creator(config):
     return GateSynthEnvRLlibHaar(config)
 
-def run(gate, environment, n_training_iterations=1, noise_file="",):
+def run(env_class, gate, n_training_iterations=1, noise_file=""):
     """Args
        gate (Gate type):
        environmment(gym.env)
@@ -109,36 +103,25 @@ def run(gate, environment, n_training_iterations=1, noise_file="",):
       alg (rllib.algorithms.algorithm)
 
     """
-    env_config = None
-    if isinstance(environment, GateSynthEnvRLlibHaarNoisy):
-        register_env("my_env", noisy_env_creator)
-        env_config = environment.get_default_env_config()
-        env_config["U_target"] = gate.get_matrix()
-    # ---------------------> Get quantum noise data <-------------------------
-        t1_list, t2_list, detuning_list = sample_noise_parameters(noise_file)
 
-        env_config["relaxation_rates_list"] = [np.reciprocal(t1_list).tolist(), np.reciprocal(t2_list).tolist()] # using real T1 data
-        env_config["delta"] = detuning_list
-        env_config["relaxation_ops"] = [sigmam(),sigmaz()]
-        env_config["observation_space_size"] = 2*16 + 1 + 2 + 1 # 2*16 = (complex number)*(density matrix elements = 4)^2, + 1 for fidelity + 2 for relaxation rate + 1 for detuning
-    elif isinstance(environment, GateSynthEnvRLlibHaar):
-        register_env("my_env", noiseless_env_creator)
-        env_config =  environment.get_default_env_config()
-        env_config["U_target"] = gate.get_matrix()
-        env_config["observation_space_size"] = 2*16 + 1  # 2*16 = (complex number)*(density matrix elements = 4)^2, + 1 for fidelity 
-        env_config["verbose"] = True
-    else:
-        RuntimeError("This environment is not supported yet for this run method")
+    env_config = env_class.get_default_env_config()
+    env_config["U_target"] = gate.get_matrix()
 
 
+# ---------------------> Get quantum noise data <-------------------------
+    t1_list, t2_list, detuning_list = sample_noise_parameters(noise_file)
+
+    env_config["relaxation_rates_list"] = [np.reciprocal(t1_list).tolist(), np.reciprocal(t2_list).tolist()] # using real T1 data
+    env_config["delta"] = detuning_list
+    env_config["relaxation_ops"] = [sigmam(),sigmaz()]
+    env_config["observation_space_size"] = 2*16 + 1 + 2 + 1 # 2*16 = (complex number)*(density matrix elements = 4)^2, + 1 for fidelity + 2 for relaxation rate + 1 for detuning
     # ---------------------> Configure algorithm and Environment <-------------------------
     alg_config = DDPGConfig()
     alg_config.framework("torch")
-    alg_config.environment("my_env", env_config=env_config)
+    alg_config.environment(env_class, env_config=env_config)
     alg_config.rollouts(batch_mode="complete_episodes")
     alg_config.callbacks(GateSynthesisCallbacks)
-    alg_config.train_batch_size = environment.get_default_env_config()["steps_per_Haar"]
-
+    alg_config.train_batch_size = env_class.get_default_env_config()["steps_per_Haar"]
     alg_config.actor_lr = 4e-5
     alg_config.critic_lr = 5e-4
 
