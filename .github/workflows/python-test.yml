@@ -30,4 +30,4 @@ jobs:
     
     - name: Run tests
       run: |
-        pytest tests/relaqs
+        pytest tests/relaqs -v
