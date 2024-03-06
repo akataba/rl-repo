@@ -177,9 +177,9 @@ class NoisyTwoQubitEnv(NoisySingleQubitEnv):
 
         self.update_transition_history(fidelity, reward, action)
       
-        self.Haar_update()
-
         truncated, terminated = self.is_episode_over(fidelity)
+
+        self.Haar_update()
 
         info = {}
         return (self.state, reward, terminated, truncated, info)
