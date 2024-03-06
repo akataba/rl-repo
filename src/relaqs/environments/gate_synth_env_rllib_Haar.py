@@ -451,8 +451,8 @@ class TwoQubitGateSynth(gym.Env):
             "delta": [[0],[0]],  # qubit detuning
             "save_data_every_step": 1,
             "verbose": True,
-#            "relaxation_rates_list": [[1/60E-6/2/np.pi],[1/30E-6/2/np.pi],[1/66E-6/2/np.pi],[1/5E-6/2/np.pi]], # relaxation lists of list of floats to be sampled from when resetting environment.
-            "relaxation_rates_list": [[0],[0],[0],[0]], # for now
+            "relaxation_rates_list": [[1/60E-6/2/np.pi],[1/30E-6/2/np.pi],[1/66E-6/2/np.pi],[1/5E-6/2/np.pi]], # relaxation lists of list of floats to be sampled from when resetting environment.
+            # "relaxation_rates_list": [[0],[0],[0],[0]], # for now
             "relaxation_ops": [sigmam1,sigmam2,Qobj(Z1),Qobj(Z2)], #relaxation operator lists for T1 and T2, respectively
             "observation_space_size": 2*256 + 1 + 4 + 2 # 2*16 = (complex number)*(density matrix elements = 4)^2, + 1 for fidelity + 4 for relaxation rate + 2 for detuning
         }
@@ -745,14 +745,14 @@ class TwoQubitGateSynth(gym.Env):
             jump_ops.append(np.sqrt(self.relaxation_rate[ii]) * self.relaxation_ops[ii])
 
         # Hamiltonian with controls
-        H2_1 = self.hamiltonian(self.delta[0][0], self.delta[1][0], 0, 0, g_eff1, 0, 0, 0, 0, index = 1)
-        H2_2 = self.hamiltonian(self.delta[0][0], self.delta[1][0], 0, 0, g_eff2, 0, 0, 0, 0, index = 1)
-        H2_3 = self.hamiltonian(self.delta[0][0], self.delta[1][0], 0, 0, g_eff3, 0, 0, 0, 0, index = 1)
+        H2_1 = self.hamiltonian(self.detuning[0], self.detuning[1], 0, 0, g_eff1, 0, 0, 0, 0, index = 1)
+        H2_2 = self.hamiltonian(self.detuning[0], self.detuning[1], 0, 0, g_eff2, 0, 0, 0, 0, index = 1)
+        H2_3 = self.hamiltonian(self.detuning[0], self.detuning[1], 0, 0, g_eff3, 0, 0, 0, 0, index = 1)
         
-        H1_1 = self.hamiltonian(self.delta[0][0], self.delta[1][0], alpha1_1, alpha2_1, 0, gamma_magnitude1_1, gamma_phase1_1, gamma_magnitude2_1, gamma_phase2_1)
-        H1_2 = self.hamiltonian(self.delta[0][0], self.delta[1][0], alpha1_2, alpha2_2, 0, gamma_magnitude1_2, gamma_phase1_2, gamma_magnitude2_2, gamma_phase2_2)
-        H1_3 = self.hamiltonian(self.delta[0][0], self.delta[1][0], alpha1_3, alpha2_3, 0, gamma_magnitude1_3, gamma_phase1_3, gamma_magnitude2_3, gamma_phase2_3)
-        H1_4 = self.hamiltonian(self.delta[0][0], self.delta[1][0], alpha1_4, alpha2_4, 0, gamma_magnitude1_4, gamma_phase1_4, gamma_magnitude2_4, gamma_phase2_4)
+        H1_1 = self.hamiltonian(self.detuning[0], self.detuning[1], alpha1_1, alpha2_1, 0, gamma_magnitude1_1, gamma_phase1_1, gamma_magnitude2_1, gamma_phase2_1)
+        H1_2 = self.hamiltonian(self.detuning[0], self.detuning[1], alpha1_2, alpha2_2, 0, gamma_magnitude1_2, gamma_phase1_2, gamma_magnitude2_2, gamma_phase2_2)
+        H1_3 = self.hamiltonian(self.detuning[0], self.detuning[1], alpha1_3, alpha2_3, 0, gamma_magnitude1_3, gamma_phase1_3, gamma_magnitude2_3, gamma_phase2_3)
+        H1_4 = self.hamiltonian(self.detuning[0], self.detuning[1], alpha1_4, alpha2_4, 0, gamma_magnitude1_4, gamma_phase1_4, gamma_magnitude2_4, gamma_phase2_4)
 
         
         self.H2_1_array.append(H2_1)  # Array of Hs at each Haar wavelet
@@ -902,7 +902,7 @@ class TwoQubitGateSynth(gym.Env):
         # if fidelity>0.49:
             # plot_complex_matrix(self.U, action, fidelity, "Matrix U")
             
-        reward = (-5 * np.log10(1.0000001 - fidelity) + np.log10(1.0000001 - self.prev_fidelity)) + (5 * fidelity - self.prev_fidelity)
+        reward = (-3 * np.log10(1.0000001 - fidelity) + np.log10(1.0000001 - self.prev_fidelity)) + (3 * fidelity - self.prev_fidelity)
         self.prev_fidelity = fidelity
 
         self.state = self.get_observation()
