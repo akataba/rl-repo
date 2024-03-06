@@ -31,12 +31,19 @@ def noisy_gate_environment(noisy_config):
     return GateSynthEnvRLlibHaarNoisy(noisy_config)
 
 @pytest.fixture()
+def number_of_training_iterations():
+    return 1
+
+@pytest.fixture()
 def noiseless_gate_environment(noiseless_config):
     return GateSynthEnvRLlibHaar(noiseless_config)
 
 @pytest.fixture()
-def gate_to_train():
-    return X()
+def gate_to_train(request):
+    if request.param == 'x':
+        return X()
+    elif request.param == 'h':
+        return H()
 
 def test_compute_fidelity_one_qubit_noisy(noisy_config):
     one_qubit_config = noisy_config
@@ -96,9 +103,9 @@ def test_unitarity(noiseless_gate_environment):
         noiseless_gate_environment.step(action)
     assert np.allclose(noiseless_gate_environment.U @ noiseless_gate_environment.U.T.conjugate(), I().get_matrix())
 
-def test_noisy_training(gate_to_train):
+def test_noisy_training(gate_to_train, number_of_training_iterations):
 
-    n_training_iterations = 250
+    n_training_iterations = number_of_training_iterations
     noise_file = "april/ibmq_belem_month_is_4.json"
 
     alg,_ = run_noisy_one_qubit_experiment(gate_to_train, 
@@ -114,8 +121,9 @@ def test_noisy_training(gate_to_train):
     average_fidelity = sum(fidelities)/len(fidelities)
     assert average_fidelity > 0.85
 
-def test_noiseless_training(gate_to_train):
-    n_train_iterations= 250
+@pytest.mark.parametrize("gate_to_train", ['x', 'h'], indirect=True)
+def test_noiseless_training(gate_to_train, number_of_training_iterations):
+    n_train_iterations= number_of_training_iterations
     alg, _ = run_noisless_one_qubit_experiment(gate_to_train,
             n_training_iterations=n_train_iterations
             )
@@ -128,6 +136,7 @@ def test_noiseless_training(gate_to_train):
     average_fidelity = sum(fidelities)/len(fidelities)
     assert average_fidelity > 0.850
 
+@pytest.mark.parametrize("gate_to_train", ['x'], indirect=True)
 def test_loading_of_unitary(gate_to_train):
     data_path = RESULTS_DIR + '2023-11-08_11-09-45/env_data.csv' 
     load_and_analyze_best_unitary(data_path, gate_to_train)

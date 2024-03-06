@@ -6,7 +6,7 @@ from relaqs.api.utils import (run,
     get_best_episode_information,
     return_env_from_alg
 )
-from relaqs.api.gates import H
+from relaqs.api.gates import H, X
 from relaqs.plot_data import plot_results, plot_data
 
 
@@ -17,7 +17,7 @@ noise_file_2 = "april/ibmq_quito_month_is_4.json"
 path_to_detuning = "qubit_detuning_data.json"
 
 # --------------------------> Training of model <-----------------------------------------------------
-alg, list_of_results = run_noisy_one_qubit_experiment(H(), 
+alg, list_of_results = run_noisy_one_qubit_experiment(X(), 
     n_training_iterations, 
     noise_file=noise_file
     )
@@ -25,7 +25,7 @@ alg, list_of_results = run_noisy_one_qubit_experiment(H(),
 # ----------------------- Creating the deterministic agent using actions from the best episode -------------------------------
 env = return_env_from_alg(alg)
 t1_list,t2_list,_  = sample_noise_parameters(noise_file_2, detuning_noise_file=path_to_detuning)
-detuning_list = np.random.normal(1e8, 1e4, 9).tolist()
+detuning_list = np.random.normal(1e8, 1e8, 9).tolist()
 # t2_list = np.random.normal(1e-9, 1e-5, 135)
 env.relaxation_rates_list = [np.reciprocal(t1_list).tolist(), np.reciprocal(t2_list).tolist()]
 env.delta = detuning_list 
