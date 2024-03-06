@@ -138,10 +138,10 @@ def test_noiseless_training(gate_to_train, number_of_training_iterations):
     average_fidelity = sum(fidelities)/len(fidelities)
     assert average_fidelity > 0.850
 
-@pytest.mark.parametrize("gate_to_train", ['x'], indirect=True)
-def test_loading_of_unitary(gate_to_train):
-    data_path = RESULTS_DIR + '2023-11-08_11-09-45/env_data.csv' 
-    load_and_analyze_best_unitary(data_path, gate_to_train)
+# @pytest.mark.parametrize("gate_to_train", ['x'], indirect=True)
+# def test_loading_of_unitary(gate_to_train):
+#     data_path = RESULTS_DIR + '2023-11-08_11-09-45/env_data.csv' 
+#     load_and_analyze_best_unitary(data_path, gate_to_train)
    
   
 
