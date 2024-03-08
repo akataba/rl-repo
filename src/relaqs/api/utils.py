@@ -7,7 +7,8 @@ from ray.rllib.algorithms.ddpg import DDPGConfig
 from relaqs import RESULTS_DIR
 import ast
 from ray.tune.registry import register_env
-from relaqs.environments.gate_synth_env_rllib_Haar import GateSynthEnvRLlibHaarNoisy, GateSynthEnvRLlibHaar
+from relaqs.environments.single_qubit_env import SingleQubitEnv
+from relaqs.environments.noisy_single_qubit_env import NoisySingleQubitEnv
 from relaqs.quantum_noise_data.get_data import (get_month_of_all_qubit_data, get_single_qubit_detuning)
 from relaqs.api.callbacks import GateSynthesisCallbacks
 from relaqs import QUANTUM_NOISE_DATA_DIR
@@ -88,10 +89,10 @@ def get_best_episode_information(filename):
     return best_episodes
 
 def noisy_env_creator(config):
-    return GateSynthEnvRLlibHaarNoisy(config)
+    return NoisySingleQubitEnv(config)
 
 def noiseless_env_creator(config):
-    return GateSynthEnvRLlibHaar(config)
+    return SingleQubitEnv(config)
 
 def run(env_class, gate, n_training_iterations=1, noise_file=""):
     """Args
@@ -149,7 +150,7 @@ def run_noisless_one_qubit_experiment(gate,n_training_iterations=1):
 
     """
     register_env("my_env", noiseless_env_creator)
-    env_config =  GateSynthEnvRLlibHaar.get_default_env_config()
+    env_config =  SingleQubitEnv.get_default_env_config()
     env_config["U_target"] = gate.get_matrix()
     # env_config["observation_space_size"] = 2*16 + 1  # 2*16 = (complex number)*(density matrix elements = 4)^2, + 1 for fidelity 
     env_config["verbose"] = True
@@ -160,7 +161,7 @@ def run_noisless_one_qubit_experiment(gate,n_training_iterations=1):
     alg_config.environment("my_env", env_config=env_config)
     alg_config.rollouts(batch_mode="complete_episodes")
     alg_config.callbacks(GateSynthesisCallbacks)
-    alg_config.train_batch_size = GateSynthEnvRLlibHaar.get_default_env_config()["steps_per_Haar"]
+    alg_config.train_batch_size = SingleQubitEnv.get_default_env_config()["steps_per_Haar"]
 
     alg_config.actor_lr = 4e-5
     alg_config.critic_lr = 5e-4
@@ -190,7 +191,7 @@ def run_noisy_one_qubit_experiment(gate, n_training_iterations=1, noise_file="  
 
     """
     register_env("my_env", noisy_env_creator)
-    env_config = GateSynthEnvRLlibHaarNoisy.get_default_env_config()
+    env_config = NoisySingleQubitEnv.get_default_env_config()
     env_config["U_target"] = gate.get_matrix()
     # ---------------------> Get quantum noise data <-------------------------
     t1_list, t2_list, detuning_list = sample_noise_parameters(noise_file)
@@ -206,7 +207,7 @@ def run_noisy_one_qubit_experiment(gate, n_training_iterations=1, noise_file="  
     alg_config.environment("my_env", env_config=env_config)
     alg_config.rollouts(batch_mode="complete_episodes")
     alg_config.callbacks(GateSynthesisCallbacks)
-    alg_config.train_batch_size = GateSynthEnvRLlibHaarNoisy.get_default_env_config()["steps_per_Haar"]
+    alg_config.train_batch_size = NoisySingleQubitEnv.get_default_env_config()["steps_per_Haar"]
 
     alg_config.actor_lr = 4e-5
     alg_config.critic_lr = 5e-4

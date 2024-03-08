@@ -4,32 +4,29 @@ import pytest
 import sys
 sys.path.append('../src')
 from relaqs.save_results import SaveResults
-from relaqs.environments.gate_synth_env_rllib_Haar import (GateSynthEnvRLlibHaarNoisy, 
-    TwoQubitGateSynth, 
-    GateSynthEnvRLlibHaar
-)
+from relaqs.environments.noisy_two_qubit_env import NoisyTwoQubitEnv
+from relaqs.environments.noisy_single_qubit_env import NoisySingleQubitEnv
+from relaqs.environments.single_qubit_env import SingleQubitEnv
 
 from relaqs.api.utils import (return_env_from_alg, 
     run_noisless_one_qubit_experiment,
     run_noisy_one_qubit_experiment,
-    load_and_analyze_best_unitary
 )
 from relaqs.api.gates import H, I, X
 import pandas as pd
-from relaqs import RESULTS_DIR
 
 
 @pytest.fixture()
 def noisy_config():
-    return GateSynthEnvRLlibHaarNoisy.get_default_env_config()
+    return NoisySingleQubitEnv.get_default_env_config()
 
 @pytest.fixture()
 def noiseless_config():
-    return GateSynthEnvRLlibHaar.get_default_env_config()
+    return SingleQubitEnv.get_default_env_config()
 
 @pytest.fixture()
 def noisy_gate_environment(noisy_config):
-    return GateSynthEnvRLlibHaarNoisy(noisy_config)
+    return NoisySingleQubitEnv(noisy_config)
 
 @pytest.fixture()
 def number_of_training_iterations():
@@ -37,7 +34,7 @@ def number_of_training_iterations():
 
 @pytest.fixture()
 def noiseless_gate_environment(noiseless_config):
-    return GateSynthEnvRLlibHaar(noiseless_config)
+    return SingleQubitEnv(noiseless_config)
 
 @pytest.fixture()
 def gate_to_train(request):
@@ -51,7 +48,7 @@ def test_compute_fidelity_one_qubit_noisy(noisy_config):
     one_qubit_config["U_initial"] = I().get_matrix()
     one_qubit_config["U_target"] = I().get_matrix()
 
-    env = GateSynthEnvRLlibHaarNoisy(one_qubit_config)
+    env = NoisySingleQubitEnv(one_qubit_config)
 
     assert env.compute_fidelity() == 1.0
 
@@ -60,14 +57,14 @@ def test_compute_fidelity_one_qubit_noisy(noisy_config):
 
 
 def test_compute_fidelity_two_qubits():
-    two_qubit_config = TwoQubitGateSynth.get_default_env_config()
+    two_qubit_config = NoisyTwoQubitEnv.get_default_env_config()
     I = np.array([[1, 0], [0, 1]])
     II = tensor(Qobj(I),Qobj(I)).data.toarray()
     
     two_qubit_config["U_initial"] = II
     two_qubit_config["U_target"] = II
 
-    env = TwoQubitGateSynth(two_qubit_config)
+    env = NoisyTwoQubitEnv(two_qubit_config)
 
     assert env.compute_fidelity() == 1.0
 
@@ -138,10 +135,6 @@ def test_noiseless_training(gate_to_train, number_of_training_iterations):
     average_fidelity = sum(fidelities)/len(fidelities)
     assert average_fidelity > 0.850
 
-# @pytest.mark.parametrize("gate_to_train", ['x'], indirect=True)
-# def test_loading_of_unitary(gate_to_train):
-#     data_path = RESULTS_DIR + '2023-11-08_11-09-45/env_data.csv' 
-#     load_and_analyze_best_unitary(data_path, gate_to_train)
    
   
 
