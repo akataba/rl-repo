@@ -73,7 +73,7 @@ def plot_data(save_dir, episode_length, figure_title=''):
     current_fidelity = fidelities[0]
     current_reward_sum = rewards[0]
     for i in range(len(episode_ids)):
-        if episode_ids[i] != current_episode_id:
+        if (episode_ids[i] != current_episode_id) or (i == len(episode_ids) - 1):
             final_fidelity_per_episode.append(current_fidelity)
             final_infelity_per_episode.append(1 - current_fidelity)
             sum_of_rewards_per_episode.append(current_reward_sum)
