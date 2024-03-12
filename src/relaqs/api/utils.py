@@ -204,7 +204,7 @@ def run_noisy_one_qubit_experiment(gate, n_training_iterations=1, noise_file="  
    # ---------------------> Configure algorithm and Environment <-------------------------
     alg_config = DDPGConfig()
     alg_config.framework("torch")
-    alg_config.environment("my_env", env_config=env_config)
+    alg_config.environment(NoisySingleQubitEnv, env_config=env_config)
     alg_config.rollouts(batch_mode="complete_episodes")
     alg_config.callbacks(GateSynthesisCallbacks)
     alg_config.train_batch_size = NoisySingleQubitEnv.get_default_env_config()["steps_per_Haar"]

@@ -30,6 +30,7 @@ class SingleQubitEnv(gym.Env):
         self.observation_space = gym.spaces.Box(low=-1, high=1, shape=(env_config["observation_space_size"],))
         self.action_space = gym.spaces.Box(low=np.array([-1, -1, -1]), high=np.array([1, 1, 1]))
         self.delta = env_config["delta"] # detuning
+        self.detuning = 0
         self.U_target = env_config["U_target"]
         self.U_initial = env_config["U_initial"] # future todo, can make random initial state
         self.U = env_config["U_initial"].copy()
@@ -70,6 +71,10 @@ class SingleQubitEnv(gym.Env):
         return (-3 * np.log10(1.0 - fidelity) + np.log10(1.0 - self.prev_fidelity)) + (3 * fidelity - self.prev_fidelity)
         
     def hamiltonian(self, delta, alpha, gamma_magnitude, gamma_phase):
+        print("delta: ", delta)
+        print("alpha: ", alpha)
+        print("gamma_magnitude: ", gamma_magnitude)
+        print("gamma_phase: ", gamma_phase)
         return (delta + alpha) * Z + gamma_magnitude * (np.cos(gamma_phase) * X + np.sin(gamma_phase) * Y)
 
     def reset(self, *, seed=None, options=None):
@@ -87,7 +92,7 @@ class SingleQubitEnv(gym.Env):
         return starting_observeration, info
     
     def hamiltonian_update(self, alpha, gamma_magnitude, gamma_phase):
-        H = self.hamiltonian(self.delta, alpha, gamma_magnitude, gamma_phase)
+        H = self.hamiltonian(self.detuning, alpha, gamma_magnitude, gamma_phase)
         self.H_array.append(H)
 
     def H_tot_upate(self, num_time_bins):

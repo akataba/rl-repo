@@ -7,6 +7,7 @@ from relaqs.save_results import SaveResults
 from relaqs.environments.noisy_two_qubit_env import NoisyTwoQubitEnv
 from relaqs.environments.noisy_single_qubit_env import NoisySingleQubitEnv
 from relaqs.environments.single_qubit_env import SingleQubitEnv
+from relaqs.api.utils import run
 
 from relaqs.api.utils import (return_env_from_alg, 
     run_noisless_one_qubit_experiment,
@@ -111,6 +112,7 @@ def test_noisy_training(gate_to_train, number_of_training_iterations):
             n_training_iterations=n_training_iterations,
             noise_file=noise_file 
         )
+
     env = return_env_from_alg(alg)  
     sr = SaveResults(env, alg)
     save_dir = sr.save_results()
@@ -125,7 +127,7 @@ def test_noiseless_training(gate_to_train, number_of_training_iterations):
     n_train_iterations= number_of_training_iterations
     alg, _ = run_noisless_one_qubit_experiment(gate_to_train,
             n_training_iterations=n_train_iterations
-            )
+            )      
     env = return_env_from_alg(alg)  
     sr = SaveResults(env, alg)
     save_dir = sr.save_results()
