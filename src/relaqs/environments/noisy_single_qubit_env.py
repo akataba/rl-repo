@@ -81,7 +81,7 @@ class NoisySingleQubitEnv(SingleQubitEnv):
         # gamma is the complex amplitude of the control field
         gamma_magnitude, gamma_phase, alpha = self.parse_actions(action)
 
-        self.hamiltonian_update(alpha, gamma_magnitude, gamma_phase)
+        self.hamiltonian_update(self.detuning, alpha, gamma_magnitude, gamma_phase)
         self.H_tot_upate(num_time_bins)
 
         self.operator_update(num_time_bins)

@@ -86,8 +86,9 @@ class SingleQubitEnv(gym.Env):
         self.episode_id += 1
         return starting_observeration, info
     
-    def hamiltonian_update(self, alpha, gamma_magnitude, gamma_phase):
-        H = self.hamiltonian(self.delta, alpha, gamma_magnitude, gamma_phase)
+    #def hamiltonian_update(self, alpha, gamma_magnitude, gamma_phase):
+    def hamiltonian_update(self, delta, alpha, gamma_magnitude, gamma_phase):
+        H = self.hamiltonian(delta, alpha, gamma_magnitude, gamma_phase)
         self.H_array.append(H)
 
     def H_tot_upate(self, num_time_bins):
@@ -134,7 +135,7 @@ class SingleQubitEnv(gym.Env):
         # Get actions
         gamma_magnitude, gamma_phase, alpha = self.parse_actions(action)
 
-        self.hamiltonian_update(alpha, gamma_magnitude, gamma_phase)
+        self.hamiltonian_update(self.delta, alpha, gamma_magnitude, gamma_phase)
         self.H_tot_upate(num_time_bins)
 
         # U update
