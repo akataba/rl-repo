@@ -45,7 +45,7 @@ class SingleQubitEnv(gym.Env):
         self.prev_fidelity = 0
         self.gamma_phase_max = 1.1675 * np.pi
         self.gamma_magnitude_max = 1.8 * np.pi / self.final_time / self.steps_per_Haar
-        self.gamma_detuning_max = 0.05E9 # detuning of the control pulse in Hz
+        self.alpha_max = 0.05E9 # detuning of the control pulse in Hz
         self.transition_history = []
         self.episode_id = 0
 
@@ -123,7 +123,7 @@ class SingleQubitEnv(gym.Env):
     def parse_actions(self, action):
         gamma_magnitude = self.gamma_magnitude_max / 2 * (action[0] + 1)
         gamma_phase = self.gamma_phase_max * action[1]
-        alpha = self.gamma_detuning_max * action[2]
+        alpha = self.alpha_max * action[2]
         return gamma_magnitude, gamma_phase, alpha
     
     def update_transition_history(self, fidelity, reward, action):
