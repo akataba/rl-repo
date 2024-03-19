@@ -1,49 +1,41 @@
 from relaqs.save_results import SaveResults
 import numpy as np
 from relaqs.api.utils import (run,
-    run_noisy_one_qubit_experiment,
     sample_noise_parameters,
     get_best_episode_information,
     return_env_from_alg
 )
-from relaqs.api.gates import H, X
-from relaqs.plot_data import plot_results, plot_data
+from relaqs.api.gates import H
 
 
-n_training_iterations = 300
+n_training_iterations = 250
 figure_title ="Inferencing on multiple noisy environments with different detuning noise"
 noise_file = "april/ibmq_belem_month_is_4.json"
 noise_file_2 = "april/ibmq_quito_month_is_4.json"
 path_to_detuning = "qubit_detuning_data.json"
 
 # --------------------------> Training of model <-----------------------------------------------------
-alg, list_of_results = run_noisy_one_qubit_experiment(X(), 
+alg = run(H(), 
     n_training_iterations, 
     noise_file=noise_file
     )
 
 # ----------------------- Creating the deterministic agent using actions from the best episode -------------------------------
 env = return_env_from_alg(alg)
-t1_list,t2_list,_  = sample_noise_parameters(noise_file_2, detuning_noise_file=path_to_detuning)
-detuning_list = np.random.normal(1e8, 1e8, 9).tolist()
+t1_list,t2_list,  = sample_noise_parameters(noise_file_2, detuning_noise_file=path_to_detuning)
+detuning_list = np.random.normal(1e8, 1e4, 9).tolist()
 # t2_list = np.random.normal(1e-9, 1e-5, 135)
 env.relaxation_rates_list = [np.reciprocal(t1_list).tolist(), np.reciprocal(t2_list).tolist()]
 env.delta = detuning_list 
 
-sr = SaveResults(env, alg, results=list_of_results)
+sr = SaveResults(env, alg)
 save_dir = sr.save_results()
 print("Results saved to:", save_dir)
-plot_data(save_dir, episode_length=alg._episode_history[0].episode_length, figure_title=figure_title)
-plot_results(save_dir, figure_title=figure_title)
 
-# best_episode_information = get_best_episode_information(save_dir + "env_data.csv")
-best_episode_information = get_best_episode_information(save_dir + "env_data.pkl")
+best_episode_information = get_best_episode_information(save_dir + "env_data.csv")
 
-print("best_episode_information actions first row: ", best_episode_information["Actions"].iloc[0])
-print("best_episode_information actions second row: ", best_episode_information["Actions"].iloc[1])
-# actions = [np.asarray(eval(best_episode_information.iloc[0,2])), np.asarray(eval(best_episode_information.iloc[1,2]))]
-actions = [best_episode_information["Actions"].iloc[0], best_episode_information["Actions"].iloc[1]]
-print("actions: ", actions)
+actions = [np.asarray(eval(best_episode_information.iloc[0,2])), np.asarray(eval(best_episode_information.iloc[1,2]))]
+
 num_episodes = 0
 episode_reward = 0.0
 
@@ -61,5 +53,3 @@ for a in actions:
         obs, info = env.reset()
         num_episodes += 1
         episode_reward = 0.0
-
-
