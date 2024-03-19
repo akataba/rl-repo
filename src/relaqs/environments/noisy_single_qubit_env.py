@@ -6,12 +6,18 @@ from qutip import Qobj
 from qutip.superoperator import liouvillian, spre, spost
 from qutip.operators import sigmam
 from relaqs.environments.single_qubit_env import SingleQubitEnv
+from relaqs.api import gates
+
+I = gates.I().get_matrix()
+X = gates.X().get_matrix()
+Y = gates.Y().get_matrix()
+Z = gates.Z().get_matrix()
 
 class NoisySingleQubitEnv(SingleQubitEnv):
     @classmethod
     def get_default_env_config(cls):
         env_config = super().get_default_env_config()
-        env_config.update({"delta": [0],  # qubit detuning
+        env_config.update({"detuning_list": [0],  # qubit detuning
             "relaxation_rates_list": [[314159]], # relaxation lists of list of floats to be sampled from when resetting environment. (10 usec)
             "relaxation_ops": [sigmam()], #relaxation operator lists for T1 and T2, respectively
             "observation_space_size": 2*16 + 1 + 1 + 1}) # 2*16 = (complex number)*(density matrix elements = 4)^2, + 1 for fidelity + 1 for relaxation rate + 1 for detuning})
@@ -19,7 +25,7 @@ class NoisySingleQubitEnv(SingleQubitEnv):
 
     def __init__(self, env_config):
         super().__init__(env_config)
-        self.delta = env_config["delta"]
+        self.detuning_list = env_config["detuning_list"]
         self.detuning_update()
         self.U_target = self.unitary_to_superoperator(env_config["U_target"])
         self.U_initial = self.unitary_to_superoperator(env_config["U_initial"])
@@ -31,10 +37,10 @@ class NoisySingleQubitEnv(SingleQubitEnv):
 
     def detuning_update(self):
         # Random detuning selection
-        if len(self.delta)==1:
-            self.detuning = self.delta[0]
+        if len(self.detuning_list)==1:
+            self.detuning = self.detuning_list[0]
         else:
-            self.detuning = random.sample(self.delta,k=1)[0]
+            self.detuning = random.sample(self.detuning_list, k=1)[0]
             print("detuning: ", f"{self.detuning}")
 
     def unitary_to_superoperator(self, U):
@@ -50,8 +56,11 @@ class NoisySingleQubitEnv(SingleQubitEnv):
         return sampled_rate_list
             
     def get_observation(self):
-        normalizedDetuning = [(self.detuning - min(self.delta)+1E-15)/(max(self.delta)-min(self.delta)+1E-15)]
+        normalizedDetuning = [(self.detuning - min(self.detuning_list)+1E-15)/(max(self.detuning_list)-min(self.detuning_list)+1E-15)]
         return np.append([self.compute_fidelity()]+[x//6283185 for x in self.relaxation_rate]+normalizedDetuning, self.unitary_to_observation(self.U)) #6283185 assuming 500 nanosecond relaxation is max
+    
+    def hamiltonian(self, detuning, alpha, gamma_magnitude, gamma_phase):
+        return (detuning + alpha)*Z + gamma_magnitude*(np.cos(gamma_phase)*X + np.sin(gamma_phase)*Y)
 
     def reset(self, *, seed=None, options=None):
         super().reset()
@@ -81,8 +90,7 @@ class NoisySingleQubitEnv(SingleQubitEnv):
         # gamma is the complex amplitude of the control field
         gamma_magnitude, gamma_phase, alpha = self.parse_actions(action)
 
-        self.hamiltonian_update(self.detuning, alpha, gamma_magnitude, gamma_phase)
-        self.H_tot_upate(num_time_bins)
+        self.hamiltonian_update(num_time_bins, self.detuning, alpha, gamma_magnitude, gamma_phase)
 
         self.operator_update(num_time_bins)
 

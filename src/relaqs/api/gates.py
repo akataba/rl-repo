@@ -39,8 +39,8 @@ class Y(Gate):
         return "Y"
     
     def get_matrix(self):
-        return np.array([[0, 1j],
-                         [-1j, 0]])
+        return np.array([[0, -1j],
+                         [1j, 0]])
 
 class Z(Gate):
     def __str__(self):
