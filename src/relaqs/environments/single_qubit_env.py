@@ -21,7 +21,6 @@ class SingleQubitEnv(gym.Env):
             "final_time": 35.5556E-9, # in seconds
             "num_Haar_basis": 1,
             "steps_per_Haar": 2,  # steps per Haar basis per episode
-            "delta": 0,
             "verbose": True,
             "observation_space_size": 9,  # 1 (fidelity) + 8 (flattened unitary)
         }
@@ -29,7 +28,6 @@ class SingleQubitEnv(gym.Env):
         self.final_time = env_config["final_time"]  # Final time for the gates
         self.observation_space = gym.spaces.Box(low=-1, high=1, shape=(env_config["observation_space_size"],))
         self.action_space = gym.spaces.Box(low=np.array([-1, -1, -1]), high=np.array([1, 1, 1]))
-        self.delta = env_config["delta"] # detuning
         self.U_target = env_config["U_target"]
         self.U_initial = env_config["U_initial"] # future todo, can make random initial state
         self.U = env_config["U_initial"].copy()
@@ -45,7 +43,7 @@ class SingleQubitEnv(gym.Env):
         self.prev_fidelity = 0
         self.gamma_phase_max = 1.1675 * np.pi
         self.gamma_magnitude_max = 1.8 * np.pi / self.final_time / self.steps_per_Haar
-        self.gamma_detuning_max = 0.05E9 # detuning of the control pulse in Hz
+        self.alpha_max = 0.05E9 # detuning of the control pulse in Hz
         self.transition_history = []
         self.episode_id = 0
 
@@ -69,8 +67,8 @@ class SingleQubitEnv(gym.Env):
     def compute_reward(self, fidelity):
         return (-3 * np.log10(1.0 - fidelity) + np.log10(1.0 - self.prev_fidelity)) + (3 * fidelity - self.prev_fidelity)
         
-    def hamiltonian(self, delta, alpha, gamma_magnitude, gamma_phase):
-        return (delta + alpha) * Z + gamma_magnitude * (np.cos(gamma_phase) * X + np.sin(gamma_phase) * Y)
+    def hamiltonian(self, alpha, gamma_magnitude, gamma_phase):
+        return alpha*Z + gamma_magnitude*(np.cos(gamma_phase)*X + np.sin(gamma_phase)*Y)
 
     def reset(self, *, seed=None, options=None):
         self.U = self.U_initial.copy()
@@ -89,11 +87,9 @@ class SingleQubitEnv(gym.Env):
             print("episode id: ", self.episode_id)
         return starting_observeration, info
     
-    def hamiltonian_update(self, alpha, gamma_magnitude, gamma_phase):
-        H = self.hamiltonian(self.delta, alpha, gamma_magnitude, gamma_phase)
+    def hamiltonian_update(self, num_time_bins, *hamiltonian_args):
+        H = self.hamiltonian(*hamiltonian_args)
         self.H_array.append(H)
-
-    def H_tot_upate(self, num_time_bins):
         self.H_tot = []
         for ii, H_elem in enumerate(self.H_array):
             for jj in range(0, num_time_bins):
@@ -123,7 +119,7 @@ class SingleQubitEnv(gym.Env):
     def parse_actions(self, action):
         gamma_magnitude = self.gamma_magnitude_max / 2 * (action[0] + 1)
         gamma_phase = self.gamma_phase_max * action[1]
-        alpha = self.gamma_detuning_max * action[2]
+        alpha = self.alpha_max * action[2]
         return gamma_magnitude, gamma_phase, alpha
     
     def update_transition_history(self, fidelity, reward, action):
@@ -135,8 +131,7 @@ class SingleQubitEnv(gym.Env):
         # Get actions
         gamma_magnitude, gamma_phase, alpha = self.parse_actions(action)
 
-        self.hamiltonian_update(alpha, gamma_magnitude, gamma_phase)
-        self.H_tot_upate(num_time_bins)
+        self.hamiltonian_update(num_time_bins, alpha, gamma_magnitude, gamma_phase)
 
         # U update
         self.U = self.U_initial.copy()
