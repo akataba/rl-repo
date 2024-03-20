@@ -1,8 +1,8 @@
 import numpy as np
-from .gate_synth_env_rllib_Haar import GateSynthEnvRLlibHaarNoisy
+from relaqs.environments import NoisySingleQubitEnv
 from relaqs.api.gates import RandomSU2
 
-class RandomGateEnvNoisy(GateSynthEnvRLlibHaarNoisy):
+class ChangingTargetEnv(NoisySingleQubitEnv):
     @classmethod
     def get_default_env_config(cls):
         config_dict = super().get_default_env_config()
@@ -20,4 +20,4 @@ class RandomGateEnvNoisy(GateSynthEnvRLlibHaarNoisy):
     
     def get_observation(self):
         observation = super().get_observation()
-        return np.append(observation, self.unitary_to_observation(self.superoperator_target))
+        return np.append(observation, self.unitary_to_observation(self.U_target))
