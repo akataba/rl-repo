@@ -14,7 +14,6 @@ class ChangingTargetEnv(NoisySingleQubitEnv):
         U = RandomSU2().get_matrix()
         self.U_target = self.unitary_to_superoperator(U)
         starting_observation = self.get_observation()
-        print(len(starting_observation))
         return starting_observation, info
 
     def get_observation(self):
