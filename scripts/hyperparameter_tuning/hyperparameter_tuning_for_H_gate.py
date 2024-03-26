@@ -26,8 +26,8 @@ def run_ray_tune(environment, n_configurations=100, n_training_iterations=50, sa
     print("starting ray tune .....")
     register_env("my_env", env_creator)
     config = {
-            "actor_lr" : [1e-3, 5e-4, 1e-4, 5e-5, 1e-5],
-            "critic_lr" : [1e-3, 5e-4, 1e-4, 5e-5, 1e-5],
+            "actor_lr" : tune.choice([1e-3, 5e-4, 1e-4, 5e-5, 1e-5]),
+            "critic_lr" : tune.choice([1e-3, 5e-4, 1e-4, 5e-5, 1e-5]),
             "actor_num_hiddens" : tune.choice([5, 10, 50]),
             "actor_layer_size" : tune.choice([50, 100, 300, 500]),
             "critic_num_hiddens" : tune.choice([5, 10, 50]),
