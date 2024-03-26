@@ -11,6 +11,7 @@ from qutip import *
 from relaqs.api.utils import sample_noise_parameters
 from relaqs.api.callbacks import GateSynthesisCallbacks
 from ray.tune.registry import register_env
+from relaqs.api import gates
 
 def env_creator(config):
     return NoisySingleQubitEnv(config)
