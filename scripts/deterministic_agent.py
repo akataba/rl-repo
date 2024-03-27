@@ -53,5 +53,3 @@ for a in actions:
         obs, info = env.reset()
         num_episodes += 1
         episode_reward = 0.0
-
-
