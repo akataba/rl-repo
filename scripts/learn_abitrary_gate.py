@@ -1,25 +1,22 @@
 import ray
 from ray.rllib.algorithms.ddpg import DDPGConfig
-from ray.tune.registry import register_env
-from relaqs.environments.learn_abitrary_target_gate import RandomGateEnvNoisy
+from relaqs.environments.changing_target_gate import ChangingTargetEnv
 from relaqs.save_results import SaveResults
 from relaqs.plot_data import plot_data
-
-def env_creator(config):
-    return RandomGateEnvNoisy(config)
+from relaqs.api import gates
 
 def run(n_training_iterations=1, save=True, plot=True):
     ray.init()
-    register_env("my_env", env_creator)
 
     # ---------------------> Configure algorithm and Environment <-------------------------
     alg_config = DDPGConfig()
     alg_config.framework("torch")
-    #alg_config.environment("my_env", env_config=RandomGateEnvNoisy.get_default_env_config())
-    alg_config.environment(RandomGateEnvNoisy, env_config=RandomGateEnvNoisy.get_default_env_config())
+    env_config = ChangingTargetEnv.get_default_env_config()
+    env_config["U_target_list"] = [gates.H().get_matrix(), gates.X().get_matrix()]
+    alg_config.environment(ChangingTargetEnv, env_config=ChangingTargetEnv.get_default_env_config())
 
     alg_config.rollouts(batch_mode="complete_episodes")
-    alg_config.train_batch_size = RandomGateEnvNoisy.get_default_env_config()["steps_per_Haar"]
+    alg_config.train_batch_size = ChangingTargetEnv.get_default_env_config()["steps_per_Haar"]
 
     ### working 1-3 sets
     alg_config.actor_lr = 4e-5
@@ -47,12 +44,12 @@ def run(n_training_iterations=1, save=True, plot=True):
     # ---------------------> Plot Data <-------------------------
     if plot is True:
         assert save is True, "If plot=True, then save must also be set to True"
-        plot_data(save_dir, episode_length=alg._episode_history[0].episode_length)
+        plot_data(save_dir, episode_length=alg._episode_history[0].episode_length, figure_title="X & H")
         print("Plots Created")
     # --------------------------------------------------------------
 
 if __name__ == "__main__":
-    n_training_iterations = 500
+    n_training_iterations = 50
     save = True
     plot = True
     run(n_training_iterations, save, plot)
