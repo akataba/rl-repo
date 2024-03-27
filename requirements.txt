@@ -1,6 +1,4 @@
 ray[rllib]==2.4.0
 ray[tune]
-matplotlib
 qutip
 torch
-tensorboard
