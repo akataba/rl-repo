@@ -12,8 +12,8 @@ def run(n_training_iterations=1, save=True, plot=True):
     alg_config = DDPGConfig()
     alg_config.framework("torch")
     env_config = ChangingTargetEnv.get_default_env_config()
-    env_config["U_target_list"] = [gates.H().get_matrix(), gates.X().get_matrix()]
-    alg_config.environment(ChangingTargetEnv, env_config=ChangingTargetEnv.get_default_env_config())
+    env_config["U_target_list"] = [gates.X().get_matrix()]
+    alg_config.environment(ChangingTargetEnv, env_config=env_config)
 
     alg_config.rollouts(batch_mode="complete_episodes")
     alg_config.train_batch_size = ChangingTargetEnv.get_default_env_config()["steps_per_Haar"]
@@ -44,7 +44,7 @@ def run(n_training_iterations=1, save=True, plot=True):
     # ---------------------> Plot Data <-------------------------
     if plot is True:
         assert save is True, "If plot=True, then save must also be set to True"
-        plot_data(save_dir, episode_length=alg._episode_history[0].episode_length, figure_title="X & H")
+        plot_data(save_dir, episode_length=alg._episode_history[0].episode_length, figure_title="X on CTG env")
         print("Plots Created")
     # --------------------------------------------------------------
 
