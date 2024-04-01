@@ -83,6 +83,10 @@ class NoisySingleQubitEnv(SingleQubitEnv):
             Ut = la.expm(self.final_time / num_time_bins * L)  # time evolution (propagation operator)
             self.U = Ut @ self.U  # calculate total propagation until the time we are at
 
+    def get_info(self, fidelity, reward, action, truncated, terminated):
+        info_string = super().get_info(fidelity, reward, action, truncated, terminated)
+        info_string += f"Relaxation rate: {self.relaxation_rate}"
+        return info_string
 
     def step(self, action):
         num_time_bins = 2 ** (self.current_Haar_num - 1) # Haar number decides the number of time bins
@@ -101,23 +105,12 @@ class NoisySingleQubitEnv(SingleQubitEnv):
 
         self.state = self.get_observation()
 
-        # printing on the command line for quick viewing
-        if self.verbose is True:
-            print(
-                "Step: ", f"{self.current_step_per_Haar}" + " episode id :" + f"{self.episode_id}",
-                "Relaxation rates:")
-            for rate in self.relaxation_rate:
-                print(f"{rate:7.6f}")
-            print(
-                "F: ", f"{fidelity:7.3f}",
-                "R: ", f"{reward:7.3f}",
-                "amp: " f"{action[0]:7.3f}",
-                "phase: " f"{action[1]:7.3f}",
-            )
-
         self.update_transition_history(fidelity, reward, action)
 
         truncated, terminated = self.is_episode_over(fidelity)
+
+        if self.verbose is True:
+            print(self.get_info(fidelity, reward, action, truncated, terminated))
 
         self.Haar_update()
 
