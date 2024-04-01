@@ -83,7 +83,6 @@ class SingleQubitEnv(gym.Env):
         info = {}
         self.episode_id += 1
         if self.verbose is True:
-            print("resetting")
             print("episode id: ", self.episode_id)
         return starting_observeration, info
     
@@ -125,6 +124,18 @@ class SingleQubitEnv(gym.Env):
     def update_transition_history(self, fidelity, reward, action):
         self.transition_history.append([fidelity, reward, action, self.U, self.episode_id])
 
+    def get_info(self, fidelity, reward, action, truncated, terminated):
+        info_string = f"""Step: {self.current_step_per_Haar}
+            F: f{fidelity:7.3f}
+            R: f{reward:7.3f}
+            amp: {action[0]:7.3f}
+            phase: {action[1]:7.3f}
+            alpha: {action[2]:7.3f}
+            truncated: {truncated}
+            terminated: {terminated}
+            """
+        return info_string
+
     def step(self, action):
         num_time_bins = 2 ** (self.current_Haar_num - 1) # Haar number decides the number of time bins
 
@@ -148,23 +159,13 @@ class SingleQubitEnv(gym.Env):
         self.state = self.get_observation()
 
         self.update_transition_history(fidelity, reward, action)
-        
-        self.Haar_update()
 
         truncated, terminated = self.is_episode_over(fidelity)
 
-        # printing on the command line for quick viewing
         if self.verbose is True:
-            print(
-                "Step: ", f"{self.current_step_per_Haar}",
-                "F: ", f"{fidelity:7.3f}",
-                "R: ", f"{reward:7.3f}",
-                "amp: " f"{action[0]:7.3f}",
-                "phase: " f"{action[1]:7.3f}",
-                "detuning: " f"{action[2]:7.3f}"
-                "termination: ", f"{truncated}",
-                "terminated", f"{terminated}"
-            )
+            print(self.get_info(fidelity, reward, action, truncated, terminated))
+            
+        self.Haar_update()
 
         info = {}
         return (self.state, reward, terminated, truncated, info)
