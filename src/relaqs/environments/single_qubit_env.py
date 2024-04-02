@@ -126,8 +126,8 @@ class SingleQubitEnv(gym.Env):
 
     def get_info(self, fidelity, reward, action, truncated, terminated):
         info_string = f"""Step: {self.current_step_per_Haar}
-            F: f{fidelity:7.3f}
-            R: f{reward:7.3f}
+            F: {fidelity:7.3f}
+            R: {reward:7.3f}
             amp: {action[0]:7.3f}
             phase: {action[1]:7.3f}
             alpha: {action[2]:7.3f}
