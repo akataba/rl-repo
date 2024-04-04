@@ -446,15 +446,18 @@ class TwoQubitGateSynth(gym.Env):
             "U_initial": II,  # staring with I
             "U_target": CZ,  # target for CZ
             "final_time": 30E-9, # in seconds, total time is final_time * 5 because of single qubit + two_qubit + single_qubit + two_qubit + single_qubit
-            "num_Haar_basis": 2,  # number of Haar basis (need to update for odd combinations)
+            "num_Haar_basis": 3,  # number of Haar basis (need to update for odd combinations)
             "steps_per_Haar": 1,  # steps per Haar basis per episode
-            "delta": [[0],[0]],  # qubit detuning
+            "delta": np.random.normal(0, np.pi/100/30E-9, size=(2, 100)).tolist(),  # qubit detuning
+            # "delta": [[np.pi/60/30E-9],[-np.pi/85/30E-9]],  # qubit detuning
+            # "delta": [[0],[0]],  # qubit detuning
             "save_data_every_step": 1,
             "verbose": True,
-            "relaxation_rates_list": [[1/60E-6/2/np.pi],[1/30E-6/2/np.pi],[1/66E-6/2/np.pi],[1/5E-6/2/np.pi]], # relaxation lists of list of floats to be sampled from when resetting environment.
-            # "relaxation_rates_list": [[0],[0],[0],[0]], # for now
+            # "relaxation_rates_list": [[1/60E-6/2/np.pi],[1/30E-6/2/np.pi],[1/66E-6/2/np.pi],[1/5E-6/2/np.pi]], # relaxation lists of list of floats to be sampled from when resetting environment.
+            "relaxation_rates_list": [[0],[0],[0],[0]], # for now
             "relaxation_ops": [sigmam1,sigmam2,Qobj(Z1),Qobj(Z2)], #relaxation operator lists for T1 and T2, respectively
-            "observation_space_size": 2*256 + 1 + 4 + 2 # 2*16 = (complex number)*(density matrix elements = 4)^2, + 1 for fidelity + 4 for relaxation rate + 2 for detuning
+            # "observation_space_size": 2*256 + 1 + 4 + 2 # 2*16 = (complex number)*(density matrix elements = 4)^2, + 1 for fidelity + 4 for relaxation rate + 2 for detuning
+            "observation_space_size": 2*16 + 1 + 4 + 2 # 2*16 = (complex number)*(target unitary matrix elements = 4)^2, + 1 for fidelity + 4 for relaxation rate + 2 for detuning
         }
 
     #physics: https://journals.aps.org/prapplied/pdf/10.1103/PhysRevApplied.10.054062, eq(2)
@@ -506,7 +509,8 @@ class TwoQubitGateSynth(gym.Env):
         self.L_array = []  # Liouvillian for each time bin
         self.U_array = []  # propagation operators for each time bin
         self.U = self.U_initial.copy()  # multiplied propagtion operators
-        self.state = self.unitary_to_observation(self.U_initial)  # starting observation space
+        # self.state = self.unitary_to_observation(self.U_initial)  # starting observation space
+        self.state = self.unitary_to_observation(self.unitary_U_target)  # starting observation space
         self.prev_fidelity = 0  # previous step' fidelity for rewarding
         self.alpha_max = self.PiFreq / 2
         self.g_eff_max = self.PiFreq / 2
@@ -525,7 +529,7 @@ class TwoQubitGateSynth(gym.Env):
             
         # Random detuning selection
         if len(self.delta[1])==1:
-            detuning2 = self.delta[0][0]
+            detuning2 = self.delta[1][0]
         else:
             detuning2 = random.sample(self.delta[1],k=1)[0]
 
@@ -550,7 +554,8 @@ class TwoQubitGateSynth(gym.Env):
             
     def get_observation(self):
         normalizedDetuning = [(self.detuning[0] - min(self.delta[0])+1E-15)/(max(self.delta[0])-min(self.delta[0])+1E-15), (self.detuning[1] - min(self.delta[1])+1E-15)/(max(self.delta[1])-min(self.delta[1])+1E-15)]
-        return np.append([self.compute_fidelity()]+[x//6283185 for x in self.relaxation_rate]+normalizedDetuning, self.unitary_to_observation(self.U)) #6283185 assuming 500 nanosecond relaxation is max
+        # return np.append([self.compute_fidelity()]+[x//6283185 for x in self.relaxation_rate]+normalizedDetuning, self.unitary_to_observation(self.U)) #6283185 assuming 500 nanosecond relaxation is max
+        return np.append([self.compute_fidelity()]+[x//6283185 for x in self.relaxation_rate]+normalizedDetuning, self.unitary_to_observation(self.unitary_U_target)) #6283185 assuming 500 nanosecond relaxation is max
     
     def compute_fidelity(self):
         U_target_dagger = self.unitary_to_superoperator(self.unitary_U_target.conjugate().transpose())
@@ -568,7 +573,6 @@ class TwoQubitGateSynth(gym.Env):
         )
 
     def reset(self, *, seed=None, options=None):
-        self.U = self.U_initial.copy()
         self.initialActions = self.KakActionCalculation()        
         self.state = self.get_observation()
         self.current_Haar_num = 1
@@ -903,6 +907,8 @@ class TwoQubitGateSynth(gym.Env):
             # plot_complex_matrix(self.U, action, fidelity, "Matrix U")
             
         reward = (-3 * np.log10(1.0000001 - fidelity) + np.log10(1.0000001 - self.prev_fidelity)) + (3 * fidelity - self.prev_fidelity)
+        # reward = (-7 * np.log10(1.0000001 - fidelity) + np.log10(1.0000001 - self.prev_fidelity)) + (3 * fidelity - self.prev_fidelity)
+        # reward = (-1 * np.log10(1.0000001 - fidelity) + np.log10(1.0000001 - self.prev_fidelity)) + (3 * fidelity - self.prev_fidelity)
         self.prev_fidelity = fidelity
 
         self.state = self.get_observation()
