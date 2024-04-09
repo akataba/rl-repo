@@ -3,7 +3,7 @@ import ray
 from ray import tune
 from ray.air import RunConfig
 from ray.rllib.algorithms.ddpg import DDPGConfig
-from relaqs.environments.gate_synth_env_rllib_Haar import TwoQubitGateSynth, GateSynthEnvRLlibHaarNoisy
+from relaqs.environments import SingleQubitEnv, NoisySingleQubitEnv
 from ray.tune.search.optuna import OptunaSearch
 from relaqs import RESULTS_DIR
 import datetime
@@ -84,7 +84,7 @@ def objective(config):
     return results
 
 if __name__ == "__main__":
-    environment = GateSynthEnvRLlibHaarNoisy
+    environment = NoisySingleQubitEnv
     n_configurations = 25
     n_training_iterations = 100
     save = True
