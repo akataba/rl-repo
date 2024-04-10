@@ -1,7 +1,8 @@
 import os
 from ray import tune
 from ray.air import RunConfig
-from ray.rllib.algorithms.ddpg import DDPGConfig
+# from ray.rllib.algorithms.ddpg.ddpg import DDPGConfig
+from rllib_ddpg.ddpg import DDPGConfig
 from relaqs.environments.noisy_single_qubit_env import NoisySingleQubitEnv
 from ray.tune.search.optuna import OptunaSearch
 from relaqs import RESULTS_DIR
@@ -12,13 +13,18 @@ from relaqs.api.utils import sample_noise_parameters
 from relaqs.api.callbacks import GateSynthesisCallbacks
 from ray.tune.registry import register_env
 from relaqs.api import gates
+import mlflow
+from ray.air.integrations.mlflow import MLflowLoggerCallback
+import tempfile
+# mlflow.set_tracking_uri('path_to_your_tracking_server_or_directory')
+
 
 def env_creator(config):
     return NoisySingleQubitEnv(config)
 
 def save_hpt_table(results: tune.ResultGrid):
     df = results.get_dataframe()
-    path = RESULTS_DIR + datetime.datetime.now().strftime("%Y-%m-%d_%H-%M-%S-HPT/")
+    path = RESULTS_DIR + "hyperparameter_tuning/"+ datetime.datetime.now().strftime("%Y-%m-%d_%H-%M-%S-HPT/")
     os.makedirs(path)
     df.to_csv(path + "hpt_results.csv")
 
@@ -29,10 +35,10 @@ def run_ray_tune(environment, n_configurations=100, n_training_iterations=50, sa
             "actor_lr" : tune.choice([1e-3, 5e-4, 1e-4, 5e-5, 1e-5]),
             "critic_lr" : tune.choice([1e-3, 5e-4, 1e-4, 5e-5, 1e-5]),
             "actor_num_hiddens" : tune.choice([5, 10, 50]),
-            "actor_layer_size" : tune.choice([50, 100, 300, 500]),
-            "critic_num_hiddens" : tune.choice([5, 10, 50]),
-            "critic_layer_size" : tune.choice([50, 100, 300, 500]),
-            # "target_noise" : tune.uniform(0.0, 4),
+            "actor_layer_size" : tune.choice([50, 60, 70, 80, 90]),
+            "critic_num_hiddens" : tune.choice([5, 7, 9, 11, 13]),
+            "critic_layer_size" : tune.choice([250, 270, 290, 300, 310]),
+            "target_noise" : tune.uniform(1, 4),
             "n_training_iterations" : n_training_iterations, 
             "environment" : environment
             }
@@ -49,9 +55,13 @@ def run_ray_tune(environment, n_configurations=100, n_training_iterations=50, sa
             ),
         run_config=RunConfig(
             stop={"training_iteration": n_training_iterations},
-        ),
+            callbacks=[MLflowLoggerCallback(experiment_name="Training the H gate 2",
+                        save_artifact=True)]
         )
+        )
+    print("Before tuner.fit")
     results = tuner.fit()
+    print("After tuner.fit")
     best_fidelity_config = results.get_best_result(metric="max_fidelity", mode="max").config
     print("best_fidelity_config", best_fidelity_config)
     
@@ -92,30 +102,34 @@ def objective(config):
     alg_config.num_steps_sampled_before_learning_starts = 1000
 
     alg = alg_config.build()
-    # ---------------------------------------------------------------------
+
     print("------------------------------------finished building-----------------------------")
     # Train
-    results = [alg.train() for _ in range(config["n_training_iterations"])]
-    print("---------------------finished training ------------------------------------------")
+    with mlflow.start_run():
+        results = [alg.train() for _ in range(config["n_training_iterations"])]
+        print("---------------------finished training ------------------------------------------")
 
-    # Record
-    env = alg.workers.local_worker().env
-    fidelities = [transition[0] for transition in env.transition_history]
-    averageing_window = 50 if len(fidelities) >= 50 else len(fidelities)
-    avg_final_fidelities = np.mean([fidelities[-averageing_window:]])
-    results = {
-            "max_fidelity": max(fidelities),
-            "avg_final_fidelities" : avg_final_fidelities,
-            "final_fidelity" : fidelities[-1],
-            "final_reward" : env.transition_history[-1][1]
-        }
-    print("-----------------------finished recording ----------------------------------------")
-    return results
+        # Record
+        env = alg.workers.local_worker().env
+        fidelities = [transition[0] for transition in env.transition_history]
+        averageing_window = 50 if len(fidelities) >= 50 else len(fidelities)
+        avg_final_fidelities = np.mean([fidelities[-averageing_window:]])
+        results = {
+                "max_fidelity": max(fidelities),
+                "avg_final_fidelities" : avg_final_fidelities,
+                "final_fidelity" : fidelities[-1],
+                "final_reward" : env.transition_history[-1][1]
+            }
+        print("-----------------------finished recording ----------------------------------------")
+        mlflow.log_metrics(dict(mean_loss=1- avg_final_fidelities))
+        return results
 
 
 if __name__ == "__main__":
     environment = NoisySingleQubitEnv
     n_configurations = 25
-    n_training_iterations = 200
+    n_training_iterations = 250
     save = True
-    run_ray_tune(environment, n_configurations, n_training_iterations, save)
+    results = run_ray_tune(environment, n_configurations, n_training_iterations, save)
+
+    print("---------------------------- Results ----------------------------------------------")
