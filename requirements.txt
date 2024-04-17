@@ -1,5 +1,5 @@
-ray[rllib]==2.4.0
+ray[rllib]==2.5.0
 ray[tune]
-qutip
+qutip==4.7.2
 torch
-numpy==1.19
+git+https://github.com/ray-project/ray.git#subdirectory=rllib_contrib/ddpg
