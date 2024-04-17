@@ -2,7 +2,8 @@ import warnings
 import pandas
 from relaqs import RESULTS_DIR
 from ray.rllib.algorithms.ddpg import DDPGConfig
-from relaqs.environments.gate_synth_env_rllib_Haar import GateSynthEnvRLlibHaar, GateSynthEnvRLlibHaarNoisy, TwoQubitGateSynth
+from relaqs.environments.single_qubit_env import SingleQubitEnv
+from relaqs.environments.noisy_single_qubit_env import NoisySingleQubitEnv
 from relaqs.save_results import SaveResults
 from relaqs.plot_data import plot_data
 import gymnasium as gym
@@ -19,7 +20,7 @@ def run(
     hyperparam_names = [column_title for column_title in df.columns if "config" in column_title]
 
     # Get best performing hyperparameters
-    metric = "max_fidelity"
+    metric = "avg_final_fidelities"
     row_id_with_max_metric = df[metric].idxmax()
     row_with_max_metric = df.iloc[row_id_with_max_metric]
     best_hyperparams = row_with_max_metric[hyperparam_names]
@@ -74,9 +75,9 @@ def run(
         plot_data(save_dir, episode_length=alg._episode_history[0].episode_length)
 
 if __name__ == "__main__":
-    env_class = TwoQubitGateSynth
-    csv_path = RESULTS_DIR + "2023-10-22_03-17-55-HPT/hpt_results.csv"
-    n_training_iterations = 1
+    env_class = SingleQubitEnv
+    csv_path = RESULTS_DIR + "2024-04-03_13-12-48-HPT/hpt_results.csv"
+    n_training_iterations = 250
     save = True
     plot = True
     run(env_class, csv_path, n_training_iterations, save, plot)

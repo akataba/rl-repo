@@ -40,6 +40,7 @@ def run(n_training_iterations=1, save=False, plot=False, plot_q_and_gradients=Fa
     # ---------------------> Train Agent <-------------------------
     for _ in range(n_training_iterations):
         result = alg.train()
+        print(result)
         list_of_results.append(result['hist_stats'])
 
     # ---------------------> Save Results <-------------------------
@@ -63,10 +64,10 @@ def run(n_training_iterations=1, save=False, plot=False, plot_q_and_gradients=Fa
     ray.shutdown()
 
 if __name__ == "__main__":
-    n_training_iterations = 2
-    save = True
-    plot = True
-    plot_q_and_gradients = True
+    n_training_iterations = 1
+    save = False
+    plot = False
+    plot_q_and_gradients = False
     figure_title ="Noisy environment"
     run(n_training_iterations, save, plot, figure_title=figure_title, plot_q_and_gradients=plot_q_and_gradients)
     

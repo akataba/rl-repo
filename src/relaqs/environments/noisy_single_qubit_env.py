@@ -4,15 +4,21 @@ import numpy as np
 import scipy.linalg as la
 from qutip import Qobj
 from qutip.superoperator import liouvillian, spre, spost
+# from qutip import liouvillian, spre, spost, sigmam
 from qutip.operators import sigmam
 from relaqs.environments.single_qubit_env import SingleQubitEnv
-from relaqs.api import gates
+from relaqs.api.gates import I, X, Y, Z
+# from qutip import *
 
-I = gates.I().get_matrix()
-X = gates.X().get_matrix()
-Y = gates.Y().get_matrix()
-Z = gates.Z().get_matrix()
+# I = gates.I().get_matrix()
+# X = gates.X().get_matrix()
+# Y = gates.Y().get_matrix()
+# Z = gates.Z().get_matrix()
 
+I = I().get_matrix()
+X = X().get_matrix()
+Y = Y().get_matrix()
+Z = Z().get_matrix()
 class NoisySingleQubitEnv(SingleQubitEnv):
     @classmethod
     def get_default_env_config(cls):

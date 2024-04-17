@@ -1,7 +1,8 @@
 """ For refactor of HaarBasis branch, based off of run_and_save_v2 """
 
 import ray
-from ray.rllib.algorithms.ddpg import DDPGConfig
+# from ray.rllib.algorithms.ddpg import DDPGConfig
+from rllib_ddpg.ddpg import DDPGConfig
 from ray.tune.registry import register_env
 from relaqs.environments.single_qubit_env import SingleQubitEnv
 from relaqs.environments.noisy_single_qubit_env import NoisySingleQubitEnv
@@ -56,15 +57,15 @@ def run(env_class=SingleQubitEnv, n_training_iterations=1, save=True, plot=True,
     alg_config.train_batch_size = env_config["steps_per_Haar"] # TOOD use env_config
 
     ### working 1-3 sets
-    alg_config.actor_lr = 4e-4
-    alg_config.critic_lr = 5e-4
+    alg_config.actor_lr = 0.001
+    alg_config.critic_lr = 0.0001
 
     alg_config.actor_hidden_activation = "relu"
     alg_config.critic_hidden_activation = "relu"
     alg_config.callbacks(GateSynthesisCallbacks)
     alg_config.num_steps_sampled_before_learning_starts = 1000
-    alg_config.actor_hiddens = [30,30,30]
-    alg_config.critic_hiddens = [400,400]
+    alg_config.actor_hiddens = [60,60,60,60,60]
+    alg_config.critic_hiddens = [290,290, 290,290,290, 290, 290]
     alg_config.exploration_config["scale_timesteps"] = 10000
 
     alg = alg_config.build()
@@ -74,6 +75,7 @@ def run(env_class=SingleQubitEnv, n_training_iterations=1, save=True, plot=True,
     # ---------------------> Train Agent <-------------------------
     for _ in range(n_training_iterations):
         result = alg.train()
+        print(result["episodes_this_iter"])
         list_of_results.append(result['hist_stats'])
     # ---------------------> Save Results <-------------------------
     if save is True:
@@ -93,7 +95,7 @@ def run(env_class=SingleQubitEnv, n_training_iterations=1, save=True, plot=True,
 
 if __name__ == "__main__":
     env_class = NoisySingleQubitEnv
-    n_training_iterations = 400
+    n_training_iterations = 250
     figure_title = "Training the noisy H gate"
     save = True
     plot = True
