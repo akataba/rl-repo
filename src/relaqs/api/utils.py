@@ -3,7 +3,8 @@ from numpy.linalg import eigvalsh
 import pandas as pd
 from scipy.linalg import sqrtm
 from ray.rllib.algorithms.algorithm import Algorithm
-from ray.rllib.algorithms.ddpg import DDPGConfig
+# from ray.rllib.algorithms.ddpg import DDPGConfig
+from rllib_ddpg.ddpg import DDPGConfig
 from relaqs import RESULTS_DIR
 from ray.tune.registry import register_env
 from relaqs.environments.single_qubit_env import SingleQubitEnv
