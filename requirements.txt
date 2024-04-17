@@ -2,3 +2,4 @@ ray[rllib]==2.4.0
 ray[tune]
 qutip
 torch
+numpy==1.19
