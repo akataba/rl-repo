@@ -1,4 +1,4 @@
 ray[rllib]==2.4.0
 ray[tune]
-qutip==4.7.0
+qutip==4.7.5
 torch
