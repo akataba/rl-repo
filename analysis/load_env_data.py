@@ -3,7 +3,8 @@ Example script to load pickled env data
 """
 
 from relaqs import RESULTS_DIR
-from relaqs.api import load_pickled_env_data
+# from relaqs.api import load_pickled_env_data
+from relaqs.api.utils load_pickled_env_data
 
 data_path = RESULTS_DIR + '2024-01-24_11-37-15_X/env_data.pkl'
 

@@ -1,0 +1,6 @@
+ray[rllib]==2.5.0
+ray[tune]
+qutip==4.7.2
+torch
+git+https://github.com/ray-project/ray.git#subdirectory=rllib_contrib/ddpg
+scipy==1.9.1

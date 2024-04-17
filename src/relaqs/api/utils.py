@@ -1,15 +1,19 @@
-import ray
 import numpy as np
 from numpy.linalg import eigvalsh
 import pandas as pd
 from scipy.linalg import sqrtm
 from ray.rllib.algorithms.algorithm import Algorithm
-from ray.rllib.algorithms.ddpg import DDPGConfig
+# from ray.rllib.algorithms.ddpg import DDPGConfig
+from rllib_ddpg.ddpg import DDPGConfig
 from relaqs import RESULTS_DIR
+from ray.tune.registry import register_env
+from relaqs.environments.single_qubit_env import SingleQubitEnv
+from relaqs.environments.noisy_single_qubit_env import NoisySingleQubitEnv
 from relaqs.quantum_noise_data.get_data import (get_month_of_all_qubit_data, get_single_qubit_detuning)
 from relaqs.api.callbacks import GateSynthesisCallbacks
 from relaqs import QUANTUM_NOISE_DATA_DIR
 from qutip.operators import *
+
 
 def load_pickled_env_data(data_path):
     df = pd.read_pickle(data_path)
@@ -76,36 +80,42 @@ def load_model(path):
     return loaded_model
 
 def get_best_episode_information(filename):
-    df = pd.read_csv(filename, names=['Fidelity', 'Reward', 'Actions', 'Flattened U', 'Episode Id'], header=0)
-    fidelity = df.iloc[:, 0]
+    data = load_pickled_env_data(filename)
+    fidelity = data["Fidelity"]
     max_fidelity_idx = fidelity.argmax()
-    fidelity = df.iloc[max_fidelity_idx, 0]
-    episode = df.iloc[max_fidelity_idx, 4]
-    best_episodes = df[df["Episode Id"] == episode]
+    fidelity = data.iloc[max_fidelity_idx, 0]
+    episode = data.iloc[max_fidelity_idx, 4]
+    best_episodes = data[data["Episode Id"] == episode]
     return best_episodes
+
+def noisy_env_creator(config):
+    return NoisySingleQubitEnv(config)
+
+def noiseless_env_creator(config):
+    return SingleQubitEnv(config)
 
 def run(env_class, gate, n_training_iterations=1, noise_file=""):
     """Args
        gate (Gate type):
+       environmment(gym.env)
        n_training_iterations (int)
        noise_file (str):
     Returns
       alg (rllib.algorithms.algorithm)
 
     """
-    ray.init()
+
     env_config = env_class.get_default_env_config()
     env_config["U_target"] = gate.get_matrix()
 
-    # ---------------------> Get quantum noise data <-------------------------
+
+# ---------------------> Get quantum noise data <-------------------------
     t1_list, t2_list, detuning_list = sample_noise_parameters(noise_file)
 
     env_config["relaxation_rates_list"] = [np.reciprocal(t1_list).tolist(), np.reciprocal(t2_list).tolist()] # using real T1 data
     env_config["delta"] = detuning_list
     env_config["relaxation_ops"] = [sigmam(),sigmaz()]
     env_config["observation_space_size"] = 2*16 + 1 + 2 + 1 # 2*16 = (complex number)*(density matrix elements = 4)^2, + 1 for fidelity + 2 for relaxation rate + 1 for detuning
-    env_config["verbose"] = True
-
     # ---------------------> Configure algorithm and Environment <-------------------------
     alg_config = DDPGConfig()
     alg_config.framework("torch")
@@ -113,15 +123,13 @@ def run(env_class, gate, n_training_iterations=1, noise_file=""):
     alg_config.rollouts(batch_mode="complete_episodes")
     alg_config.callbacks(GateSynthesisCallbacks)
     alg_config.train_batch_size = env_class.get_default_env_config()["steps_per_Haar"]
-
-    ### working 1-3 sets
     alg_config.actor_lr = 4e-5
     alg_config.critic_lr = 5e-4
 
     alg_config.actor_hidden_activation = "relu"
     alg_config.critic_hidden_activation = "relu"
     alg_config.num_steps_sampled_before_learning_starts = 1000
-    alg_config.actor_hiddens = [30,30,30]
+    alg_config.actor_hiddens = [30,30,30, 30]
     alg_config.exploration_config["scale_timesteps"] = 10000
 
     alg = alg_config.build()
@@ -129,10 +137,94 @@ def run(env_class, gate, n_training_iterations=1, noise_file=""):
     for _ in range(n_training_iterations):
         result = alg.train()
         list_of_results.append(result['hist_stats'])
+    return alg, list_of_results
 
-    ray.shutdown()
+def run_noisless_one_qubit_experiment(gate,n_training_iterations=1):
+    """Args
+       gate (Gate type):
+       environmment(gym.env)
+       n_training_iterations (int)
+       noise_file (str):
+    Returns
+      alg (rllib.algorithms.algorithm)
 
-    return alg
+    """
+    register_env("my_env", noiseless_env_creator)
+    env_config =  SingleQubitEnv.get_default_env_config()
+    env_config["U_target"] = gate.get_matrix()
+    # env_config["observation_space_size"] = 2*16 + 1  # 2*16 = (complex number)*(density matrix elements = 4)^2, + 1 for fidelity 
+    env_config["verbose"] = True
+
+ # ---------------------> Configure algorithm and Environment <-------------------------
+    alg_config = DDPGConfig()
+    alg_config.framework("torch")
+    alg_config.environment("my_env", env_config=env_config)
+    alg_config.rollouts(batch_mode="complete_episodes")
+    alg_config.callbacks(GateSynthesisCallbacks)
+    alg_config.train_batch_size = SingleQubitEnv.get_default_env_config()["steps_per_Haar"]
+
+    alg_config.actor_lr = 4e-5
+    alg_config.critic_lr = 5e-4
+
+    alg_config.actor_hidden_activation = "relu"
+    alg_config.critic_hidden_activation = "relu"
+    alg_config.num_steps_sampled_before_learning_starts = 1000
+    alg_config.actor_hiddens = [30,30,30, 30]
+    alg_config.exploration_config["scale_timesteps"] = 10000
+
+    alg = alg_config.build()
+    list_of_results = []
+    for _ in range(n_training_iterations):
+        result = alg.train()
+        list_of_results.append(result['hist_stats'])
+    return alg, list_of_results
+
+
+def run_noisy_one_qubit_experiment(gate, n_training_iterations=1, noise_file="      "):
+    """Args
+       gate (Gate type):
+       environmment(gym.env)
+       n_training_iterations (int)
+       noise_file (str):
+    Returns
+      alg (rllib.algorithms.algorithm)
+
+    """
+    register_env("my_env", noisy_env_creator)
+    env_config = NoisySingleQubitEnv.get_default_env_config()
+    env_config["U_target"] = gate.get_matrix()
+    # ---------------------> Get quantum noise data <-------------------------
+    t1_list, t2_list, detuning_list = sample_noise_parameters(noise_file)
+
+    env_config["relaxation_rates_list"] = [np.reciprocal(t1_list).tolist(), np.reciprocal(t2_list).tolist()] # using real T1 data
+    env_config["delta"] = detuning_list
+    env_config["relaxation_ops"] = [sigmam(),sigmaz()]
+    env_config["observation_space_size"] = 2*16 + 1 + 2 + 1 # 2*16 = (complex number)*(density matrix elements = 4)^2, + 1 for fidelity + 2 for relaxation rate + 1 for detuning
+
+   # ---------------------> Configure algorithm and Environment <-------------------------
+    alg_config = DDPGConfig()
+    alg_config.framework("torch")
+    alg_config.environment(NoisySingleQubitEnv, env_config=env_config)
+    alg_config.rollouts(batch_mode="complete_episodes")
+    alg_config.callbacks(GateSynthesisCallbacks)
+    alg_config.train_batch_size = NoisySingleQubitEnv.get_default_env_config()["steps_per_Haar"]
+
+    alg_config.actor_lr = 4e-5
+    alg_config.critic_lr = 5e-4
+
+    alg_config.actor_hidden_activation = "relu"
+    alg_config.critic_hidden_activation = "relu"
+    alg_config.num_steps_sampled_before_learning_starts = 1000
+    alg_config.actor_hiddens = [30,30,30, 30]
+    alg_config.exploration_config["scale_timesteps"] = 10000
+
+    alg = alg_config.build()
+    list_of_results = []
+    for _ in range(n_training_iterations):
+        result = alg.train()
+        list_of_results.append(result['hist_stats'])
+    return alg, list_of_results
+
 
 def return_env_from_alg(alg):
     env = alg.workers.local_worker().env
