@@ -5,7 +5,6 @@ from scipy.linalg import sqrtm
 from ray.rllib.algorithms.algorithm import Algorithm
 from ray.rllib.algorithms.ddpg import DDPGConfig
 from relaqs import RESULTS_DIR
-import ast
 from ray.tune.registry import register_env
 from relaqs.environments.single_qubit_env import SingleQubitEnv
 from relaqs.environments.noisy_single_qubit_env import NoisySingleQubitEnv
