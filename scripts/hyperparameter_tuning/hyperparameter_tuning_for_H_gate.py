@@ -16,7 +16,8 @@ from ray.tune.registry import register_env
 from relaqs.api import gates
 import mlflow
 from ray.air.integrations.mlflow import MLflowLoggerCallback
-import tempfile
+import json
+
 
 # mlflow.set_tracking_uri(RESULTS_DIR + "hyperparameter_tuning/")
 
@@ -30,19 +31,24 @@ def save_hpt_table(results: tune.ResultGrid):
     os.makedirs(path)
     df.to_csv(path + "hpt_results.csv")
 
-def run_ray_tune(environment, n_configurations=100, n_training_iterations=50, save=True):
+def run_ray_tune(environment, n_configurations=100, n_training_iterations=50, save=True, experiment_name = None):
     print("starting ray tune .....")
     register_env("my_env", env_creator)
     config = {
-            "actor_lr" : tune.choice([1e-3, 5e-4, 1e-4, 5e-5, 1e-5]),
-            "critic_lr" : tune.choice([1e-3, 5e-4, 1e-4, 5e-5, 1e-5]),
-            "actor_num_hiddens" : tune.choice([5, 10, 15, 20, 25]),
-            "actor_layer_size" : tune.choice([50, 60, 70, 80, 90]),
-            "critic_num_hiddens" : tune.choice([5, 7, 9, 11, 13]),
-            "critic_layer_size" : tune.choice([250, 260, 270, 280, 290, 300]),
-            "target_noise" : tune.uniform(1.4, 4.5),
+            "actor_lr" : tune.choice([1e-3, 5e-4, 1e-4, 5e-5, 1e-5, 1-6]),
+            "critic_lr" : tune.choice([1e-3, 5e-4, 1e-4, 5e-5, 1e-5, 1e-6]),
+            "actor_num_hiddens" : tune.choice([5, 10, 15, 20, 25, 30]),
+            "actor_layer_size" : tune.choice([50, 60, 70, 80, 90, 100]),
+            "critic_num_hiddens" : tune.choice([5, 7, 9, 11, 13, 15, 17]),
+            "critic_layer_size" : tune.choice([240, 250, 260, 270, 280, 290, 300]),
+            "target_noise" : tune.uniform(1.0, 4.5),
             "n_training_iterations" : n_training_iterations, 
-            "environment" : environment 
+            "environment" : environment,
+            "steps": 100,
+            "alpha": tune.uniform(1,4),
+            "beta": tune.uniform(1,4),
+            "target_network_update": tune.choice([0, 1, 2, 3, 4, 5, 6, 7]),
+            "scale_timesteps": tune.choice([100, 500, 1000, 5000, 10000])
             }
     algo = OptunaSearch()
     print("starting OptunaSearch ...")
@@ -50,14 +56,14 @@ def run_ray_tune(environment, n_configurations=100, n_training_iterations=50, sa
         objective,
         param_space=config,
         tune_config=tune.TuneConfig(
-            metric="fidelity",
+            metric="avg_final_fidelity",
             mode="max",
             search_alg=algo,
             num_samples=n_configurations
             ),
         run_config=RunConfig(
             stop={"training_iteration": n_training_iterations},
-            callbacks=[MLflowLoggerCallback(experiment_name="Training H gate 5",
+            callbacks=[MLflowLoggerCallback(experiment_name=experiment_name,
                         save_artifact=True)]
         )
         )
@@ -93,16 +99,25 @@ def objective(config):
     alg_config.rollouts(batch_mode="complete_episodes")
     alg_config.train_batch_size = env_config["steps_per_Haar"] # TOOD use env_config
 
+    # -------------------------------------N N parameters ------------------------------------
+
+    alg_config.exploration(
+                exploration_config={
+                    "type": "GaussianNoise",
+                    "scale_timesteps": config["scale_timesteps"],
+                    "initial_scale": 1.0,
+                    "final_scale": 0.05,
+                }
+    )
 
     ### working 1-3 sets
     alg_config.actor_lr = config["actor_lr"]
     alg_config.critic_lr = config["critic_lr"]
-
     alg_config.actor_hidden_activation = "relu"
     alg_config.critic_hidden_activation = "relu"
     alg_config.target_noise = config["target_noise"]
     alg_config.callbacks(GateSynthesisCallbacks)
-    alg_config.num_steps_sampled_before_learning_starts = 1000
+    alg_config.twin_q = True
 
 
     alg = alg_config.build()
@@ -113,29 +128,21 @@ def objective(config):
     for iterations in range(config["n_training_iterations"]):
         results = alg.train()
 
-
-    # Record
-    env = alg.workers.local_worker().env
-    fidelities = [transition[0] for transition in env.transition_history]
-    for i, f in enumerate(fidelities):
-        report({"iterations": i, "fidelity": f})
-    averageing_window = 50 if len(fidelities) >= 50 else len(fidelities)      
-    avg_final_fidelities = np.mean([fidelities[-averageing_window:]])
-    results = {
-            "max_fidelity": max(fidelities),
-            "avg_final_fidelities" : avg_final_fidelities,
-            "final_fidelity" : fidelities[-1],
-            "final_reward" : env.transition_history[-1][1],
-            }
-
-    return results
+        # Record
+        env = alg.workers.local_worker().env
+        fidelities = [transition[0] for transition in env.transition_history]
+        averageing_window = 50 if len(fidelities) >= 50 else len(fidelities)      
+        avg_final_fidelities = np.mean([fidelities[-averageing_window:]])
+        mlflow.log_metrics({"steps": iterations, "avg_final_fidelity":avg_final_fidelities})
+        report({"steps": iterations, "avg_final_fidelity": avg_final_fidelities})
 
 
 if __name__ == "__main__":
     environment = NoisySingleQubitEnv
-    n_configurations = 2
-    n_training_iterations = 1
+    n_configurations = 25
+    n_training_iterations = 250
     save = True
-    results = run_ray_tune(environment, n_configurations, n_training_iterations, save)
+    experiment_name = " Training H gate 5"
+    results = run_ray_tune(environment, n_configurations, n_training_iterations, save, experiment_name=experiment_name)
 
     print("---------------------------- Results ----------------------------------------------")
