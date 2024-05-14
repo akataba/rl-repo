@@ -8,6 +8,7 @@ class ChangingTargetEnv(SingleQubitEnv):
     def get_default_env_config(cls):
         config_dict = super().get_default_env_config()
         config_dict["observation_space_size"] = 17
+        config_dict["U_target_list"] = []
         config_dict["target_generation_function"] = RandomSU2
         return config_dict
     
@@ -18,9 +19,9 @@ class ChangingTargetEnv(SingleQubitEnv):
 
     def set_target_gate(self):
         if len(self.U_target_list) == 0:
-            self.U = self.target_generation_function().get_matrix()
+            self.U_target= self.target_generation_function().get_matrix()
         else:
-            self.U = random.choice(self.U_target_list)
+            self.U_target = random.choice(self.U_target_list)
 
     def reset(self, *, seed=None, options=None):
         _, info = super().reset()
