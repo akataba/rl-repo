@@ -11,6 +11,11 @@ from relaqs.api.callbacks import GateSynthesisCallbacks
 from relaqs import QUANTUM_NOISE_DATA_DIR
 from qutip.operators import *
 
+
+def actions_to_operator(env, actions): 
+    env.step(actions)
+    return env.U
+ 
 def load_pickled_env_data(data_path):
     df = pd.read_pickle(data_path)
     return df
