@@ -23,7 +23,7 @@ def run(env_class=SingleQubitEnv, n_training_iterations=1, save=True, plot=True)
     alg_config.environment(env_class, env_config=env_config)
 
     alg_config.rollouts(batch_mode="complete_episodes")
-    alg_config.train_batch_size = env_config["steps_per_Haar"] # TOOD use env_config
+    alg_config.train_batch_size = env_config["steps_per_Haar"]
 
     ### working 1-3 sets
     alg_config.actor_lr = 4e-5
