@@ -22,6 +22,7 @@ def run(n_training_iterations=1, save=True, plot=True):
     env_config["relaxation_rates_list"] = [np.reciprocal(t1_list).tolist(), np.reciprocal(t2_list).tolist()]
     env_config["delta"] = detuning_list
     env_config["relaxation_ops"] = [sigmam(), sigmaz()]
+    env_config["observation_space_size"] += 1 # for T2
 
     # Set target gate
     target_gate = gates.X()
@@ -59,7 +60,7 @@ def run(n_training_iterations=1, save=True, plot=True):
     if plot is True:
         assert save is True, "If plot=True, then save must also be set to True"
         print("epiosde length", alg._episode_history[0].episode_length)
-        plot_data(save_dir, episode_length=alg._episode_history[0].episode_length, figure_title="IBM April Belem Noise, noisy X")
+        plot_data(save_dir, episode_length=alg._episode_history[0].episode_length, figure_title="IBM April Belem Noise, noisy X, gamma/5")
         print("Plots Created")
     # --------------------------------------------------------------
 
