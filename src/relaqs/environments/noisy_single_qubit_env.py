@@ -56,10 +56,10 @@ class NoisySingleQubitEnv(SingleQubitEnv):
         return sampled_rate_list
             
     def get_observation(self):
-        normalizedDetuning = [(self.detuning - min(self.detuning_list) + 1E-15) / (max(self.detuning_list) - min(self.detuning_list) + 1E-15)]
+        normalized_detuning = [(self.detuning - min(self.detuning_list) + 1E-15) / (max(self.detuning_list) - min(self.detuning_list) + 1E-15)]
         return np.append([self.compute_fidelity()] +
                          [x // 6283185 for x in self.relaxation_rate] +
-                         normalizedDetuning,
+                         normalized_detuning,
                          self.unitary_to_observation(self.U)) #6283185 assuming 500 nanosecond relaxation is max
     
     def hamiltonian(self, detuning, alpha, gamma_magnitude, gamma_phase):
