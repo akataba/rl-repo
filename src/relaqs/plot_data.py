@@ -101,6 +101,10 @@ def plot_data(save_dir, episode_length, figure_title=''):
     avg_final_infelity_per_episode = np.round(avg_final_infelity_per_episode, rounding_precision)
     avg_sum_of_rewards_per_episode = np.round(avg_sum_of_rewards_per_episode, rounding_precision)
 
+
+    if len(avg_final_fidelity_per_episode) >= 100: 
+        print("Average final fidelity over last 100 episodes", np.mean(avg_final_fidelity_per_episode[-100:]))
+
     # -------------------------------> Plotting <-------------------------------------
     rcParams['font.family'] = 'serif'
     mpl.style.use('seaborn-v0_8')
