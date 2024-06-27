@@ -43,6 +43,7 @@ class NoisySingleQubitEnv(SingleQubitEnv):
             self.detuning = random.sample(self.detuning_list, k=1)[0]
             print("detuning: ", f"{self.detuning}")
 
+    @classmethod
     def unitary_to_superoperator(self, U):
         return (spre(Qobj(U)) * spost(Qobj(U))).data.toarray()
 
