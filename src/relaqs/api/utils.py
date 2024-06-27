@@ -48,7 +48,7 @@ def do_inferencing(alg, n_episodes_for_inferencing, quantum_noise_file_path):
     obs, info = env.reset()
     t1_list, t2_list, detuning_list = sample_noise_parameters(quantum_noise_file_path)
     env.relaxation_rates_list = [np.reciprocal(t1_list).tolist(), np.reciprocal(t2_list).tolist()]
-    env.delta = detuning_list  
+    env.detuning_list = detuning_list
     num_episodes = 0
     episode_reward = 0.0
     print("Inferencing is starting ....")
@@ -101,7 +101,7 @@ def run(env_class, gate, n_training_iterations=1, noise_file=""):
     t1_list, t2_list, detuning_list = sample_noise_parameters(noise_file)
 
     env_config["relaxation_rates_list"] = [np.reciprocal(t1_list).tolist(), np.reciprocal(t2_list).tolist()] # using real T1 data
-    env_config["delta"] = detuning_list
+    env_config["detuning_list"] = detuning_list
     env_config["relaxation_ops"] = [sigmam(),sigmaz()]
     env_config["observation_space_size"] = 2*16 + 1 + 2 + 1 # 2*16 = (complex number)*(density matrix elements = 4)^2, + 1 for fidelity + 2 for relaxation rate + 1 for detuning
     env_config["verbose"] = True
