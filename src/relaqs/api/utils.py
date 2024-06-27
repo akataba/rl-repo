@@ -28,7 +28,7 @@ def sample_noise_parameters(t1_t2_noise_file, detuning_noise_file = None):
 
     if detuning_noise_file is None:
         mean = 0
-        std = 0.03
+        std = 10e10
         sample_size = 100
         samples = np.random.normal(mean, std, sample_size)
         detunings = samples.tolist()
