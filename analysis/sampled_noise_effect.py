@@ -6,11 +6,17 @@ from qutip.operators import sigmaz, sigmam
 
 noise_file = "april/ibmq_belem_month_is_4.json"
 t1_list, t2_list, detuning_list = sample_noise_parameters(noise_file)
+print(detuning_list)
 
 env_config = NoisySingleQubitEnv.get_default_env_config()
-env_config["relaxation_rates_list"] = [np.reciprocal(t1_list).tolist(), np.reciprocal(t2_list).tolist()]
-env_config["delta"] = detuning_list
-env_config["relaxation_ops"] = [sigmam(), sigmaz()]
+#env_config["relaxation_rates_list"] = [np.reciprocal(t1_list).tolist(), np.reciprocal(t2_list).tolist()]
+#env_config["delta"] = detuning_list
+#env_config["relaxation_ops"] = [sigmam(), sigmaz()]
+
+# zeroing out relaxation rates
+env_config["relaxation_rates_list"] = []
+env_config["relaxation_ops"] = []
+env_config["detuning_list"] = [0]
 
 noiseless_env = SingleQubitEnv(SingleQubitEnv.get_default_env_config())
 noisy_env = NoisySingleQubitEnv(env_config)
