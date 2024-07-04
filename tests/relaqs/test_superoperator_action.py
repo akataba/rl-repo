@@ -20,6 +20,8 @@ U_dm = U_psi @ U_psi.conj().T
 # Superoperator evoluion
 U_super = noisy_env.unitary_to_superoperator(U)
 
+# Potention fix
+U_super = np.kron(U, U.conj())
 
 super_dm = (U_super @ dm.reshape(-1, 1)).reshape(2, 2)
 
