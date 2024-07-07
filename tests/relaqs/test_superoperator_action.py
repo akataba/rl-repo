@@ -1,7 +1,6 @@
-from relaqs.api.gates import RandomSU2
-from relaqs.api import gates
-from qiskit.quantum_info import random_statevector
 import numpy as np
+from relaqs.api.gates import RandomSU2
+from qiskit.quantum_info import random_statevector
 
 psi = random_statevector(2).data.reshape(-1, 1)
 dm = psi @ psi.conj().T
