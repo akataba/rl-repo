@@ -1,3 +1,10 @@
+"""
+zero_noise = True verifies that the noisy environment matches the noiseless environment when there
+no noise parameters are provided.
+
+zero_noise = False samples T1 and T2 data from IBM and samples detuning from a normal distribution.
+This setting verifies that the noise has a significant effect on the fidelity.
+"""
 import numpy as np
 from relaqs.api.utils import sample_noise_parameters
 from relaqs.environments import SingleQubitEnv, NoisySingleQubitEnv
