@@ -1,6 +1,7 @@
 import numpy as np
 from relaqs.api.gates import RandomSU2
 from qiskit.quantum_info import random_statevector
+from relaqs.api.utils import superoperator_evolution
 
 psi = random_statevector(2).data.reshape(-1, 1)
 dm = psi @ psi.conj().T
@@ -21,6 +22,7 @@ dm3 = (superop1 @ dm.reshape(-1, 1)).reshape(2, 2)
 superop2 = np.kron(U.conj(), U)
 dm4 = (superop2 @ dm.reshape(-1, 1, order="F")).reshape(2, 2, order="F")
 
-print(np.allclose(dm1, dm2))
-print(np.allclose(dm2, dm3))
-print(np.allclose(dm3, dm4))
+# Using API
+dm5 = superoperator_evolution(superop2, dm)
+
+print(np.allclose(dm1, dm2, dm3, dm4, dm5))
