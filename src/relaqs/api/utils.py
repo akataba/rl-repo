@@ -1,7 +1,7 @@
 import ray
 import numpy as np
-from numpy.linalg import eigvalsh
 import pandas as pd
+from numpy.linalg import eigvalsh
 from scipy.linalg import sqrtm
 from ray.rllib.algorithms.algorithm import Algorithm
 from ray.rllib.algorithms.ddpg import DDPGConfig
@@ -10,6 +10,14 @@ from relaqs.quantum_noise_data.get_data import (get_month_of_all_qubit_data, get
 from relaqs.api.callbacks import GateSynthesisCallbacks
 from relaqs import QUANTUM_NOISE_DATA_DIR
 from qutip.operators import *
+
+vec = lambda X : X.reshape(-1, 1, order="F") # vectorization operation, column-order. X is a numpy array.
+vec_inverse = lambda X : X.reshape(int(np.sqrt(X.shape[0])),
+                                   int(np.sqrt(X.shape[0])),
+                                   order="F") # inverse vectorization operation, column-order. X is a numpy array.
+
+def superoperator_evolution(superop, dm):
+    return vec_inverse(superop @ vec(dm))
 
 def load_pickled_env_data(data_path):
     df = pd.read_pickle(data_path)
@@ -175,15 +183,3 @@ def load_and_analyze_best_unitary(data_path, U_target):
     print("true dm\n:", true_dm)
 
     print("Density matrix fidelity:", dm_fidelity(true_dm, dm))
-
-if __name__ == "__main__":
-    data_path = RESULTS_DIR + '2023-11-08_11-09-45/env_data.csv' 
-    target = gates.H().get_matrix()
-    load_and_analyze_best_unitary(data_path, target)
-
-
-
-
-
-
-
