@@ -30,7 +30,7 @@ def dm_fidelity(rho, sigma):
     #return np.abs(np.trace(sqrtm(sqrtm(rho) @ sigma @ sqrtm(rho))))**2
     return np.trace(sqrtm(sqrtm(rho) @ sigma @ sqrtm(rho))).real**2
 
-def sample_noise_parameters(t1_t2_noise_file=None, detuning_noise_file = None):
+def sample_noise_parameters(t1_t2_noise_file=None, detuning_noise_file=None):
     # ---------------------> Get quantum noise data <-------------------------
     if t1_t2_noise_file is None:
         t1_list = np.random.uniform(40e-6, 200e-6, 100)
@@ -110,7 +110,7 @@ def get_best_actions(filename):
 
         # Convert the list to a numpy array (optional)
         best_actions.append(float_values)
-    return best_actions
+    return best_actions, best_episode['Fidelity'].to_numpy() 
 
 def run(env_class, gate, n_training_iterations=1, noise_file=""):
     """Args
