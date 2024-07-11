@@ -30,9 +30,13 @@ def dm_fidelity(rho, sigma):
     #return np.abs(np.trace(sqrtm(sqrtm(rho) @ sigma @ sqrtm(rho))))**2
     return np.trace(sqrtm(sqrtm(rho) @ sigma @ sqrtm(rho))).real**2
 
-def sample_noise_parameters(t1_t2_noise_file, detuning_noise_file = None):
+def sample_noise_parameters(t1_t2_noise_file=None, detuning_noise_file = None):
     # ---------------------> Get quantum noise data <-------------------------
-    t1_list, t2_list = get_month_of_all_qubit_data(QUANTUM_NOISE_DATA_DIR + t1_t2_noise_file)        #in seconds
+    if t1_t2_noise_file is None:
+        t1_list = np.random.uniform(40e-6, 200e-6, 100)
+        t2_list = np.random.uniform(40e-6, 200e-6, 100)
+    else:
+        t1_list, t2_list = get_month_of_all_qubit_data(QUANTUM_NOISE_DATA_DIR + t1_t2_noise_file) # in seconds
 
     if detuning_noise_file is None:
         mean = 0
