@@ -89,8 +89,24 @@ def get_best_episode_information(filename):
     max_fidelity_idx = fidelity.argmax()
     fidelity = df.iloc[max_fidelity_idx, 0]
     episode = df.iloc[max_fidelity_idx, 4]
-    best_episodes = df[df["Episode Id"] == episode]
-    return best_episodes
+    best_episode = df[df["Episode Id"] == episode]
+    return best_episode
+
+def get_best_actions(filename):
+    best_episode = get_best_episode_information(filename)
+    action_str_array = best_episode['Actions'].to_numpy()
+
+    best_actions = []
+    for actions_str in action_str_array:
+        # Remove the brackets and split the string by spaces
+        str_values = actions_str.strip('[]').split()
+
+        # Convert the string values to float
+        float_values = [float(value) for value in str_values]
+
+        # Convert the list to a numpy array (optional)
+        best_actions.append(float_values)
+    return best_actions
 
 def run(env_class, gate, n_training_iterations=1, noise_file=""):
     """Args
