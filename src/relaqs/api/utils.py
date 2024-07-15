@@ -30,9 +30,13 @@ def dm_fidelity(rho, sigma):
     #return np.abs(np.trace(sqrtm(sqrtm(rho) @ sigma @ sqrtm(rho))))**2
     return np.trace(sqrtm(sqrtm(rho) @ sigma @ sqrtm(rho))).real**2
 
-def sample_noise_parameters(t1_t2_noise_file, detuning_noise_file = None):
+def sample_noise_parameters(t1_t2_noise_file=None, detuning_noise_file=None):
     # ---------------------> Get quantum noise data <-------------------------
-    t1_list, t2_list = get_month_of_all_qubit_data(QUANTUM_NOISE_DATA_DIR + t1_t2_noise_file)        #in seconds
+    if t1_t2_noise_file is None:
+        t1_list = np.random.uniform(40e-6, 200e-6, 100)
+        t2_list = np.random.uniform(40e-6, 200e-6, 100)
+    else:
+        t1_list, t2_list = get_month_of_all_qubit_data(QUANTUM_NOISE_DATA_DIR + t1_t2_noise_file) # in seconds
 
     if detuning_noise_file is None:
         mean = 0
@@ -43,7 +47,7 @@ def sample_noise_parameters(t1_t2_noise_file, detuning_noise_file = None):
     else:
         detunings = get_single_qubit_detuning(QUANTUM_NOISE_DATA_DIR + detuning_noise_file)
 
-    return t1_list, t2_list, detunings
+    return list(t1_list), list(t2_list), detunings
 
 def do_inferencing(alg, n_episodes_for_inferencing, quantum_noise_file_path):
     """
@@ -89,8 +93,24 @@ def get_best_episode_information(filename):
     max_fidelity_idx = fidelity.argmax()
     fidelity = df.iloc[max_fidelity_idx, 0]
     episode = df.iloc[max_fidelity_idx, 4]
-    best_episodes = df[df["Episode Id"] == episode]
-    return best_episodes
+    best_episode = df[df["Episode Id"] == episode]
+    return best_episode
+
+def get_best_actions(filename):
+    best_episode = get_best_episode_information(filename)
+    action_str_array = best_episode['Actions'].to_numpy()
+
+    best_actions = []
+    for actions_str in action_str_array:
+        # Remove the brackets and split the string by spaces
+        str_values = actions_str.strip('[]').split()
+
+        # Convert the string values to float
+        float_values = [float(value) for value in str_values]
+
+        # Convert the list to a numpy array (optional)
+        best_actions.append(float_values)
+    return best_actions, best_episode['Fidelity'].to_numpy() 
 
 def run(env_class, gate, n_training_iterations=1, noise_file=""):
     """Args

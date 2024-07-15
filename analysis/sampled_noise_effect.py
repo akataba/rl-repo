@@ -21,7 +21,8 @@ env_config["relaxation_ops"] = [sigmam(), sigmaz()]
 noisy_env = NoisySingleQubitEnv(env_config)
 
 n_targets = 1000
-abs_superop_fidelity_differences = []
+noisy_superop_fidelities = []
+noiseless_superop_fidelities = []
 for _ in range(n_targets):
     # Set random U_target
     U_target = RandomSU2().get_matrix()
@@ -43,13 +44,16 @@ for _ in range(n_targets):
     noisy_fidelity = noisy_env.compute_fidelity()
     noisy_env.U = noiseless_superop
     noiseless_fidelity = noisy_env.compute_fidelity()
-
-    # Compute superoperator fidelity difference
-    superop_fidelity_difference = noiseless_fidelity - noisy_fidelity
-    abs_superop_fidelity_differences.append(np.abs(superop_fidelity_difference))
+    noisy_superop_fidelities.append(noisy_fidelity)
+    noiseless_superop_fidelities.append(noiseless_fidelity)
 
     # Reset envs
     noiseless_env.reset()
     noisy_env.reset()
 
+abs_superop_fidelity_differences = [np.abs(noisy_fidelity - noiseless_fidelity) for (noisy_fidelity, noiseless_fidelity)
+                                    in zip(noisy_superop_fidelities, noiseless_superop_fidelities)]
+
+print("Mean noisy superoperator fidelity: ", np.mean(noisy_superop_fidelities))
+print("Mean noiseless superoperator fidelity: ", np.mean(noiseless_superop_fidelities))
 print("Mean fidelity difference: ", np.mean(abs_superop_fidelity_differences))
