@@ -47,7 +47,7 @@ def sample_noise_parameters(t1_t2_noise_file=None, detuning_noise_file=None):
     else:
         detunings = get_single_qubit_detuning(QUANTUM_NOISE_DATA_DIR + detuning_noise_file)
 
-    return t1_list, t2_list, detunings
+    return list(t1_list), list(t2_list), detunings
 
 def do_inferencing(alg, n_episodes_for_inferencing, quantum_noise_file_path):
     """
