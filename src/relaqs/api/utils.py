@@ -16,9 +16,12 @@ vec_inverse = lambda X : X.reshape(int(np.sqrt(X.shape[0])),
                                    int(np.sqrt(X.shape[0])),
                                    order="F") # inverse vectorization operation, column-order. X is a numpy array.
 
-def polar_vec_to_complex_matrix(vec, return_flat=True):
+def polar_vec_to_complex_matrix(vec, return_flat=False):
     """ 
-    Convert a vector of polar coordinates to a unitary matrix. 
+    The intended use of this function is to convert from the representation of the unitary
+    in the agent's observation back to the unitary matrxi.
+
+    Converts a vector of polar coordinates to a unitary matrix. 
     
     The vector is of the form: [r1, phi1, r2, phi2, ...]
     
@@ -28,12 +31,12 @@ def polar_vec_to_complex_matrix(vec, return_flat=True):
     for i in range(0, len(vec), 2):
         r = vec[i]
         phi = vec[i+1]
-        z = -1 * r * np.exp(1j * phi * 2*np.pi) # Not sure why the negative sign is needed, but it matches self.U in environment this way. ¯\_(ツ)_/¯
+        z = -1 * r * np.exp(1j * phi * 2*np.pi) 
         complex_data.append(z)
 
     # Reshape into square matrix
     if not return_flat:
-        matrix_dimension = math.isqrt(len(vec))
+        matrix_dimension = int(np.sqrt(len(vec)))
         complex_data = np.array(complex_data).reshape((matrix_dimension, matrix_dimension))
 
     return complex_data
