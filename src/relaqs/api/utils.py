@@ -1,26 +1,27 @@
 import ray
 import numpy as np
+import pandas as pd
 from numpy.linalg import eigvalsh
+from scipy.linalg import sqrtm
 from ray.rllib.algorithms.algorithm import Algorithm
 from ray.rllib.algorithms.ddpg import DDPGConfig
-from relaqs.quantum_noise_data.get_data import (get_month_of_all_qubit_data, 
-get_single_qubit_detuning 
-)
 from relaqs import RESULTS_DIR
-import pandas as pd
-from scipy.linalg import sqrtm
-from relaqs import RESULTS_DIR
-import ast
-from ray.tune.registry import register_env
-from relaqs.environments.gate_synth_env_rllib import GateSynthEnvRLlib
-from relaqs.environments.gate_synth_env_rllib_Haar import GateSynthEnvRLlibHaarNoisy
-from relaqs.save_results import SaveResults
+from relaqs.quantum_noise_data.get_data import (get_month_of_all_qubit_data, get_single_qubit_detuning)
 from relaqs.api.callbacks import GateSynthesisCallbacks
-from relaqs.plot_data import plot_data
-import numpy as np
 from relaqs import QUANTUM_NOISE_DATA_DIR
 from qutip.operators import *
-import relaqs.api.gates as gates
+
+vec = lambda X : X.reshape(-1, 1, order="F") # vectorization operation, column-order. X is a numpy array.
+vec_inverse = lambda X : X.reshape(int(np.sqrt(X.shape[0])),
+                                   int(np.sqrt(X.shape[0])),
+                                   order="F") # inverse vectorization operation, column-order. X is a numpy array.
+
+def superoperator_evolution(superop, dm):
+    return vec_inverse(superop @ vec(dm))
+
+def load_pickled_env_data(data_path):
+    df = pd.read_pickle(data_path)
+    return df
 
 gate_fidelity = lambda U, V: float(np.abs(np.trace(U.conjugate().transpose() @ V))) / (U.shape[0])
 
@@ -29,20 +30,24 @@ def dm_fidelity(rho, sigma):
     #return np.abs(np.trace(sqrtm(sqrtm(rho) @ sigma @ sqrtm(rho))))**2
     return np.trace(sqrtm(sqrtm(rho) @ sigma @ sqrtm(rho))).real**2
 
-def sample_noise_parameters(t1_t2_noise_file, detuning_noise_file = None):
+def sample_noise_parameters(t1_t2_noise_file=None, detuning_noise_file=None):
     # ---------------------> Get quantum noise data <-------------------------
-    t1_list, t2_list = get_month_of_all_qubit_data(QUANTUM_NOISE_DATA_DIR + t1_t2_noise_file)        #in seconds
+    if t1_t2_noise_file is None:
+        t1_list = np.random.uniform(40e-6, 200e-6, 100)
+        t2_list = np.random.uniform(40e-6, 200e-6, 100)
+    else:
+        t1_list, t2_list = get_month_of_all_qubit_data(QUANTUM_NOISE_DATA_DIR + t1_t2_noise_file) # in seconds
 
     if detuning_noise_file is None:
         mean = 0
-        std = 0.03
+        std = 10e10
         sample_size = 100
         samples = np.random.normal(mean, std, sample_size)
         detunings = samples.tolist()
     else:
         detunings = get_single_qubit_detuning(QUANTUM_NOISE_DATA_DIR + detuning_noise_file)
 
-    return t1_list, t2_list, detunings
+    return list(t1_list), list(t2_list), detunings
 
 def do_inferencing(alg, n_episodes_for_inferencing, quantum_noise_file_path):
     """
@@ -55,7 +60,7 @@ def do_inferencing(alg, n_episodes_for_inferencing, quantum_noise_file_path):
     obs, info = env.reset()
     t1_list, t2_list, detuning_list = sample_noise_parameters(quantum_noise_file_path)
     env.relaxation_rates_list = [np.reciprocal(t1_list).tolist(), np.reciprocal(t2_list).tolist()]
-    env.delta = detuning_list  
+    env.detuning_list = detuning_list
     num_episodes = 0
     episode_reward = 0.0
     print("Inferencing is starting ....")
@@ -88,13 +93,26 @@ def get_best_episode_information(filename):
     max_fidelity_idx = fidelity.argmax()
     fidelity = df.iloc[max_fidelity_idx, 0]
     episode = df.iloc[max_fidelity_idx, 4]
-    best_episodes = df[df["Episode Id"] == episode]
-    return best_episodes
+    best_episode = df[df["Episode Id"] == episode]
+    return best_episode
 
-def env_creator(config):
-    return GateSynthEnvRLlibHaarNoisy(config)
+def get_best_actions(filename):
+    best_episode = get_best_episode_information(filename)
+    action_str_array = best_episode['Actions'].to_numpy()
 
-def run(gate, n_training_iterations=1, noise_file=""):
+    best_actions = []
+    for actions_str in action_str_array:
+        # Remove the brackets and split the string by spaces
+        str_values = actions_str.strip('[]').split()
+
+        # Convert the string values to float
+        float_values = [float(value) for value in str_values]
+
+        # Convert the list to a numpy array (optional)
+        best_actions.append(float_values)
+    return best_actions, best_episode['Fidelity'].to_numpy() 
+
+def run(env_class, gate, n_training_iterations=1, noise_file=""):
     """Args
        gate (Gate type):
        n_training_iterations (int)
@@ -104,15 +122,14 @@ def run(gate, n_training_iterations=1, noise_file=""):
 
     """
     ray.init()
-    register_env("my_env", env_creator)
-    env_config = GateSynthEnvRLlibHaarNoisy.get_default_env_config()
+    env_config = env_class.get_default_env_config()
     env_config["U_target"] = gate.get_matrix()
 
     # ---------------------> Get quantum noise data <-------------------------
     t1_list, t2_list, detuning_list = sample_noise_parameters(noise_file)
 
     env_config["relaxation_rates_list"] = [np.reciprocal(t1_list).tolist(), np.reciprocal(t2_list).tolist()] # using real T1 data
-    env_config["delta"] = detuning_list
+    env_config["detuning_list"] = detuning_list
     env_config["relaxation_ops"] = [sigmam(),sigmaz()]
     env_config["observation_space_size"] = 2*16 + 1 + 2 + 1 # 2*16 = (complex number)*(density matrix elements = 4)^2, + 1 for fidelity + 2 for relaxation rate + 1 for detuning
     env_config["verbose"] = True
@@ -120,10 +137,10 @@ def run(gate, n_training_iterations=1, noise_file=""):
     # ---------------------> Configure algorithm and Environment <-------------------------
     alg_config = DDPGConfig()
     alg_config.framework("torch")
-    alg_config.environment("my_env", env_config=env_config)
+    alg_config.environment(env_class, env_config=env_config)
     alg_config.rollouts(batch_mode="complete_episodes")
     alg_config.callbacks(GateSynthesisCallbacks)
-    alg_config.train_batch_size = GateSynthEnvRLlibHaarNoisy.get_default_env_config()["steps_per_Haar"]
+    alg_config.train_batch_size = env_class.get_default_env_config()["steps_per_Haar"]
 
     ### working 1-3 sets
     alg_config.actor_lr = 4e-5
@@ -186,15 +203,3 @@ def load_and_analyze_best_unitary(data_path, U_target):
     print("true dm\n:", true_dm)
 
     print("Density matrix fidelity:", dm_fidelity(true_dm, dm))
-
-if __name__ == "__main__":
-    data_path = RESULTS_DIR + '2023-11-08_11-09-45/env_data.csv' 
-    target = gates.H().get_matrix()
-    load_and_analyze_best_unitary(data_path, target)
-
-
-
-
-
-
-

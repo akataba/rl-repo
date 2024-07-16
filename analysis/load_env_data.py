@@ -1,60 +1,21 @@
-import pandas as pd
+"""
+Example script to load pickled env data
+"""
+
 from relaqs import RESULTS_DIR
-from relaqs.api import dm_fidelity
-import relaqs.api.gates as gates
+from relaqs.api import load_pickled_env_data
 
-import numpy as np
-from numpy.linalg import eigvalsh
+data_path = RESULTS_DIR + '2024-01-24_11-37-15_X/env_data.pkl'
 
-def load_and_analyze(data_path, U_target):
-    df = pd.read_csv(data_path) 
-    
-    fidelity = df.iloc[:, 0]
-    reward = df.iloc[:, 1]
-    actions = df.iloc[:, 2:4]
-    unitary = df.iloc[:, 4:]
+df = load_pickled_env_data(data_path)
 
-    max_fidelity_idx = fidelity.argmax()
-    max_fidelity = fidelity.iloc[max_fidelity_idx]
-    best_fidelity_unitary = np.array([complex(x) for x in unitary.iloc[max_fidelity_idx].tolist()]).reshape(4, 4)
+fidelity = df["Fidelity"]
+reward = df["Rewards"]
+actions = df["Actions"]
+unitary = df["Operator"]
+episode_id = df["Episode Id"]
 
-    print("Max fidelity:", max_fidelity)
-    print("Max unitary:", best_fidelity_unitary)
+max_fidelity_idx = fidelity.argmax()
+max_fidelity = fidelity.iloc[max_fidelity_idx]
 
-    zero = np.array([1, 0]).reshape(-1, 1)
-    zero_dm = zero @ zero.T.conjugate()
-    zero_dm_flat = zero_dm.reshape(-1, 1)
-
-    dm = best_fidelity_unitary @ zero_dm_flat
-    dm = dm.reshape(2, 2)
-    print("Density Matrix:\n", dm)
-
-    # Check trace = 1
-    dm_diagonal = np.diagonal(dm)
-    print("diagonal:", dm_diagonal)
-    trace = sum(np.diagonal(dm))
-    print("trace:", trace)
-
-    # # Check that all eigenvalues are positive
-    eigenvalues = eigvalsh(dm)
-    print("eigenvalues:", eigenvalues)
-    #assert (0 <= eigenvalues).all()
-
-    psi = U_target @ zero
-    true_dm = psi @ psi.T.conjugate()
-    print("true dm\n:", true_dm)
-
-    print("Density matrix fidelity:", dm_fidelity(true_dm, dm))
-
-if __name__ == "__main__":
-    data_path = RESULTS_DIR + '2023-07-21_13-34-31/env_data.csv' # H
-    #data_path = RESULTS_DIR + '2023-07-25_16-24-58/env_data.csv' # S
-    #data_path = RESULTS_DIR + '2023-07-25_22-32-31/env_data.csv' # X pi/4
-    #data_path = RESULTS_DIR + '2023-07-26_13-14-26/env_data.csv' # X
-    #data_path = RESULTS_DIR + '2023-07-26_13-47-46/env_data.csv' # Y
-    #data_path = RESULTS_DIR + '2023-08-02_09-10-09/env_data.csv' # Noiseless H
-    #data_path = RESULTS_DIR + '2023-08-02_09-48-04/env_data.csv' # Noiseless X
-    #data_path = RESULTS_DIR + '2023-08-02_11-24-32/env_data.csv' # H with element-wise reward
-
-    U_target = gates.H().get_matrix()
-    load_and_analyze(data_path, U_target)
+print("Max fidelity:", max_fidelity)

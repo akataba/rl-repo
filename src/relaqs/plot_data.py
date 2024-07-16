@@ -56,33 +56,32 @@ def plot_results(save_dir, figure_title=""):
 def plot_data(save_dir, episode_length, figure_title=''):
     """ Currently works for constant episode_length """
     #---------------------- Getting data from files  <--------------------------------------
-    try:
-        with open(save_dir + "env_data.npy", "rb") as f:
-            df = np.load(f)
-            fidelities = df[:, 0]
-            rewards = df[:, 1]
-    except:
-        df = pd.read_csv(save_dir + "env_data.csv", header=0)
-        fidelities = np.array(df.iloc[:,0])
-        rewards = np.array(df.iloc[:,1])
-
-
+    df = pd.read_csv(save_dir + "env_data.csv", header=0)
+    fidelities = np.array(df.iloc[:,0])
+    rewards = np.array(df.iloc[:,1])
+    episode_ids = np.array(df.iloc[:,4])
 
     print("max fidelity: ", max(fidelities))
     print("max reward: ", max(rewards))
 
+    # --------> Get fidelity, infidelity, and reward from the last step of the episode <--------
     final_fidelity_per_episode = []
     final_infelity_per_episode = []
     sum_of_rewards_per_episode = []
 
-    # there is probably a numpy way to speed this up
-    n_transitions = len(fidelities)
-    for i in range(episode_length, n_transitions, episode_length):
-        episode_start_index = i - episode_length
-        episode_end_index = i - 1 # 0-indexing
-        final_fidelity_per_episode.append(fidelities[episode_end_index])
-        final_infelity_per_episode.append(1 - fidelities[episode_end_index])
-        sum_of_rewards_per_episode.append(np.sum(rewards[episode_start_index : episode_end_index + 1])) # +1 to include end of episode
+    current_episode_id = episode_ids[0]
+    current_fidelity = fidelities[0]
+    current_reward_sum = rewards[0]
+    for i in range(len(episode_ids)):
+        if (episode_ids[i] != current_episode_id) or (i == len(episode_ids) - 1):
+            final_fidelity_per_episode.append(current_fidelity)
+            final_infelity_per_episode.append(1 - current_fidelity)
+            sum_of_rewards_per_episode.append(current_reward_sum)
+            current_reward_sum = 0
+        current_episode_id = episode_ids[i]
+        current_fidelity = fidelities[i]
+        current_reward_sum += rewards[i]
+    # ------------------------------------------------------------------------------------------
 
     # ----------------------> Moving average <--------------------------------------
     # Fidelity
@@ -91,11 +90,20 @@ def plot_data(save_dir, episode_length, figure_title=''):
     avg_final_infelity_per_episode = []
     avg_sum_of_rewards_per_episode = []
     for i in range (len(final_fidelity_per_episode)):
-        start = i - rolling_average_window if (i - rolling_average_window) >= 0 else 0
-        avg_final_fidelity_per_episode.append(np.mean(final_fidelity_per_episode[start: i]))
-        avg_final_infelity_per_episode.append(np.mean(final_infelity_per_episode[start: i]))
-        avg_sum_of_rewards_per_episode.append(np.mean(sum_of_rewards_per_episode[start: i]))
-    
+        start = i - rolling_average_window if (i - rolling_average_window) > 0 else 0
+        avg_final_fidelity_per_episode.append(np.mean(final_fidelity_per_episode[start: i + 1]))
+        avg_final_infelity_per_episode.append(np.mean(final_infelity_per_episode[start: i + 1]))
+        avg_sum_of_rewards_per_episode.append(np.mean(sum_of_rewards_per_episode[start: i + 1]))
+
+    # Round averages to prevent numerical error when plotting
+    rounding_precision = 6
+    avg_final_fidelity_per_episode = np.round(avg_final_fidelity_per_episode, rounding_precision)
+    avg_final_infelity_per_episode = np.round(avg_final_infelity_per_episode, rounding_precision)
+    avg_sum_of_rewards_per_episode = np.round(avg_sum_of_rewards_per_episode, rounding_precision)
+
+
+    if len(avg_final_fidelity_per_episode) >= 100: 
+        print("Average final fidelity over last 100 episodes", np.mean(avg_final_fidelity_per_episode[-100:]))
 
     # -------------------------------> Plotting <-------------------------------------
     rcParams['font.family'] = 'serif'
@@ -111,7 +119,6 @@ def plot_data(save_dir, episode_length, figure_title=''):
     ax1.set_title("Fidelity")
     ax1.set_title("a)", loc='left', fontsize='medium')
     ax1.set_xlabel("Episodes")
-
 
     # ----> infidelity <----
     ax2.plot(final_infelity_per_episode, color="r")
@@ -132,5 +139,5 @@ def plot_data(save_dir, episode_length, figure_title=''):
     plt.savefig(save_dir + "plot.png")
 
 if __name__ == "__main__":
-    save_dir = RESULTS_DIR + "2023-09-19_14-21-02/"
-    plot_data(save_dir, episode_length=2, figure_title="Random Target Gate")
+    save_dir = RESULTS_DIR + "2024-02-27_19-31-17_H/"
+    plot_data(save_dir, episode_length=2, figure_title="")
