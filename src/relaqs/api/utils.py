@@ -16,6 +16,28 @@ vec_inverse = lambda X : X.reshape(int(np.sqrt(X.shape[0])),
                                    int(np.sqrt(X.shape[0])),
                                    order="F") # inverse vectorization operation, column-order. X is a numpy array.
 
+def polar_vec_to_complex_matrix(vec, return_flat=True):
+    """ 
+    Convert a vector of polar coordinates to a unitary matrix. 
+    
+    The vector is of the form: [r1, phi1, r2, phi2, ...]
+    
+    And the matrix is then: [-1 * r1 * exp(i * phi1 * 2pi),...] """
+    # Convert polar coordinates to complex numbers
+    complex_data = []
+    for i in range(0, len(vec), 2):
+        r = vec[i]
+        phi = vec[i+1]
+        z = -1 * r * np.exp(1j * phi * 2*np.pi) # Not sure why the negative sign is needed, but it matches self.U in environment this way. ¯\_(ツ)_/¯
+        complex_data.append(z)
+
+    # Reshape into square matrix
+    if not return_flat:
+        matrix_dimension = math.isqrt(len(vec))
+        complex_data = np.array(complex_data).reshape((matrix_dimension, matrix_dimension))
+
+    return complex_data
+
 def superoperator_evolution(superop, dm):
     return vec_inverse(superop @ vec(dm))
 
