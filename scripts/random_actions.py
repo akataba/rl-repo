@@ -4,6 +4,7 @@ from relaqs.environments import SingleQubitEnv, NoisySingleQubitEnv
 from relaqs import RESULTS_DIR
 from relaqs.api.utils import sample_noise_parameters
 from qutip.operators import sigmam, sigmaz
+import relaqs.api.gates as gates
 
 def take_random_actions(env, n_episodes, save_file_name):
     """
@@ -32,6 +33,7 @@ if __name__ == "__main__":
     env_config["detuning_list"] = detuning_list  # qubit detuning
     env_config["relaxation_rates_list"] =[t1_list, t2_list] # relaxation lists of list of floats to be sampled from when resetting environment. (10 usec)
     env_config["relaxation_ops"] = [sigmam(), sigmaz()]
+    env_config["U_target"] = gates.Z().get_matrix()
     env = NoisySingleQubitEnv(env_config)
     n_episodes = 10000
-    take_random_actions(env, n_episodes, save_file_name="changing_noise_X.csv")
+    take_random_actions(env, n_episodes, save_file_name="changing_noise_Z.csv")

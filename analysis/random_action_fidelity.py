@@ -3,7 +3,7 @@ import numpy as np
 import matplotlib.pyplot as plt
 from relaqs import RESULTS_DIR
 
-gate = "X"
+gate = "Z"
 #file_name = RESULTS_DIR + "random_actions_fidelity/" + f"noiseless_{gate}.csv"
 file_name = RESULTS_DIR + "random_actions_fidelity/" + f"changing_noise_{gate}.csv"
 
