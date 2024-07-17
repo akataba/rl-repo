@@ -4,9 +4,10 @@ import numpy as np
 import scipy.linalg as la
 from qutip import Qobj
 from qutip.superoperator import liouvillian, spre, spost
-from qutip.operators import sigmam
+from qutip.operators import sigmam, sigmaz
 from relaqs.environments.single_qubit_env import SingleQubitEnv
 from relaqs.api import gates
+from relaqs.api.utils import sample_noise_parameters
 
 I = gates.I().get_matrix()
 X = gates.X().get_matrix()
@@ -17,10 +18,11 @@ class NoisySingleQubitEnv(SingleQubitEnv):
     @classmethod
     def get_default_env_config(cls):
         env_config = super().get_default_env_config()
-        env_config.update({"detuning_list": [0],  # qubit detuning
-            "relaxation_rates_list": [[314159]], # relaxation lists of list of floats to be sampled from when resetting environment. (10 usec)
-            "relaxation_ops": [sigmam()], #relaxation operator lists for T1 and T2, respectively
-            "observation_space_size": 2*16 + 1 + 1 + 1}) # 2*16 = (complex number)*(density matrix elements = 4)^2, + 1 for fidelity + 1 for relaxation rate + 1 for detuning})
+        t1_list, t2_list, detuning_list = sample_noise_parameters()
+        env_config.update({"detuning_list": detuning_list,  # qubit detuning
+            "relaxation_rates_list": [t1_list, t2_list], # relaxation lists of list of floats to be sampled from when resetting environment. (10 usec)
+            "relaxation_ops": [sigmam(), sigmaz()], #relaxation operator lists for T1 and T2, respectively
+            "observation_space_size": 2*16 + 1 + 2 + 1}) # 2*16 = (complex number)*(density matrix elements = 4)^2, + 1 for fidelity + 2 for relaxation rates + 1 for detuning})
         return env_config
 
     def __init__(self, env_config):
