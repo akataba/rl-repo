@@ -19,7 +19,7 @@ class NoisySingleQubitEnv(SingleQubitEnv):
     def get_default_env_config(cls):
         env_config = super().get_default_env_config()
         t1_list, t2_list, detuning_list = sample_noise_parameters()
-        env_config.update({"detuning_list": [0],  # qubit detuning
+        env_config.update({"detuning_list": detuning_list,  # qubit detuning
             "relaxation_rates_list": [t1_list, t2_list], # relaxation lists of list of floats to be sampled from when resetting environment. (10 usec)
             "relaxation_ops": [sigmam(), sigmaz()], #relaxation operator lists for T1 and T2, respectively
             "observation_space_size": 2*16 + 1 + 2 + 1}) # 2*16 = (complex number)*(density matrix elements = 4)^2, + 1 for fidelity + 2 for relaxation rates + 1 for detuning})
