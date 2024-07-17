@@ -3,7 +3,7 @@ import random
 import numpy as np
 import scipy.linalg as la
 from qutip import Qobj
-from qutip.superoperator import liouvillian, spre, spost
+from qutip.superoperator import liouvillian
 from qutip.operators import sigmam, sigmaz
 from relaqs.environments.single_qubit_env import SingleQubitEnv
 from relaqs.api import gates
