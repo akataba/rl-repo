@@ -43,7 +43,6 @@ class NoisySingleQubitEnv(SingleQubitEnv):
             self.detuning = self.detuning_list[0]
         else:
             self.detuning = random.sample(self.detuning_list, k=1)[0]
-            print("detuning: ", f"{self.detuning}")
 
     @classmethod
     def unitary_to_superoperator(self, U):
@@ -60,10 +59,12 @@ class NoisySingleQubitEnv(SingleQubitEnv):
             
     def get_observation(self):
         normalized_detuning = [(self.detuning - min(self.detuning_list) + 1E-15) / (max(self.detuning_list) - min(self.detuning_list) + 1E-15)]
+        normalized_t1 = (self.relaxation_rate[0] - min(self.relaxation_rates_list[0]) + 1E-15) / (max(self.relaxation_rates_list[0]) - min(self.relaxation_rates_list[0]) + 1E-15)
+        normalized_t2 = (self.relaxation_rate[1] - min(self.relaxation_rates_list[1]) + 1E-15) / (max(self.relaxation_rates_list[1]) - min(self.relaxation_rates_list[1]) + 1E-15)
         return np.append([self.compute_fidelity()] +
-                         [x // 6283185 for x in self.relaxation_rate] +
+                         [normalized_t1, normalized_t2] +
                          normalized_detuning,
-                         self.unitary_to_observation(self.U)) #6283185 assuming 500 nanosecond relaxation is max
+                         self.unitary_to_observation(self.U)) 
     
     def hamiltonian(self, detuning, alpha, gamma_magnitude, gamma_phase):
         return (detuning + alpha)*Z + gamma_magnitude*(np.cos(gamma_phase)*X + np.sin(gamma_phase)*Y)
@@ -91,7 +92,8 @@ class NoisySingleQubitEnv(SingleQubitEnv):
 
     def get_info(self, fidelity, reward, action, truncated, terminated):
         info_string = super().get_info(fidelity, reward, action, truncated, terminated)
-        info_string += f"Relaxation rate: {self.relaxation_rate}"
+        info_string += f"""Relaxation rate: {self.relaxation_rate}
+            Detuning: {self.detuning}"""
         return info_string
 
     def step(self, action):
