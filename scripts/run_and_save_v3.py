@@ -55,18 +55,29 @@ def run(env_class=SingleQubitEnv, n_training_iterations=1, save=True, plot=True,
 
     alg_config.rollouts(batch_mode="complete_episodes")
     alg_config.train_batch_size = env_config["steps_per_Haar"] # TOOD use env_config
-
+    alg_config.target_noise = 2.532602079724711
+    alg_config.twin_q = True
     ### working 1-3 sets
-    alg_config.actor_lr = 0.001
+    alg_config.actor_lr = 0.0005
     alg_config.critic_lr = 0.0001
+    alg_config.exploration(
+                exploration_config={
+                    "type": "GaussianNoise",
+                    "scale_timesteps": 500,
+                    "initial_scale": 1.0,
+                    "final_scale": 0.001,
+                }
+    )
+    alg_config.replay_buffer_config["prioritized_replay_alpha"]=0.43927148426471374
+    alg_config.replay_buffer_config["prioritized_replay_beta"]= 0.46704809886287607   
 
     alg_config.actor_hidden_activation = "relu"
     alg_config.critic_hidden_activation = "relu"
     alg_config.callbacks(GateSynthesisCallbacks)
-    alg_config.num_steps_sampled_before_learning_starts = 1000
-    alg_config.actor_hiddens = [60,60,60,60,60]
-    alg_config.critic_hiddens = [290,290, 290,290,290, 290, 290]
-    alg_config.exploration_config["scale_timesteps"] = 10000
+    # alg_config.num_steps_sampled_before_learning_starts = 1000
+    alg_config.actor_hiddens = [150] * 4
+    alg_config.critic_hiddens = [200] * 9
+    # alg_config.exploration_config["scale_timesteps"] = 500
 
     alg = alg_config.build()
     # ---------------------------------------------------------------------

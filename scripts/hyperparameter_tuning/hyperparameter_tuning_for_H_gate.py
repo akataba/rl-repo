@@ -37,18 +37,18 @@ def run_ray_tune(environment, n_configurations=100, n_training_iterations=50, sa
     config = {
             "actor_lr" : tune.choice([1e-3, 5e-4, 1e-4, 5e-5, 1e-5, 1-6]),
             "critic_lr" : tune.choice([1e-3, 5e-4, 1e-4, 5e-5, 1e-5, 1e-6]),
-            "actor_num_hiddens" : tune.choice([5, 10, 15, 20, 25, 30]),
-            "actor_layer_size" : tune.choice([50, 60, 70, 80, 90, 100]),
+            "actor_num_hiddens" : tune.choice([5, 6, 7, 8, 9, 10]),
+            "actor_layer_size" : tune.choice([100, 110, 120, 130, 140, 150]),
             "critic_num_hiddens" : tune.choice([5, 7, 9, 11, 13, 15, 17]),
-            "critic_layer_size" : tune.choice([240, 250, 260, 270, 280, 290, 300]),
+            "critic_layer_size" : tune.choice([200]),
             "target_noise" : tune.uniform(1.0, 4.5),
             "n_training_iterations" : n_training_iterations, 
             "environment" : environment,
             "steps": 100,
-            "alpha": tune.uniform(1,4),
-            "beta": tune.uniform(1,4),
+            "alpha": tune.uniform(0,0.5),
+            "beta": tune.uniform(0,0.5),
             "target_network_update": tune.choice([0, 1, 2, 3, 4, 5, 6, 7]),
-            "scale_timesteps": tune.choice([100, 500, 1000, 5000, 10000])
+            "scale_timesteps": tune.choice([100, 500, 1000, 5000, 10000, 15000, 20000])
             }
     algo = OptunaSearch()
     print("starting OptunaSearch ...")
@@ -106,7 +106,7 @@ def objective(config):
                     "type": "GaussianNoise",
                     "scale_timesteps": config["scale_timesteps"],
                     "initial_scale": 1.0,
-                    "final_scale": 0.05,
+                    "final_scale": 0.001,
                 }
     )
 
@@ -139,10 +139,10 @@ def objective(config):
 
 if __name__ == "__main__":
     environment = NoisySingleQubitEnv
-    n_configurations = 25
+    n_configurations = 20
     n_training_iterations = 250
     save = True
-    experiment_name = " Training H gate 5"
+    experiment_name = " Training H gate 15 200 critic size"
     results = run_ray_tune(environment, n_configurations, n_training_iterations, save, experiment_name=experiment_name)
 
     print("---------------------------- Results ----------------------------------------------")

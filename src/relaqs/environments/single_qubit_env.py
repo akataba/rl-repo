@@ -116,7 +116,7 @@ class SingleQubitEnv(gym.Env):
             self.current_step_per_Haar += 1
 
     def parse_actions(self, action):
-        gamma_magnitude = self.gamma_magnitude_max / 2 * (action[0] + 1)
+        gamma_magnitude = self.gamma_magnitude_max / 7 * (action[0] + 1)
         gamma_phase = self.gamma_phase_max * action[1]
         alpha = self.alpha_max * action[2]
         return gamma_magnitude, gamma_phase, alpha
