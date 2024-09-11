@@ -1,14 +1,9 @@
-import gymnasium as gym
-import numpy as np
-import scipy.linalg as la
-from scipy.linalg import expm
-from scipy.stats import unitary_group
-from scipy.spatial.transform import Rotation as R
-from sympy import Matrix
+""" RL Environments """
 from typing import Tuple
 
 import cmath
 import random
+from scipy.linalg import expm
 import matplotlib.pyplot as plt
 import matplotlib.colors as mcolors
 
@@ -18,7 +13,10 @@ from qutip.operators import *
 from qutip import cnot, cphase
 
 from qiskit.synthesis.one_qubit.one_qubit_decompose import OneQubitEulerDecomposer
-#from relaqs.api.reward_functions import negative_matrix_difference_norm
+
+import gymnasium as gym
+import numpy as np
+import scipy.linalg as la
 
 sig_p = np.array([[0, 1.], [0, 0]])
 sig_m = np.array([[0, 0], [1., 0]])
