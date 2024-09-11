@@ -17,8 +17,7 @@ from qutip import Qobj, tensor
 from qutip.operators import *
 from qutip import cnot, cphase
 
-from qiskit.quantum_info import OneQubitEulerDecomposer
-
+from qiskit.synthesis.one_qubit.one_qubit_decompose import OneQubitEulerDecomposer
 #from relaqs.api.reward_functions import negative_matrix_difference_norm
 
 sig_p = np.array([[0, 1.], [0, 0]])
