@@ -49,9 +49,8 @@ def run(n_training_iterations=1, save=True, plot=True):
     try:
         register_env("my_env", env_creator)
 
-
         # ---------------------> Configure algorithm and Environment <-------------------------
-        alg_config = DDPGConfig().training().resources(num_gpus=1)
+        alg_config = DDPGConfig()
         # alg_config = DDPGConfig()
         alg_config.framework("torch")
         
