@@ -56,7 +56,7 @@ CNOT = cnot().data.toarray()
 CZ = cphase(np.pi).data.toarray()
 
 
-class TwoQubitGateSynth(gym.Env):
+class NoisyTwoQubitEnv(gym.Env):
     @classmethod
     def get_default_env_config(cls):
         return {
