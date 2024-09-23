@@ -66,9 +66,7 @@ class NoisyTwoQubitEnv(gym.Env):
             "final_time": 30E-9, # in seconds, total time is final_time * 5 because of single qubit + two_qubit + single_qubit + two_qubit + single_qubit
             "num_Haar_basis": 3,  # number of Haar basis (need to update for odd combinations)
             "steps_per_Haar": 1,  # steps per Haar basis per episode
-            "delta": np.random.normal(0, np.pi/100/30E-9, size=(2, 100)).tolist(),  # qubit detuning
-            # "delta": [[np.pi/60/30E-9],[-np.pi/85/30E-9]],  # qubit detuning
-            # "delta": [[0],[0]],  # qubit detuning
+            "detuning_list": np.random.normal(0, np.pi/100/30E-9, size=(2, 100)).tolist(),  # qubit detuning
             "save_data_every_step": 1,
             "verbose": True,
             # "relaxation_rates_list": [[1/60E-6/2/np.pi],[1/30E-6/2/np.pi],[1/66E-6/2/np.pi],[1/5E-6/2/np.pi]], # relaxation lists of list of floats to be sampled from when resetting environment.
@@ -84,8 +82,8 @@ class NoisyTwoQubitEnv(gym.Env):
     #T1 = 60 us, 30 us
     #T2* = 66 us, 5 us
 
-    def hamiltonian(self, delta1, delta2, alpha1, alpha2, g_eff, gamma_magnitude1, gamma_phase1, gamma_magnitude2, gamma_phase2, index = 1):
-        selfEnergyTerms = (delta1 + alpha1) * Z1 + (delta2 + alpha2) * Z2
+    def hamiltonian(self, detuning1, detuning2, alpha1, alpha2, g_eff, gamma_magnitude1, gamma_phase1, gamma_magnitude2, gamma_phase2, index = 1):
+        selfEnergyTerms = (detuning1 + alpha1) * Z1 + (detuning2 + alpha2) * Z2
         Qubit1ControlTerms = gamma_magnitude1 * (np.cos(gamma_phase1) * X1 + np.sin(gamma_phase1) * Y1)
         Qubit2ControlTerms = gamma_magnitude2 * (np.cos(gamma_phase2) * X2 + np.sin(gamma_phase2) * Y2)
         
@@ -108,8 +106,7 @@ class NoisyTwoQubitEnv(gym.Env):
         self.PiFreq = np.pi / self.final_time
         self.observation_space = gym.spaces.Box(low=0, high=1, shape=(env_config["observation_space_size"],))  # propagation operator elements + fidelity + relaxation + detuning
         self.action_space = gym.spaces.Box(low=-0.1*np.ones(27), high=0.1*np.ones(27)) #alpha1, alpha2, alphaC, gamma_magnitude1, gamma_phase1, gamma_magnitude2, gamma_phase2
-        self.delta = env_config["delta"]  # detuning
-        self.detuning = [0, 0]
+        self.detuning_list = env_config["detuning_list"]
         self.detuning_update()
         self._U_target = self.unitary_to_superoperator(env_config["U_target"])
         self.unitary_U_target = env_config["U_target"]
@@ -139,19 +136,10 @@ class NoisyTwoQubitEnv(gym.Env):
         self.initialActions = self.KakActionCalculation()
 
     def detuning_update(self):
-        # Random detuning selection
-        if len(self.delta[0])==1:
-            detuning1 = self.delta[0][0]
-        else:
-            detuning1 = random.sample(self.delta[0],k=1)[0]
-            
-        # Random detuning selection
-        if len(self.delta[1])==1:
-            detuning2 = self.delta[1][0]
-        else:
-            detuning2 = random.sample(self.delta[1],k=1)[0]
+        qubit_1_detuning = random.sample(self.detuning_list[0],k=1)[0]
+        qubit_2_detuning = random.sample(self.detuning_list[1],k=1)[0]
 
-        self.detuning = [detuning1, detuning2]
+        self.detuning = [qubit_1_detuning, qubit_2_detuning]
         
     def update_target_unitary(self, U):
         self._U_target = self.unitary_to_superoperator(U)
@@ -171,7 +159,10 @@ class NoisyTwoQubitEnv(gym.Env):
         return sampled_rate_list
             
     def get_observation(self):
-        normalizedDetuning = [(self.detuning[0] - min(self.delta[0])+1E-15)/(max(self.delta[0])-min(self.delta[0])+1E-15), (self.detuning[1] - min(self.delta[1])+1E-15)/(max(self.delta[1])-min(self.delta[1])+1E-15)]
+        normalizedDetuning = [(self.detuning[0] - min(self.detuning_list[0]) + 1E-15) /
+                              (max(self.detuning_list[0]) - min(self.detuning_list[0]) + 1E-15),
+                              (self.detuning[1] - min(self.detuning_list[1]) + 1E-15) /
+                              (max(self.detuning_list[1]) - min(self.detuning_list[1]) + 1E-15)]
         # return np.append([self.compute_fidelity()]+[x//6283185 for x in self.relaxation_rate]+normalizedDetuning, self.unitary_to_observation(self.U)) #6283185 assuming 500 nanosecond relaxation is max
         return np.append([self.compute_fidelity()]+[x//6283185 for x in self.relaxation_rate]+normalizedDetuning, self.unitary_to_observation(self.unitary_U_target)) #6283185 assuming 500 nanosecond relaxation is max
     
