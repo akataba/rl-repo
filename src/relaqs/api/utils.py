@@ -16,6 +16,10 @@ vec_inverse = lambda X : X.reshape(int(np.sqrt(X.shape[0])),
                                    int(np.sqrt(X.shape[0])),
                                    order="F") # inverse vectorization operation, column-order. X is a numpy array.
 
+def normalize(quantity, list_of_values):
+    """ normalize quantity to [0, 1] range based on list of values """
+    return (quantity - min(list_of_values) + 1E-15) / (max(list_of_values) - min(list_of_values) + 1E-15)
+
 def polar_vec_to_complex_matrix(vec, return_flat=False):
     """ 
     The intended use of this function is to convert from the representation of the unitary

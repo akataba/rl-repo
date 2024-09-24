@@ -7,7 +7,7 @@ from qutip.superoperator import liouvillian
 from qutip.operators import sigmam, sigmaz
 from relaqs.environments.single_qubit_env import SingleQubitEnv
 from relaqs.api import gates
-from relaqs.api.utils import sample_noise_parameters
+from relaqs.api.utils import sample_noise_parameters, normalize
 
 I = gates.I().get_matrix()
 X = gates.X().get_matrix()
@@ -56,15 +56,15 @@ class NoisySingleQubitEnv(SingleQubitEnv):
             sampled_rate_list.append(random.sample(self.relaxation_rates_list[ii],k=1)[0])
 
         return sampled_rate_list
-            
+
     def get_observation(self):
-        normalized_detuning = [(self.detuning - min(self.detuning_list) + 1E-15) / (max(self.detuning_list) - min(self.detuning_list) + 1E-15)]
-        normalized_t1 = (self.relaxation_rate[0] - min(self.relaxation_rates_list[0]) + 1E-15) / (max(self.relaxation_rates_list[0]) - min(self.relaxation_rates_list[0]) + 1E-15)
-        normalized_t2 = (self.relaxation_rate[1] - min(self.relaxation_rates_list[1]) + 1E-15) / (max(self.relaxation_rates_list[1]) - min(self.relaxation_rates_list[1]) + 1E-15)
+        normalized_detuning = [normalize(self.detuning, self.detuning_list)]
+        normalized_relaxation_rates = [normalize(self.relaxation_rate[0], self.relaxation_rates_list[0]),
+                                       normalize(self.relaxation_rate[1], self.relaxation_rates_list[1])] # could do list comprehension
         return np.append([self.compute_fidelity()] +
-                         [normalized_t1, normalized_t2] +
+                         normalized_relaxation_rates +
                          normalized_detuning,
-                         self.unitary_to_observation(self.U)) 
+                         self.unitary_to_observation(self.U))
     
     def hamiltonian(self, detuning, alpha, gamma_magnitude, gamma_phase):
         return (detuning + alpha)*Z + gamma_magnitude*(np.cos(gamma_phase)*X + np.sin(gamma_phase)*Y)
