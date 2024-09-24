@@ -10,6 +10,8 @@ from qutip.operators import *
 from qutip import cnot, cphase
 
 from qiskit.synthesis.one_qubit.one_qubit_decompose import OneQubitEulerDecomposer
+from relaqs.api.utils import normalize
+
 
 import gymnasium as gym
 import numpy as np
@@ -157,14 +159,18 @@ class NoisyTwoQubitEnv(gym.Env):
             sampled_rate_list.append(random.sample(self.relaxation_rates_list[ii],k=1)[0])
 
         return sampled_rate_list
-            
+
     def get_observation(self):
-        normalizedDetuning = [(self.detuning[0] - min(self.detuning_list[0]) + 1E-15) /
-                              (max(self.detuning_list[0]) - min(self.detuning_list[0]) + 1E-15),
-                              (self.detuning[1] - min(self.detuning_list[1]) + 1E-15) /
-                              (max(self.detuning_list[1]) - min(self.detuning_list[1]) + 1E-15)]
-        # return np.append([self.compute_fidelity()]+[x//6283185 for x in self.relaxation_rate]+normalizedDetuning, self.unitary_to_observation(self.U)) #6283185 assuming 500 nanosecond relaxation is max
-        return np.append([self.compute_fidelity()]+[x//6283185 for x in self.relaxation_rate]+normalizedDetuning, self.unitary_to_observation(self.unitary_U_target)) #6283185 assuming 500 nanosecond relaxation is max
+        normalized_detuning = [normalize(self.detuning[0], self.detuning_list[0]),
+                               normalize(self.detuning[1], self.detuning_list[1])]
+        normalized_relaxation_rates = [normalize(self.relaxation_rate[0], self.relaxation_rates_list[0]),
+                                       normalize(self.relaxation_rate[1], self.relaxation_rates_list[1]),
+                                       normalize(self.relaxation_rate[2], self.relaxation_rates_list[2]),
+                                       normalize(self.relaxation_rate[3], self.relaxation_rates_list[3])]
+        return np.append([self.compute_fidelity()] +
+                          normalized_relaxation_rates +
+                          normalized_detuning,
+                          self.unitary_to_observation(self.unitary_U_target))
     
     def compute_fidelity(self):
         U_target_dagger = self.unitary_to_superoperator(self.unitary_U_target.conjugate().transpose())
