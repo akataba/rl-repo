@@ -1,18 +1,14 @@
+""" Environment for two qubit gate synthesis with noise """
 from typing import Tuple
-
 import cmath
 import random
 from scipy.linalg import expm
-
 from qutip.superoperator import liouvillian, spre, spost
 from qutip import Qobj, tensor
 from qutip.operators import *
 from qutip import cnot, cphase
-
 from qiskit.synthesis.one_qubit.one_qubit_decompose import OneQubitEulerDecomposer
 from relaqs.api.utils import normalize
-
-
 import gymnasium as gym
 import numpy as np
 import scipy.linalg as la
@@ -59,6 +55,13 @@ CZ = cphase(np.pi).data.toarray()
 
 
 class NoisyTwoQubitEnv(gym.Env):
+    """
+    physics: https://journals.aps.org/prapplied/pdf/10.1103/PhysRevApplied.10.054062, eq(2)
+    parameters: https://journals.aps.org/prx/pdf/10.1103/PhysRevX.11.021058
+    30 ns duration, g1 = 72.5 MHz, g2 = 71.5 MHz, g12 = 5 MHz
+    T1 = 60 us, 30 us
+    T2* = 66 us, 5 us
+    """
     @classmethod
     def get_default_env_config(cls):
         return {
@@ -72,36 +75,11 @@ class NoisyTwoQubitEnv(gym.Env):
             "save_data_every_step": 1,
             "verbose": True,
             # "relaxation_rates_list": [[1/60E-6/2/np.pi],[1/30E-6/2/np.pi],[1/66E-6/2/np.pi],[1/5E-6/2/np.pi]], # relaxation lists of list of floats to be sampled from when resetting environment.
-            "relaxation_rates_list": [[0],[0],[0],[0]], # for now
-            "relaxation_ops": [sigmam1,sigmam2,Qobj(Z1),Qobj(Z2)], #relaxation operator lists for T1 and T2, respectively
+            "relaxation_rates_list": [[0], [0], [0], [0]], # for now
+            "relaxation_ops": [sigmam1, sigmam2, Qobj(Z1), Qobj(Z2)], #relaxation operator lists for T1 and T2, respectively
             # "observation_space_size": 2*256 + 1 + 4 + 2 # 2*16 = (complex number)*(density matrix elements = 4)^2, + 1 for fidelity + 4 for relaxation rate + 2 for detuning
             "observation_space_size": 2*16 + 1 + 4 + 2 # 2*16 = (complex number)*(target unitary matrix elements = 4)^2, + 1 for fidelity + 4 for relaxation rate + 2 for detuning
         }
-
-    #physics: https://journals.aps.org/prapplied/pdf/10.1103/PhysRevApplied.10.054062, eq(2)
-    #parameters: https://journals.aps.org/prx/pdf/10.1103/PhysRevX.11.021058
-    #30 ns duration, g1 = 72.5 MHz, g2 = 71.5 MHz, g12 = 5 MHz
-    #T1 = 60 us, 30 us
-    #T2* = 66 us, 5 us
-
-    def hamiltonian(self, detuning1, detuning2, alpha1, alpha2, g_eff, gamma_magnitude1, gamma_phase1, gamma_magnitude2, gamma_phase2, index = 1):
-        selfEnergyTerms = (detuning1 + alpha1) * Z1 + (detuning2 + alpha2) * Z2
-        Qubit1ControlTerms = gamma_magnitude1 * (np.cos(gamma_phase1) * X1 + np.sin(gamma_phase1) * Y1)
-        Qubit2ControlTerms = gamma_magnitude2 * (np.cos(gamma_phase2) * X2 + np.sin(gamma_phase2) * Y2)
-        
-        if index ==1:
-            interactionEnergy = g_eff*exchangeOperator1
-        elif index ==2:
-            interactionEnergy = g_eff*exchangeOperator2
-        elif index ==3:
-            interactionEnergy = g_eff*exchangeOperator3
-        else:
-            interactionEnergy = 0
-            print("interaction kind not specified")
-
-        energyTotal = selfEnergyTerms + interactionEnergy + Qubit1ControlTerms + Qubit2ControlTerms
-
-        return energyTotal
 
     def __init__(self, env_config):
         self.final_time = env_config["final_time"]  # Final time for the gates
@@ -142,17 +120,37 @@ class NoisyTwoQubitEnv(gym.Env):
         qubit_2_detuning = random.sample(self.detuning_list[1],k=1)[0]
 
         self.detuning = [qubit_1_detuning, qubit_2_detuning]
+
+    def hamiltonian(self, detuning1, detuning2, alpha1, alpha2, g_eff, gamma_magnitude1, gamma_phase1, gamma_magnitude2, 
+        gamma_phase2, index = 1):
+        selfEnergyTerms = (detuning1 + alpha1) * Z1 + (detuning2 + alpha2) * Z2
+        Qubit1ControlTerms = gamma_magnitude1 * (np.cos(gamma_phase1) * X1 + np.sin(gamma_phase1) * Y1)
+        Qubit2ControlTerms = gamma_magnitude2 * (np.cos(gamma_phase2) * X2 + np.sin(gamma_phase2) * Y2)
         
+        if index ==1:
+            interactionEnergy = g_eff*exchangeOperator1
+        elif index ==2:
+            interactionEnergy = g_eff*exchangeOperator2
+        elif index ==3:
+            interactionEnergy = g_eff*exchangeOperator3
+        else:
+            interactionEnergy = 0
+            print("interaction kind not specified")
+
+        energyTotal = selfEnergyTerms + interactionEnergy + Qubit1ControlTerms + Qubit2ControlTerms
+
+        return energyTotal
+
     def update_target_unitary(self, U):
         self._U_target = self.unitary_to_superoperator(U)
         self.unitary_U_target = U
-        self.initialActions = self.KakActionCalculation()    
+        self.initialActions = self.KakActionCalculation()
 
     def unitary_to_superoperator(self, U):
         return (spre(Qobj(U)) * spost(Qobj(U.conjugate().transpose()))).data.toarray()
 
     def get_relaxation_rate(self):
-        relaxation_size = len(self.relaxation_ops)      #get number of relaxation ops
+        relaxation_size = len(self.relaxation_ops) # get number of relaxation ops
         
         sampled_rate_list = []
         for ii in range(relaxation_size):
@@ -180,7 +178,7 @@ class NoisyTwoQubitEnv(gym.Env):
     def unitary_to_observation(self, U):
         return (
             np.array(
-                [(abs(x), (cmath.phase(x) / 2 / np.pi + 1) / 2) for x in U.flatten()], 
+                [(abs(x), (cmath.phase(x) / 2 / np.pi + 1) / 2) for x in U.flatten()],
                 dtype=np.float64,
                 )
             .squeeze()
