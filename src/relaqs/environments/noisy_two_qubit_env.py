@@ -216,12 +216,147 @@ class NoisyTwoQubitEnv(gym.Env):
         info = {}
         return starting_observeration, info
 
+    def parse_actions(self, action):
+        ### First single qubit gate
+        if self.current_Haar_num == 1:
+            alpha1_1 = self.alpha_max * (action[0] + self.initialActions[0])
+            alpha2_1 = self.alpha_max * (action[1] + self.initialActions[1])
+
+            gamma_magnitude1_1 = self.gamma_magnitude_max * (action[2] + self.initialActions[2])
+            gamma_magnitude2_1 = self.gamma_magnitude_max * (action[3] + self.initialActions[3])
+
+            gamma_phase1_1 = self.gamma_phase_max * (action[4] + self.initialActions[4])
+            gamma_phase2_1 = self.gamma_phase_max * (action[5] + self.initialActions[5])
+        elif self.current_Haar_num == 2:
+            alpha1_1 = - self.alpha_max * (action[0] + self.initialActions[0])
+            alpha2_1 = - self.alpha_max * (action[1] + self.initialActions[1])
+
+            gamma_magnitude1_1 = self.gamma_magnitude_max * (action[2] + self.initialActions[2])
+            gamma_magnitude2_1 = self.gamma_magnitude_max * (action[3] + self.initialActions[3])
+
+            gamma_phase1_1 = self.gamma_phase_max * (action[4] + self.initialActions[4])
+            gamma_phase2_1 = self.gamma_phase_max * (action[5] + self.initialActions[5])
+        else:
+            alpha1_1 = self.alpha_max * (action[0])
+            alpha2_1 = self.alpha_max * (action[1])
+
+            gamma_magnitude1_1 = self.gamma_magnitude_max * (action[2])
+            gamma_magnitude2_1 = self.gamma_magnitude_max * (action[3])
+
+            gamma_phase1_1 = self.gamma_phase_max * (action[4])
+            gamma_phase2_1 = self.gamma_phase_max * (action[5])            
+
+        ### First two qubit gate
+        # Question: why not haar number 2 w/ initial actions?
+        if self.current_Haar_num==1:
+            g_eff1 = self.g_eff_max * (action[6]+self.initialActions[6])
+        else:
+            g_eff1 = self.g_eff_max * (action[6])
+
+        ### Second Single qubit gate
+        if self.current_Haar_num == 1:
+            alpha1_2 = self.alpha_max * (action[7] + self.initialActions[7])
+            alpha2_2 = self.alpha_max * (action[8] + self.initialActions[8])
+
+            gamma_magnitude1_2 = self.gamma_magnitude_max * (action[9] + self.initialActions[9])
+            gamma_magnitude2_2 = self.gamma_magnitude_max * (action[10] + self.initialActions[10])
+
+            gamma_phase1_2 = self.gamma_phase_max * (action[11] + self.initialActions[11])
+            gamma_phase2_2 = self.gamma_phase_max * (action[12] + self.initialActions[12])
+        elif self.current_Haar_num==2:
+            alpha1_2 = - self.alpha_max * (action[7] + self.initialActions[7])
+            alpha2_2 = - self.alpha_max * (action[8] + self.initialActions[8])
+
+            gamma_magnitude1_2 = self.gamma_magnitude_max * (action[9] + self.initialActions[9])
+            gamma_magnitude2_2 = self.gamma_magnitude_max * (action[10] + self.initialActions[10])
+
+            gamma_phase1_2 = self.gamma_phase_max * (action[11] + self.initialActions[11])
+            gamma_phase2_2 = self.gamma_phase_max * (action[12] + self.initialActions[12])
+        else:
+            alpha1_2 = self.alpha_max * (action[7])
+            alpha2_2 = self.alpha_max * (action[8])
+
+            gamma_magnitude1_2 = self.gamma_magnitude_max * (action[9])
+            gamma_magnitude2_2 = self.gamma_magnitude_max * (action[10])
+
+            gamma_phase1_2 = self.gamma_phase_max * (action[11])
+            gamma_phase2_2 = self.gamma_phase_max * (action[12])
+            
+        ### second two qubit gate
+        if self.current_Haar_num == 1:
+            g_eff2 = self.g_eff_max * (action[13]+self.initialActions[13])
+        else:
+            g_eff2 = self.g_eff_max * (action[13])
+
+        ### Third Single qubit gate
+        if self.current_Haar_num == 1:        
+            alpha1_3 = self.alpha_max * (action[14] + self.initialActions[14])
+            alpha2_3 = self.alpha_max * (action[15] + self.initialActions[15])
+
+            gamma_magnitude1_3 = self.gamma_magnitude_max * (action[16] + self.initialActions[16])
+            gamma_magnitude2_3 = self.gamma_magnitude_max * (action[17] + self.initialActions[17])
+
+            gamma_phase1_3 = self.gamma_phase_max * (action[18] + self.initialActions[18]) 
+            gamma_phase2_3 = self.gamma_phase_max * (action[19] + self.initialActions[19])
+        elif self.current_Haar_num == 2:
+            alpha1_3 = - self.alpha_max * (action[14] + self.initialActions[14])
+            alpha2_3 = - self.alpha_max * (action[15] + self.initialActions[15])
+
+            gamma_magnitude1_3 = self.gamma_magnitude_max * (action[16] + self.initialActions[16])
+            gamma_magnitude2_3 = self.gamma_magnitude_max * (action[17] + self.initialActions[17])
+
+            gamma_phase1_3 = self.gamma_phase_max * (action[18] + self.initialActions[18]) 
+            gamma_phase2_3 = self.gamma_phase_max * (action[19] + self.initialActions[19])
+        else:
+            alpha1_3 = self.alpha_max * (action[14])
+            alpha2_3 = self.alpha_max * (action[15])
+
+            gamma_magnitude1_3 = self.gamma_magnitude_max * (action[16])
+            gamma_magnitude2_3 = self.gamma_magnitude_max * (action[17])
+
+            gamma_phase1_3 = self.gamma_phase_max * (action[18])
+            gamma_phase2_3 = self.gamma_phase_max * (action[19])
+
+        ### third two qubit gate
+        if self.current_Haar_num == 1:
+            g_eff3 = self.g_eff_max * (action[20]+self.initialActions[20])
+        else:
+            g_eff3 = self.g_eff_max * (action[20])
+        
+        ### Fourth Single qubit gate
+        if self.current_Haar_num == 1:        
+            alpha1_4 = self.alpha_max * (action[21] + self.initialActions[21])
+            alpha2_4 = self.alpha_max * (action[22] + self.initialActions[22])
+
+            gamma_magnitude1_4 = self.gamma_magnitude_max * (action[23] + self.initialActions[23])
+            gamma_magnitude2_4 = self.gamma_magnitude_max * (action[24] + self.initialActions[24])
+
+            gamma_phase1_4 = self.gamma_phase_max * (action[25] + self.initialActions[25])
+            gamma_phase2_4 = self.gamma_phase_max * (action[26] + self.initialActions[26])
+        elif self.current_Haar_num == 2:
+            alpha1_4 = - self.alpha_max * (action[21] + self.initialActions[21])
+            alpha2_4 = - self.alpha_max * (action[22] + self.initialActions[22])
+
+            gamma_magnitude1_4 = self.gamma_magnitude_max * (action[23] + self.initialActions[23])
+            gamma_magnitude2_4 = self.gamma_magnitude_max * (action[24] + self.initialActions[24])
+
+            gamma_phase1_4 = self.gamma_phase_max * (action[25] + self.initialActions[25])
+            gamma_phase2_4 = self.gamma_phase_max * (action[26] + self.initialActions[26])
+        else:            
+            alpha1_4 = self.alpha_max * (action[21])
+            alpha2_4 = self.alpha_max * (action[22])
+
+            gamma_magnitude1_4 = self.gamma_magnitude_max * (action[23])
+            gamma_magnitude2_4 = self.gamma_magnitude_max * (action[24])
+
+            gamma_phase1_4 = self.gamma_phase_max * (action[25])
+            gamma_phase2_4 = self.gamma_phase_max * (action[26])
+
     def step(self, action):
         num_time_bins = 2 ** (self.current_Haar_num - 1)
         self.initialActions = self.KakActionCalculation()
         
         ### First single qubit gate
-        
         if self.current_Haar_num==1:
             alpha1_1 = self.alpha_max * (action[0] + self.initialActions[0])
             alpha2_1 = self.alpha_max * (action[1] + self.initialActions[1])
