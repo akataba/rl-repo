@@ -54,13 +54,13 @@ def run(env_class: gym.Env = SingleQubitEnv,
     if plot is True:
         assert save is True, "If plot=True, then save must also be set to True"
         print("epiosde length", alg._episode_history[0].episode_length)
-        plot_data(save_dir, episode_length=alg._episode_history[0].episode_length, figure_title=str(target_gate) + "Y, noiselesss, gamma/5")
+        plot_data(save_dir, episode_length=alg._episode_history[0].episode_length, figure_title=str(target_gate))
         print("Plots Created")
     # --------------------------------------------------------------
 
 if __name__ == "__main__":
     env_class = NoisySingleQubitEnv
-    target_gate = gates.Y()
+    target_gate = gates.X()
     n_training_iterations = 50
     save = plot = True
     run(env_class, target_gate, n_training_iterations, save, plot)
