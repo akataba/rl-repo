@@ -63,14 +63,17 @@ class S(Gate):
         return "S"
     
     def get_matrix(self):
-        return np.exp(-1j * Z().get_matrix() * np.pi/4)
+        return np.array([[1, 0],
+                         [0, 1j]])
 
 class X_pi_4(Gate):
     def __str__(self):
         return "X_pi_4"
     
     def get_matrix(self):
-        return np.exp(-1j * X().get_matrix() * np.pi/4)
+        theta = np.pi / 4
+        return np.array([[np.cos(theta/2), -1j*np.sin(theta/2)],
+                         [-1j*np.sin(theta/2), np.cos(theta/2)]])
 
 class RandomSU2(Gate):
     def __str__(self):
