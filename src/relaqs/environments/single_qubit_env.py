@@ -122,7 +122,7 @@ class SingleQubitEnv(gym.Env):
         return gamma_magnitude, gamma_phase, alpha
     
     def update_transition_history(self, fidelity, reward, action):
-        self.transition_history.append([fidelity, reward, action, self.U, self.episode_id])
+        self.transition_history.append([fidelity, reward, action, self.U, self.U_target, self.episode_id])
 
     def get_info(self, fidelity, reward, action, truncated, terminated):
         info_string = f"""Step: {self.current_step_per_Haar}
