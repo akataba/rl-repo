@@ -1,17 +1,18 @@
 from relaqs import RESULTS_DIR
 from relaqs.api import load_pickled_env_data
-
-path = '2025-01-16_11-27-21_arbitrary-gate'
+path = '2025-01-21_10-40-03_arbitrary-gate'
 data_path = RESULTS_DIR + path + '/env_data.pkl'
 
 df = load_pickled_env_data(data_path)
 
-fidelity = df["Fidelity"]
-reward = df["Rewards"]
-actions = df["Actions"]
-operator = df["Operator"]
-target_operator = df["Target Operator"]
-episode_id = df["Episode Id"]
+last_n = 1000
+
+fidelity = df["Fidelity"][:last_n]
+reward = df["Rewards"][:last_n]
+actions = df["Actions"][:last_n]
+operator = df["Operator"][:last_n]
+target_operator = df["Target Operator"][:last_n]
+episode_id = df["Episode Id"][:last_n]
 
 n_lowest = 10
 
