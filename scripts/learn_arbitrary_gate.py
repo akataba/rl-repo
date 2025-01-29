@@ -29,7 +29,7 @@ def run(n_training_iterations=1, save=True, plot=True):
     alg_config = DDPGConfig()
     alg_config.framework("torch")
     env_config = ChangingTargetEnv.get_default_env_config()
-    env_config["target_generation_function"] = XY_combination
+    #env_config["target_generation_function"] = XY_combination
     #env_config["U_target_list"] = [gates.X().get_matrix(), gates.Y().get_matrix()]
     alg_config.environment(ChangingTargetEnv, env_config=env_config)
 
@@ -62,12 +62,12 @@ def run(n_training_iterations=1, save=True, plot=True):
     # ---------------------> Plot Data <-------------------------
     if plot is True:
         assert save is True, "If plot=True, then save must also be set to True"
-        plot_data(save_dir, episode_length=alg._episode_history[0].episode_length, figure_title="X Y Combinations")
+        plot_data(save_dir, episode_length=alg._episode_history[0].episode_length)
         print("Plots Created")
     # --------------------------------------------------------------
 
 if __name__ == "__main__":
-    n_training_iterations = 250
+    n_training_iterations = 150
     save = True
     plot = True
     run(n_training_iterations, save, plot)
