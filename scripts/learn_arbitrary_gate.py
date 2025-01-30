@@ -2,7 +2,7 @@
 import ray
 import numpy as np
 from ray.rllib.algorithms.ddpg import DDPGConfig
-from relaqs.environments.changing_target_gate import ChangingTargetEnv
+from relaqs.environments.changing_target_gate import ChangingTargetEnv, NoisyChangingTargetEnv
 from relaqs.save_results import SaveResults
 from relaqs.plot_data import plot_data
 from relaqs.api import gates
@@ -22,19 +22,19 @@ class XY_combination(Gate):
         b = np.cos(theta)
         return a*gates.X().get_matrix() + b*gates.Y().get_matrix()
 
-def run(n_training_iterations=1, save=True, plot=True):
+def run(env=ChangingTargetEnv, n_training_iterations=1, save=True, plot=True):
     ray.init()
 
     # ---------------------> Configure algorithm and Environment <-------------------------
     alg_config = DDPGConfig()
     alg_config.framework("torch")
-    env_config = ChangingTargetEnv.get_default_env_config()
+    env_config = env.get_default_env_config()
     #env_config["target_generation_function"] = XY_combination
     #env_config["U_target_list"] = [gates.X().get_matrix(), gates.Y().get_matrix()]
-    alg_config.environment(ChangingTargetEnv, env_config=env_config)
+    alg_config.environment(env, env_config=env_config)
 
     alg_config.rollouts(batch_mode="complete_episodes")
-    alg_config.train_batch_size = ChangingTargetEnv.get_default_env_config()["steps_per_Haar"]
+    alg_config.train_batch_size = env.get_default_env_config()["steps_per_Haar"]
 
     ### working 1-3 sets
     alg_config.actor_lr = 4e-5
@@ -62,12 +62,13 @@ def run(n_training_iterations=1, save=True, plot=True):
     # ---------------------> Plot Data <-------------------------
     if plot is True:
         assert save is True, "If plot=True, then save must also be set to True"
-        plot_data(save_dir, episode_length=alg._episode_history[0].episode_length)
+        plot_data(save_dir, episode_length=alg._episode_history[0].episode_length, figure_title="Noisy Random SU(2)")
         print("Plots Created")
     # --------------------------------------------------------------
 
 if __name__ == "__main__":
+    env = NoisyChangingTargetEnv
     n_training_iterations = 150
     save = True
     plot = True
-    run(n_training_iterations, save, plot)
+    run(NoisyChangingTargetEnv, n_training_iterations, save, plot)
