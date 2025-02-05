@@ -37,7 +37,7 @@ class NoisyChangingTargetEnv(ChangingTargetEnv, NoisySingleQubitEnv):
     @classmethod
     def get_default_env_config(cls):
         config_dict = super().get_default_env_config()
-        config_dict["observation_space_size"] = 67
+        config_dict["observation_space_size"] = 68
         return config_dict
     
     def __init__(self, env_config):
