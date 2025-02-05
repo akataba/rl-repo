@@ -67,8 +67,8 @@ def run(env=ChangingTargetEnv, n_training_iterations=1, save=True, plot=True):
     # --------------------------------------------------------------
 
 if __name__ == "__main__":
-    env = NoisyChangingTargetEnv
-    n_training_iterations = 150
+    env = ChangingTargetEnv
+    n_training_iterations = 100
     save = True
     plot = True
-    run(NoisyChangingTargetEnv, n_training_iterations, save, plot)
+    run(env, n_training_iterations, save, plot)
