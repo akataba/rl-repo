@@ -62,13 +62,14 @@ def run(env=ChangingTargetEnv, n_training_iterations=1, save=True, plot=True):
     # ---------------------> Plot Data <-------------------------
     if plot is True:
         assert save is True, "If plot=True, then save must also be set to True"
-        plot_data(save_dir, episode_length=alg._episode_history[0].episode_length, figure_title="Noisy Random SU(2)")
+        env_string = "Noiseless" if isinstance(env, ChangingTargetEnv) else "Noisy"
+        plot_data(save_dir, episode_length=alg._episode_history[0].episode_length, figure_title=env_string +" Random SU(2)")
         print("Plots Created")
     # --------------------------------------------------------------
 
 if __name__ == "__main__":
     env = ChangingTargetEnv
-    n_training_iterations = 100
+    n_training_iterations = 1
     save = True
     plot = True
     run(env, n_training_iterations, save, plot)
