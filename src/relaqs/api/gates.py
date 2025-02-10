@@ -67,6 +67,7 @@ class S(Gate):
                          [0, 1j]])
 
 class X_pi_4(Gate):
+    "45 degree rotation about the X axis"
     def __str__(self):
         return "X_pi_4"
     
@@ -74,6 +75,16 @@ class X_pi_4(Gate):
         theta = np.pi / 4
         return np.array([[np.cos(theta/2), -1j*np.sin(theta/2)],
                          [-1j*np.sin(theta/2), np.cos(theta/2)]])
+
+class Y_pi_2(Gate):
+    "90 degree rotation about the Y axis"
+    def __str__(self):
+        return "Y_pi_2"
+    
+    def get_matrix(self):
+        theta = np.pi / 4
+        return np.array([[np.cos(theta), -1*np.sin(theta)],
+                         [np.sin(theta), np.cos(theta)]])
 
 class RandomSU2(Gate):
     def __str__(self):
