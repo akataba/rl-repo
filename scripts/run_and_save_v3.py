@@ -1,6 +1,7 @@
 """ For refactor of HaarBasis branch, based off of run_and_save_v2 """
 import ray
 import gymnasium as gym
+import numpy as np
 from ray.rllib.algorithms.ddpg import DDPGConfig
 from relaqs.environments import SingleQubitEnv, NoisySingleQubitEnv
 from relaqs.save_results import SaveResults
@@ -54,14 +55,14 @@ def run(env_class: gym.Env = SingleQubitEnv,
     if plot is True:
         assert save is True, "If plot=True, then save must also be set to True"
         print("epiosde length", alg._episode_history[0].episode_length)
-        plot_data(save_dir, episode_length=alg._episode_history[0].episode_length, figure_title=str(target_gate))
+        plot_data(save_dir, episode_length=alg._episode_history[0].episode_length, figure_title="Noiseless " + str(target_gate))
         print("Plots Created")
     # --------------------------------------------------------------
 
 if __name__ == "__main__":
-    env_class = NoisySingleQubitEnv
-    target_gate = gates.X()
-    n_training_iterations = 50
+    env_class = SingleQubitEnv
+    target_gate = gates.RY(-1*np.pi/4, "-pi/4")
+    n_training_iterations = 50                  
     save = plot = True
     run(env_class, target_gate, n_training_iterations, save, plot)
     
