@@ -85,6 +85,32 @@ class Y_pi_2(Gate):
         theta = np.pi / 4
         return np.array([[np.cos(theta), -1*np.sin(theta)],
                          [np.sin(theta), np.cos(theta)]])
+ 
+class RX(Gate):
+    "Rotation about the X axis"
+    def __init__(self, theta, theta_str=""):
+        self.theta = theta
+        self.theta_str = theta_str
+
+    def __str__(self):
+        return "RX(" + self.theta_str + ")"
+    
+    def get_matrix(self):
+        return np.array([[np.cos(self.theta/2), -1j*np.sin(self.theta/2)],
+                         [-1j*np.sin(self.theta/2), np.cos(self.theta/2)]])
+    
+class RY(Gate):
+    "Rotation about the Y axis"
+    def __init__(self, theta, theta_str=""):
+        self.theta = theta
+        self.theta_str = theta_str
+
+    def __str__(self):
+        return "RY(" + self.theta_str + ")"
+    
+    def get_matrix(self):
+        return np.array([[np.cos(self.theta/2), -1*np.sin(self.theta/2)],
+                         [np.sin(self.theta/2), np.cos(self.theta/2)]])
 
 class RandomSU2(Gate):
     def __str__(self):
