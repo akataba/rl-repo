@@ -61,7 +61,8 @@ def run(env_class: gym.Env = SingleQubitEnv,
 
 if __name__ == "__main__":
     env_class = SingleQubitEnv
-    target_gate = gates.RY(-1*np.pi/4, "-pi/4")
+    target_gate = gates.RX(-np.pi/2, "-pi_2")
+    #target_gate = gates.H()
     n_training_iterations = 50                  
     save = plot = True
     run(env_class, target_gate, n_training_iterations, save, plot)
