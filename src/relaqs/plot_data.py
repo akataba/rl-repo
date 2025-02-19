@@ -59,7 +59,7 @@ def plot_data(save_dir, episode_length, figure_title=''):
     df = pd.read_csv(save_dir + "env_data.csv", header=0)
     fidelities = np.array(df.iloc[:,0])
     rewards = np.array(df.iloc[:,1])
-    episode_ids = np.array(df.iloc[:,4])
+    episode_ids = np.array(df.iloc[:,-1])
 
     print("max fidelity: ", max(fidelities))
     print("max reward: ", max(rewards))
