@@ -3,3 +3,7 @@ __pycache__
 .relaqs.egg-info
 results/
 gradfile
+venv/
+requirements.txt
+ray/
+.idea

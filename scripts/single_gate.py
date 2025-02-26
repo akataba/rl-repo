@@ -62,7 +62,7 @@ def run(env_class: gym.Env = SingleQubitEnv,
 if __name__ == "__main__":
     env_class = SingleQubitEnv
     target_gate = gates.X()
-    n_training_iterations = 50
+    n_training_iterations = 1
     save = plot = True
     run(env_class, target_gate, n_training_iterations, save, plot)
     
