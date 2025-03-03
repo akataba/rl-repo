@@ -37,31 +37,17 @@ def run(env=ChangingTargetEnv, n_training_episodes=1, u_target_list = [gates.Ran
 
     #---------------------------------Collins Configs---------------------------------
     ### working 1-3 sets
-    # alg_config.actor_lr = 4e-5
-    # alg_config.critic_lr = 5e-4
-    #
-    # alg_config.actor_hidden_activation = "relu"
-    # alg_config.critic_hidden_activation = "relu"
-    # alg_config.num_steps_sampled_before_learning_starts = 100
-    # alg_config.actor_hiddens = [300, 300, 300, 300, 300]
-    # alg_config.exploration_config["scale_timesteps"] = 1000
-    # alg_config.train_batch_size = 256
+    alg_config.actor_lr = 4e-5
+    alg_config.critic_lr = 5e-4
+
+    alg_config.actor_hidden_activation = "relu"
+    alg_config.critic_hidden_activation = "relu"
+    alg_config.num_steps_sampled_before_learning_starts = 100
+    alg_config.actor_hiddens = [300, 300, 300, 300, 300]
+    alg_config.exploration_config["scale_timesteps"] = 1000
+    alg_config.train_batch_size = 128
     # alg_config.twin_q = True
 
-    alg_config.actor_hiddens = [1024, 512, 256]
-    alg_config.actor_lr = 5e-5
-    alg_config.critic_lr = 1e-3
-    alg_config.critic_hiddens = [1024, 512, 300]
-
-    alg_config.exploration_config["random_timesteps"] = 3055.8304716435505
-    alg_config.exploration_config["ou_base_scale"] = 0.33536897625927453
-    alg_config.exploration_config["ou_theta"] = 0.31360827370009975
-    alg_config.exploration_config["ou_sigma"] = 0.26940347674578985
-    alg_config.exploration_config["initial_scale"] = 1.1
-    alg_config.exploration_config["scale_timesteps"] = n_training_episodes*1000
-    alg_config.target_network_update_freq = 2  # Slows down updates slightly for stability
-    alg_config.tau = 0.0005
-    alg_config.twin_q = True
     # ---------------------------------------------------------------------
     alg = alg_config.build()
 
@@ -179,7 +165,7 @@ def do_inferencing(env, train_alg, curr_gate):
 
 def main():
     env = NoisyChangingTargetEnv
-    n_training_episodes = 30
+    n_training_episodes = 100
     save = True
     plot = True
     n_episodes_for_inferencing = 1000
