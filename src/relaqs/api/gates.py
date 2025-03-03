@@ -75,6 +75,82 @@ class X_pi_4(Gate):
         return np.array([[np.cos(theta/2), -1j*np.sin(theta/2)],
                          [-1j*np.sin(theta/2), np.cos(theta/2)]])
 
+class XY_combination(Gate):
+    def __str__(self):
+        return "XY_combination"
+
+    def get_matrix(self):
+        """
+        aX + bY, a^2 + b^2 = 1
+        """
+        theta = np.random.uniform(0* np.pi, 2 * np.pi)
+        a = np.sin(theta)
+        b = np.cos(theta)
+        return a * X().get_matrix() + b * Y().get_matrix()
+
+class Rx(Gate):
+    def __init__(self, theta_range=(0, 2)):
+        super().__init__()
+        self.theta_min, self.theta_max = theta_range
+
+    def __str__(self):
+        return f"Rx({self.theta_min}, {self.theta_max})"
+
+    def get_matrix(self):
+        theta = np.random.uniform(self.theta_min* np.pi, self.theta_max * np.pi)
+        return np.array([[np.cos(theta / 2), -1j * np.sin(theta / 2)],
+                         [-1j * np.sin(theta / 2), np.cos(theta / 2)]])
+
+class Ry(Gate):
+    def __init__(self, theta_range=(0, 2)):
+        super().__init__()
+        self.theta_min, self.theta_max = theta_range
+
+    def __str__(self):
+        return f"Ry({self.theta_min}, {self.theta_max})"
+
+    def get_matrix(self):
+        theta = np.random.uniform(self.theta_min* np.pi, self.theta_max * np.pi)
+        return np.array([[np.cos(theta / 2), -1 * np.sin(theta / 2)],
+                         [ np.sin(theta / 2), np.cos(theta / 2)]])
+
+class Rz(Gate):
+    def __init__(self, theta_range=(0, 2)):
+        super().__init__()
+        self.theta_min, self.theta_max = theta_range
+
+    def __str__(self):
+        return f"Rz({self.theta_min}, {self.theta_max})"
+
+    def get_matrix(self):
+        theta = np.random.uniform(self.theta_min * np.pi, self.theta_max * np.pi)
+        return np.array([[np.exp(-1j*(theta/2)), 0],
+                         [ 0, np.exp(1j*(theta/2))]])
+
+class ZX_combination(Gate):
+    def __str__(self):
+        return "ZX_combination"
+
+    def get_matrix(self):
+        """
+        aZ + bX, where a^2 + b^2 = 1
+        """
+        theta = np.random.uniform(0* np.pi, 2 * np.pi)
+        a = np.sin(theta)
+        b = np.cos(theta)
+        return a * Z().get_matrix() + b * X().get_matrix()
+
+class HS(Gate):
+    def __str__(self):
+        return "HS"
+
+    def get_matrix(self):
+        """
+        Hadamard followed by Phase (HS)
+        """
+        return np.matmul(H().get_matrix(), S().get_matrix())
+
+
 class RandomSU2(Gate):
     def __str__(self):
         return "RandomSU2"

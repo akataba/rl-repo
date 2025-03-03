@@ -29,6 +29,7 @@ class SingleQubitEnv(gym.Env):
         self.observation_space = gym.spaces.Box(low=-1, high=1, shape=(env_config["observation_space_size"],))
         self.action_space = gym.spaces.Box(low=np.array([-1, -1, -1]), high=np.array([1, 1, 1]))
         self.U_target = env_config["U_target"]
+        self.original_U_target = None
         self.U_initial = env_config["U_initial"] # future todo, can make random initial state
         self.U = env_config["U_initial"].copy()
         self.num_Haar_basis = env_config["num_Haar_basis"]
@@ -65,6 +66,10 @@ class SingleQubitEnv(gym.Env):
         return float(np.abs(np.trace(U_target_dagger @ self.U))) / (self.U.shape[0])
     
     def compute_reward(self, fidelity):
+        if fidelity >= 1.0 or self.prev_fidelity > 1.0 and self.verbose:
+            print(
+                f'Giving max reward----**********************----\n')
+            return 35
         return (-3 * np.log10(1.0 - fidelity) + np.log10(1.0 - self.prev_fidelity)) + (3 * fidelity - self.prev_fidelity)
         
     def hamiltonian(self, alpha, gamma_magnitude, gamma_phase):
@@ -116,13 +121,14 @@ class SingleQubitEnv(gym.Env):
             self.current_step_per_Haar += 1
 
     def parse_actions(self, action):
-        gamma_magnitude = self.gamma_magnitude_max / 2 * (action[0] + 1)
+        gamma_magnitude = self.gamma_magnitude_max/2  * (action[0]+1)
+        # gamma_magnitude = self.gamma_magnitude_max * action[0]
         gamma_phase = self.gamma_phase_max * action[1]
         alpha = self.alpha_max * action[2]
         return gamma_magnitude, gamma_phase, alpha
     
     def update_transition_history(self, fidelity, reward, action):
-        self.transition_history.append([fidelity, reward, action, self.U, self.U_target, self.episode_id])
+        self.transition_history.append([fidelity, reward, action, self.U, self.U_target,  self.original_U_target, self.episode_id])
 
     def get_info(self, fidelity, reward, action, truncated, terminated):
         info_string = f"""Step: {self.current_step_per_Haar}
