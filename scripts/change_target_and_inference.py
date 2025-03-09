@@ -94,8 +94,7 @@ def run(env=ChangingTargetEnv, n_training_episodes=1, u_target_list = [gates.Ran
     return alg, training_elapsed_time, save_dir
 
 def inference_and_save(inference_list, save_dir, train_alg, n_episodes_for_inferencing):
-    columns = ['Fidelity', 'Rewards', 'Actions', 'Self.U_Operator', 'Target_Operator', 'Unitary_target', 'Episode Id']
-
+    columns = columns = ['Fidelity', 'Rewards', 'Actions', 'Operator', 'Target Operator', 'Target DM', 'Episode Id']
 
     for curr_gate in inference_list:
         # train_alg = copy.deepcopy(alg)
@@ -165,7 +164,7 @@ def do_inferencing(env, train_alg, curr_gate):
 
 def main():
     env = NoisyChangingTargetEnv
-    n_training_episodes = 100
+    n_training_episodes = 50
     save = True
     plot = True
     n_episodes_for_inferencing = 1000

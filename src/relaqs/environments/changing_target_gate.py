@@ -51,7 +51,7 @@ class NoisyChangingTargetEnv(ChangingTargetEnv, NoisySingleQubitEnv):
         else:
             U = random.choice(self.U_target_list).get_matrix()
         self.U_target = self.unitary_to_superoperator(U)
-        self.original_U_target = U
+        self.U_target_dm = U
 
     def return_env_config(self):
         env_config = super().get_default_env_config()
