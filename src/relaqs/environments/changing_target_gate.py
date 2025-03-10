@@ -21,7 +21,7 @@ class ChangingTargetEnv(SingleQubitEnv):
         if len(self.U_target_list) == 0:
             self.U_target= self.target_generation_function().get_matrix()
         else:
-            self.U_target = random.choice(self.U_target_list)
+            self.U_target = random.choice(self.U_target_list.get_matrix())
 
     def reset(self, *, seed=None, options=None):
         _, info = super().reset()
@@ -49,5 +49,24 @@ class NoisyChangingTargetEnv(ChangingTargetEnv, NoisySingleQubitEnv):
         if len(self.U_target_list) == 0:
             U = self.target_generation_function().get_matrix()
         else:
-            U = random.choice(self.U_target_list)
+            U = random.choice(self.U_target_list).get_matrix()
         self.U_target = self.unitary_to_superoperator(U)
+        self.U_target_dm = U
+
+    def return_env_config(self):
+        env_config = super().get_default_env_config()
+        env_config.update({"detuning_list": self.detuning_list,  # qubit detuning
+                           "relaxation_rates_list": self.relaxation_rates_list,
+                           "relaxation_ops": self.relaxation_ops,
+                           "observation_space_size": 68,
+                           "num_Haar_basis": self.num_Haar_basis,
+                           "steps_per_Haar": self.steps_per_Haar,
+                           "verbose": self.verbose,
+                           "U_init": self.U_initial,
+                           "U_target": self.U_target,
+                           "target_generation_function": self.target_generation_function,
+                           "U_target_list": self.U_target_list,
+                           })
+        return env_config
+
+

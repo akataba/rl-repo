@@ -29,6 +29,7 @@ class SingleQubitEnv(gym.Env):
         self.observation_space = gym.spaces.Box(low=-1, high=1, shape=(env_config["observation_space_size"],))
         self.action_space = gym.spaces.Box(low=np.array([-1, -1, -1]), high=np.array([1, 1, 1]))
         self.U_target = env_config["U_target"]
+        self.U_target_dm = None
         self.U_initial = env_config["U_initial"] # future todo, can make random initial state
         self.U = env_config["U_initial"].copy()
         self.num_Haar_basis = env_config["num_Haar_basis"]
@@ -116,13 +117,13 @@ class SingleQubitEnv(gym.Env):
             self.current_step_per_Haar += 1
 
     def parse_actions(self, action):
-        gamma_magnitude = self.gamma_magnitude_max / 2 * (action[0] + 1)
+        gamma_magnitude = self.gamma_magnitude_max / 2  * (action[0] + 1)
         gamma_phase = self.gamma_phase_max * action[1]
         alpha = self.alpha_max * action[2]
         return gamma_magnitude, gamma_phase, alpha
     
     def update_transition_history(self, fidelity, reward, action):
-        self.transition_history.append([fidelity, reward, action, self.U, self.U_target, self.episode_id])
+        self.transition_history.append([fidelity, reward, action, self.U, self.U_target,  self.U_target_dm, self.episode_id])
 
     def get_info(self, fidelity, reward, action, truncated, terminated):
         info_string = f"""Step: {self.current_step_per_Haar}
