@@ -163,10 +163,10 @@ def do_inferencing(env, train_alg, curr_gate):
 
 def main():
     env = NoisyChangingTargetEnv
-    n_training_episodes = 2
+    n_training_episodes = 60
     save = True
     plot = True
-    n_episodes_for_inferencing = 100
+    n_episodes_for_inferencing = 1000
     u_target_list = [gates.RandomSU2()]
     alg, training_time, save_dir = run(env, n_training_episodes, u_target_list, save, plot)
     inferencing_gate = [gates.RandomSU2(), gates.Rx(), gates.Ry(), gates.Rz(),
