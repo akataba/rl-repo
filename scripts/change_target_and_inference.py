@@ -20,7 +20,6 @@ def run(env=ChangingTargetEnv, n_training_episodes=1, u_target_list = [gates.Ran
     alg_config = DDPGConfig()
     alg_config.framework("torch")
     env_config = env.get_default_env_config()
-    # env_config["target_generation_function"] = XY_combination
     env_config['num_Haar_basis'] = 1
     env_config['steps_per_Haar'] = 2
     env_config["U_target_list"] = u_target_list
@@ -94,7 +93,7 @@ def run(env=ChangingTargetEnv, n_training_episodes=1, u_target_list = [gates.Ran
     return alg, training_elapsed_time, save_dir
 
 def inference_and_save(inference_list, save_dir, train_alg, n_episodes_for_inferencing):
-    columns = columns = ['Fidelity', 'Rewards', 'Actions', 'Operator', 'Target Operator', 'Target DM', 'Episode Id']
+    columns = ['Fidelity', 'Rewards', 'Actions', 'Operator', 'Target Operator', 'Target DM', 'Initial DM', 'Episode Id']
 
     for curr_gate in inference_list:
         # train_alg = copy.deepcopy(alg)
@@ -164,10 +163,10 @@ def do_inferencing(env, train_alg, curr_gate):
 
 def main():
     env = NoisyChangingTargetEnv
-    n_training_episodes = 50
+    n_training_episodes = 2
     save = True
     plot = True
-    n_episodes_for_inferencing = 1000
+    n_episodes_for_inferencing = 100
     u_target_list = [gates.RandomSU2()]
     alg, training_time, save_dir = run(env, n_training_episodes, u_target_list, save, plot)
     inferencing_gate = [gates.RandomSU2(), gates.Rx(), gates.Ry(), gates.Rz(),
