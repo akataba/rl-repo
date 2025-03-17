@@ -259,7 +259,7 @@ def multiple_inference_visuals(df, figure_title, save_dir, plot_filename, bin_st
     # Extract fidelity, rewards, and episode IDs from the DataFrame
     fidelities = np.array(df.iloc[:, 0])  # Fidelity values per episode
     rewards = np.array(df.iloc[:, 1])  # Rewards per episode
-    episode_ids = np.array(df.iloc[:, 6])  # Episode indices
+    episode_ids = np.array(df.iloc[:,-1])  # Episode indices
     u_target_list = df.iloc[:, 5]
 
     # Extract U_target matrix and action sequences from the dataset

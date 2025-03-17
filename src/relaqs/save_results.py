@@ -60,7 +60,7 @@ class SaveResults():
         return path
 
     def save_env_transitions(self):
-        columns = ['Fidelity', 'Rewards', 'Actions', 'Operator', 'Target Operator', 'Target DM', 'Episode Id']
+        columns = ['Fidelity', 'Rewards', 'Actions', 'Operator', 'Target Operator', 'Target DM', 'Initial DM', 'Episode Id']
         df = pd.DataFrame(self.env.transition_history, columns=columns)
         df.to_pickle(self.save_path + "env_data.pkl") # easier to load than csv
         df.to_csv(self.save_path + "env_data.csv", index=False) # backup in case pickle doesn't work
