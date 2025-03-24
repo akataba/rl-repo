@@ -22,7 +22,7 @@ class SingleQubitEnv(gym.Env):
             "num_Haar_basis": 1,
             "steps_per_Haar": 2,  # steps per Haar basis per episode
             "verbose": True,
-            "observation_space_size": 9,  # 1 (fidelity) + 8 (flattened unitary)
+            "observation_space_size": 8,  # 8 = 4 complex numbers in density matrix * 2 to separate elements into real and imaginary 
         }
     def __init__(self, env_config):
         self.final_time = env_config["final_time"]  # Final time for the gates
