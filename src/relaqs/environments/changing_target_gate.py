@@ -8,7 +8,6 @@ class ChangingTargetEnv(SingleQubitEnv):
     @classmethod
     def get_default_env_config(cls):
         config_dict = super().get_default_env_config()
-        config_dict["observation_space_size"] = 8
         config_dict["U_target_list"] = []
         config_dict["target_generation_function"] = RandomSU2
         return config_dict
