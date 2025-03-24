@@ -1,5 +1,4 @@
 import random
-import numpy as np
 from relaqs.environments import SingleQubitEnv, NoisySingleQubitEnv
 from relaqs.api.gates import RandomSU2
 from relaqs.api.utils import normalize
