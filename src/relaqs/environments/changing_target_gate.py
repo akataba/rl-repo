@@ -35,10 +35,6 @@ class ChangingTargetEnv(SingleQubitEnv):
         starting_observation = self.get_observation()
         return starting_observation, info
 
-    def get_observation(self):
-        U_diff = self.U_target @ self.U_initial.conj().T
-        return self.unitary_to_observation(U_diff)
-
     def return_env_config(self):
         env_config = super().get_default_env_config()
         env_config.update({
