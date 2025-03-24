@@ -60,7 +60,8 @@ class SingleQubitEnv(gym.Env):
         )
 
     def get_observation(self):
-        return np.append([self.compute_fidelity()], self.unitary_to_observation(self.U))
+        U_diff = self.U_target @ self.U_initial.conj().T
+        return self.unitary_to_observation(U_diff)
     
     def compute_fidelity(self):
         U_target_dagger = self.U_target.conjugate().transpose()
