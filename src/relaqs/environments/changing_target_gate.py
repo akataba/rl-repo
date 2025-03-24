@@ -8,6 +8,7 @@ class ChangingTargetEnv(SingleQubitEnv):
     @classmethod
     def get_default_env_config(cls):
         config_dict = super().get_default_env_config()
+        config_dict["U_initial_generation_function"] = RandomSU2 
         config_dict["U_target_list"] = []
         config_dict["target_generation_function"] = RandomSU2
         return config_dict
@@ -16,6 +17,7 @@ class ChangingTargetEnv(SingleQubitEnv):
         super().__init__(env_config)
         self.U_target_list = env_config["U_target_list"]
         self.target_generation_function = env_config["target_generation_function"]
+        self.U_initial_generation_function = env_config["U_initial_generation_function"]
 
     def set_target_gate(self):
         if len(self.U_target_list) == 0:
@@ -25,13 +27,13 @@ class ChangingTargetEnv(SingleQubitEnv):
         self.U_target_dm = self.U_target.copy()
 
     def set_initial_gate(self):
-        self.U_initial = self.target_generation_function().get_matrix()
+        self.U_initial = self.U_initial_generation_function().get_matrix()
         self.U_initial_dm = self.U_initial.copy()
 
     def reset(self, *, seed=None, options=None):
         _, info = super().reset()
-        self.set_target_gate()
         self.set_initial_gate()
+        self.set_target_gate()
         starting_observation = self.get_observation()
         return starting_observation, info
 
