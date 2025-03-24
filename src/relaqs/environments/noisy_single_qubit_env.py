@@ -31,6 +31,7 @@ class NoisySingleQubitEnv(SingleQubitEnv):
         self.detuning_update()
         self.U_target = self.unitary_to_superoperator(env_config["U_target"])
         self.U_target_dm = None
+        self.U_initial_dm = None
         self.U_initial = self.unitary_to_superoperator(env_config["U_initial"])
         self.relaxation_rates_list = env_config["relaxation_rates_list"]
         self.relaxation_ops = env_config["relaxation_ops"]
@@ -47,7 +48,7 @@ class NoisySingleQubitEnv(SingleQubitEnv):
 
     @classmethod
     def unitary_to_superoperator(self, U):
-        return np.kron(U,U.conj())
+        return np.kron(U,U.conj().T)
 
     def get_relaxation_rate(self):
         relaxation_size = len(self.relaxation_ops) # get number of relaxation ops
@@ -118,7 +119,7 @@ class NoisySingleQubitEnv(SingleQubitEnv):
 
         truncated, terminated = self.is_episode_over(fidelity)
 
-        if self.verbose is True:
+        if self.verbose:
             print(self.get_info(fidelity, reward, action, truncated, terminated))
 
         self.Haar_update()
